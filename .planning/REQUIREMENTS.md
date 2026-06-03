@@ -102,13 +102,47 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmap) | — | Pending |
+| ONBD-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| ONBD-02 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| ONBD-03 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| ONBD-04 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| DATA-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| SYMP-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| SYMP-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| SYMP-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| SYMP-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| CYCL-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| CYCL-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| CYCL-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| CYCL-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| LIFE-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
+| LIFE-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
+| LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
+| CHCK-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
+| CHCK-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
+| DATA-02 | Phase 4 — Private CloudKit Sync | Pending |
+| DATA-03 | Phase 4 — Private CloudKit Sync | Pending |
+| DATA-04 | Phase 4 — Private CloudKit Sync | Pending |
+| INST-01 | Phase 5 — Snapshot Contract + Descriptive Trends Engine | Pending |
+| INST-02 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Pending |
+| INST-04 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Pending |
+| INST-03 | Phase 7 — Correlation & Trigger Discovery | Pending |
+| DATA-05 | Phase 9 — HealthKit Import | Pending |
+| RPRT-01 | Phase 10 — Doctor-Ready PDF Report | Pending |
+| RPRT-02 | Phase 10 — Doctor-Ready PDF Report | Pending |
+| RPRT-03 | Phase 10 — Doctor-Ready PDF Report | Pending |
+| INST-05 | Phase 11 — Personalized Recommendations | Pending |
+| INST-06 | Phase 12 — Flare Early-Warning | Pending |
+
+**Note:** Phase 8 (Insights Integration — Coordinator, Cached Insights & Dashboard) is a pure integration phase that wires the Phase 5–7 engine (INST-01..04) into the live app; it introduces no new requirement IDs of its own.
 
 **Coverage:**
-- v1 requirements: 27 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 27 ⚠️
+- v1 requirements: 31 total (ONBD ×4, SYMP ×4, CYCL ×4, LIFE ×3, CHCK ×2, INST ×6, RPRT ×3, DATA ×5)
+- Mapped to phases: 31 (100%) ✓
+- Unmapped: 0 ✓
+
+> Count note: the project brief referenced "27 requirements," but this document enumerates 31 distinct v1 REQ-IDs. All 31 are mapped here, each to exactly one phase.
 
 ---
 *Requirements defined: 2026-06-03*
-*Last updated: 2026-06-03 after initial definition*
+*Last updated: 2026-06-03 after roadmap creation (traceability populated, 100% coverage)*
