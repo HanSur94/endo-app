@@ -26,7 +26,7 @@ The user delegated all four discussion areas ("no preference") — the decisions
 ### Onboarding & Consent
 - **D-01:** First-run is **warm, plain-language, and short** — validating in tone (many users are newly diagnosed, in pain, or fatigued), never clinical. Any education is optional/skippable.
 - **D-02:** A single clear **up-front consent** to process health data **on-device + in private iCloud** is the baseline gate to use the app. No health data is processed until the user opts in (ONBD-01).
-- **D-03:** `[informational — deferred to Phase 9]` Consent for **HealthKit** and any future optional processing is **just-in-time / purpose-specific** (requested in context, e.g. Phase 9), NOT bundled into the launch consent. (Not a Phase 1 deliverable — a deferral boundary.)
+- **D-03:** [informational] Consent for **HealthKit** and any future optional processing is **just-in-time / purpose-specific** (requested in context, e.g. Phase 9), NOT bundled into the launch consent. Deferred to Phase 9 — not a Phase 1 deliverable (a deferral boundary).
 - **D-04:** Consent is **withdrawable in Settings**, with a plain explanation of what withdrawal means for existing data.
 - **D-05:** "Not medical advice / not a medical device" framing appears in onboarding AND is surfaced alongside insights in later phases (ONBD-02).
 
@@ -38,7 +38,7 @@ The user delegated all four discussion areas ("no preference") — the decisions
 ### App Identity & App Store De-risk
 - **D-09:** Scaffold with provisional display name **"Endo-App"** and a **placeholder bundle ID** (e.g. `com.endoapp.ios`) — both flagged to finalize when the user picks a real name and enrolls an Apple Developer team.
 - **D-10:** Build **local-first with CloudKit sync behind a feature flag**, so development is never blocked on an Apple Developer account or App Review (matches the research-mandated local-only fallback).
-- **D-11:** `[informational — gated/deferred]` The App Store **5.1.3(ii) de-risk** (success criterion 5: throwaway TestFlight build + pre-submission review note for private-CloudKit health storage) is **planned but GATED** on the user enrolling in the Apple Developer Program. It is NOT a blocker for Phase 1 schema/consent work, and not a Phase 1 plan deliverable. → see External Dependencies.
+- **D-11:** [informational] The App Store **5.1.3(ii) de-risk** (success criterion 5: throwaway TestFlight build + pre-submission review note for private-CloudKit health storage) is **planned but GATED** on the user enrolling in the Apple Developer Program. It is NOT a blocker for Phase 1 schema/consent work, and not a Phase 1 plan deliverable. → see External Dependencies.
 - **D-12:** **Min deployment target iOS 18.** Scaffold a real `.xcodeproj` via **XcodeGen** (`project.yml`) — never an SPM executable target (GSD iOS rule).
 
 ### Privacy Policy & Publisher
