@@ -1,8 +1,8 @@
 ---
 phase: 1
 slug: foundations-schema-privacy-posture-claims-policy
-status: draft
-nyquist_compliant: false
+status: planned
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-06-03
 ---
@@ -43,13 +43,13 @@ created: 2026-06-03
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | 01 | 0/1 | DATA-01 | — | CloudKit-safe schema (all optional, no `.unique`, inverses) | unit | `xcodebuild test ... -only-testing:EndoAppTests/SchemaRoundTripTests` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 0/1 | DATA-01 | — | "Suppressed, no bleeding" fixture persists, no phantom cycle field | unit | `... -only-testing:EndoAppTests/SchemaRoundTripTests` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | ONBD-01 | T-consent | Processing blocked until `ConsentState == .consented`; `withdraw()` re-gates | unit | `... -only-testing:EndoAppTests/ConsentGateTests` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | ONBD-03 | — | Neutral default terminology; customization changes resolved copy; no gendered defaults | unit | `... -only-testing:EndoAppTests/TerminologyTests` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | ONBD-02 | — | "Not medical advice" disclaimer present & surfaced by onboarding | unit | `... -only-testing:EndoAppTests/DisclaimerTests` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | ONBD-04 | — | Privacy text non-empty, states on-device + private iCloud + no third-party sharing; reachable from onboarding + Settings | unit | `... -only-testing:EndoAppTests/PrivacyPolicyTests` | ❌ W0 | ⬜ pending |
-| TBD | 01 | 1 | (skeleton) | — | App builds & launches for Simulator destination | build | `xcodebuild ... build` (exit 0) | ❌ W0 | ⬜ pending |
+| 01-01-T3 → 01-02-T1 | 01→02 | 1→2 | DATA-01 | T-01-05 | CloudKit-safe schema (all optional, no `.unique`, inverses) | unit | `xcodebuild test ... -only-testing:EndoAppTests/SchemaRoundTripTests` | Created RED in 01-01-T3; GREEN in 01-02-T1 | ⬜ pending |
+| 01-01-T3 → 01-02-T1 | 01→02 | 1→2 | DATA-01 | — | "Suppressed, no bleeding" fixture persists, no phantom cycle field | unit | `... -only-testing:EndoAppTests/SchemaRoundTripTests` | Created RED in 01-01-T3; GREEN in 01-02-T1 | ⬜ pending |
+| 01-01-T3 → 01-02-T2 | 01→02 | 1→2 | ONBD-01 | T-01-03 | Processing blocked until `ConsentState == .consented`; `withdraw()` re-gates (Settings UI in 01-03-T2) | unit | `... -only-testing:EndoAppTests/ConsentGateTests` | Created RED in 01-01-T3; GREEN in 01-02-T2 | ⬜ pending |
+| 01-01-T3 → 01-03-T1 | 01→03 | 1→3 | ONBD-03 | T-01-09 | Neutral default terminology; customization changes resolved copy; no gendered defaults | unit | `... -only-testing:EndoAppTests/TerminologyTests` | Created RED in 01-01-T3; GREEN in 01-03-T1 | ⬜ pending |
+| 01-01-T3 → 01-03-T1 | 01→03 | 1→3 | ONBD-02 | T-01-09 | "Not medical advice" disclaimer present & surfaced by onboarding (surfacing verified in 01-03-T2/T3) | unit | `... -only-testing:EndoAppTests/DisclaimerTests` | Created RED in 01-01-T3; GREEN in 01-03-T1 | ⬜ pending |
+| 01-01-T3 → 01-03-T1 | 01→03 | 1→3 | ONBD-04 | T-01-08 | Privacy text non-empty, states on-device + private iCloud + no third-party sharing; reachable from onboarding + Settings (reachability in 01-03-T2/T3) | unit | `... -only-testing:EndoAppTests/PrivacyPolicyTests` | Created RED in 01-01-T3; GREEN in 01-03-T1 | ⬜ pending |
+| 01-01-T2 / 01-03-T3 | 01/03 | 1→3 | (skeleton) | — | App builds & launches for Simulator destination; human-verified end-to-end | build | `xcodebuild ... build` (exit 0) | Build green from 01-01-T2; E2E human-verify 01-03-T3 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -79,11 +79,11 @@ created: 2026-06-03
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 60s
-- [ ] `nyquist_compliant: true` set in frontmatter (after planner aligns task IDs)
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (all 5 test files created RED in 01-01-T3; build/test infra in 01-01-T1/T2)
+- [x] No watch-mode flags
+- [x] Feedback latency < 60s
+- [x] `nyquist_compliant: true` set in frontmatter (task IDs aligned to 01-01/01-02/01-03 plans)
 
-**Approval:** pending
+**Approval:** planner-aligned (task IDs mapped to 01-01/01-02/01-03; awaiting execution)

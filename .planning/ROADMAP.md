@@ -38,7 +38,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User sees clear "not medical advice / not a medical device" framing during onboarding, and onboarding language is inclusive, non-gendered, and lets the user customize identity/terminology.
   4. The SwiftData schema is `VersionedSchema`, all-optional/defaulted, has no `@Attribute(.unique)`, models bleeding/treatment state as first-class with cycle-day as an optional derived field, and initializes a private-only CloudKit container.
   5. A throwaway TestFlight build plus a pre-submission review note has been used to validate the private-CloudKit-health-storage interpretation, with a local-only fallback designed in.
-**Plans**: TBD
+**Plans**: 3 plans, 3 waves (strictly sequential)
+Plans:
+- [ ] 01-01-PLAN.md — Wave 1: env setup (full Xcode + XcodeGen, MANUAL/blocking) + iOS 18 .xcodeproj scaffold + Privacy Manifest + 5 RED requirement tests (Nyquist Wave 0)
+- [ ] 01-02-PLAN.md — Wave 2: CloudKit-safe VersionedSchema + local-only container + consent gate + skeleton write/read (DATA-01, ONBD-01 GREEN — the walking-skeleton happy path)
+- [ ] 01-03-PLAN.md — Wave 3: warm onboarding + disclaimer + offline privacy policy + neutral terminology + Settings withdraw/customize (ONBD-02/03/04 GREEN; human-verify end-to-end)
+  > Note: Success Criterion 5 (TestFlight 5.1.3(ii) de-risk) is GATED on Apple Developer enrollment (D-11) and is a deferred follow-up, NOT in Phase 1's executable scope. The architecture that makes that de-risk winnable IS delivered here.
 
 ### Phase 2: Core Symptom & Cycle/Bleeding Logging
 **Goal**: Deliver the endo-credible logging surface — deep symptom logging with a pain body map, free-text notes, full edit/delete, and a bleeding & cycle model that treats flow as first-class, tolerates irregular cycles, supports a suppressed/no-cycle mode, and shows cycle-day only as derived with a confidence indicator.
@@ -179,7 +184,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundations — Schema, Privacy Posture & Claims Policy | 0/TBD | Not started | - |
+| 1. Foundations — Schema, Privacy Posture & Claims Policy | 0/3 | Not started | - |
 | 2. Core Symptom & Cycle/Bleeding Logging | 0/TBD | Not started | - |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/TBD | Not started | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
