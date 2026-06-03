@@ -7,6 +7,7 @@ The Endo-App is a free, privacy-first iOS app that turns endometriosis self-trac
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
@@ -28,152 +29,195 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Phase Details
 
 ### Phase 1: Foundations — Schema, Privacy Posture & Claims Policy
+
 **Goal**: Lock every irreversible foundational decision so the rest of the build is conventional Apple-platform engineering — a CloudKit-safe append-only schema, an explicit GDPR consent flow, an in-app privacy policy, a claims/inclusive-language policy, and an early App Store 5.1.3(ii) interpretation de-risk.
 **Mode:** mvp
 **Depends on**: Nothing (first phase)
 **Requirements**: ONBD-01, ONBD-02, ONBD-03, ONBD-04, DATA-01
 **Success Criteria** (what must be TRUE):
+
   1. User is shown an explicit, plain-language consent screen and cannot have any health data processed until they opt in; they can later withdraw consent.
   2. User can read an in-app privacy policy that accurately describes on-device + private-iCloud storage and the absence of servers/third parties.
   3. User sees clear "not medical advice / not a medical device" framing during onboarding, and onboarding language is inclusive, non-gendered, and lets the user customize identity/terminology.
   4. The SwiftData schema is `VersionedSchema`, all-optional/defaulted, has no `@Attribute(.unique)`, models bleeding/treatment state as first-class with cycle-day as an optional derived field, and initializes a private-only CloudKit container.
   5. A throwaway TestFlight build plus a pre-submission review note has been used to validate the private-CloudKit-health-storage interpretation, with a local-only fallback designed in.
-**Plans**: 3 plans, 3 waves (strictly sequential)
-Plans:
+
+**Plans**: 3 plans, 3 waves (strictly sequential)Plans:
+**Wave 1**
+
 - [ ] 01-01-PLAN.md — Wave 1: env setup (full Xcode + XcodeGen, MANUAL/blocking) + iOS 18 .xcodeproj scaffold + Privacy Manifest + 5 RED requirement tests (Nyquist Wave 0)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 01-02-PLAN.md — Wave 2: CloudKit-safe VersionedSchema + local-only container + consent gate + skeleton write/read (DATA-01, ONBD-01 GREEN — the walking-skeleton happy path)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 01-03-PLAN.md — Wave 3: warm onboarding + disclaimer + offline privacy policy + neutral terminology + Settings withdraw/customize (ONBD-02/03/04 GREEN; human-verify end-to-end)
   > Note: Success Criterion 5 (TestFlight 5.1.3(ii) de-risk) is GATED on Apple Developer enrollment (D-11) and is a deferred follow-up, NOT in Phase 1's executable scope. The architecture that makes that de-risk winnable IS delivered here.
 
 ### Phase 2: Core Symptom & Cycle/Bleeding Logging
+
 **Goal**: Deliver the endo-credible logging surface — deep symptom logging with a pain body map, free-text notes, full edit/delete, and a bleeding & cycle model that treats flow as first-class, tolerates irregular cycles, supports a suppressed/no-cycle mode, and shows cycle-day only as derived with a confidence indicator.
 **Mode:** mvp
 **Depends on**: Phase 1
 **Requirements**: SYMP-01, SYMP-02, SYMP-03, SYMP-04, CYCL-01, CYCL-02, CYCL-03, CYCL-04
 **Success Criteria** (what must be TRUE):
+
   1. User can log endo-specific symptoms (pain, fatigue, GI/"endo belly", urinary, mood, brain fog, etc.) with severity, mark pain location on a body map, and add free-text notes to a day.
   2. User can edit or delete any past entry, and the change is reflected immediately.
   3. User can log bleeding/flow as a standalone event that exists independently of any predicted cycle.
   4. A user on continuous hormonal treatment can switch on a "suppressed / no cycle" mode and the app stays fully useful, showing no phantom cycle phase.
   5. When a cycle exists, cycle-day appears as a derived/optional value with a confidence indicator and never assumes a 28-day cycle; predictions degrade gracefully for irregular data.
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders
+
 **Goal**: Capture the contextual factors that feed insights (food, activity, sleep, medication, stress, mood) and make daily logging adherence-friendly with a fast check-in and configurable, fatigue-aware reminders.
 **Mode:** mvp
 **Depends on**: Phase 2
 **Requirements**: LIFE-01, LIFE-02, LIFE-03, CHCK-01, CHCK-02
 **Success Criteria** (what must be TRUE):
+
   1. User can log food/nutrition and physical activity/sport for a day.
   2. User can log contextual factors (sleep, medication, stress, mood) that will feed insights.
   3. User can complete a fast daily check-in that records the day in just a few taps (e.g. with sensible defaults / "same as yesterday").
   4. User can set one or more configurable reminder notifications to log, with controls that avoid notification fatigue (opt-in, minimal, quiet hours respected).
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 4: Private CloudKit Sync
+
 **Goal**: Turn the local store into a robust private iCloud sync that works across the user's own devices, survives offline edits and reinstall-from-iCloud without data loss, and truly purges the CloudKit private DB on delete.
 **Mode:** mvp
 **Depends on**: Phase 3
 **Requirements**: DATA-02, DATA-03, DATA-04
 **Success Criteria** (what must be TRUE):
+
   1. User's data syncs across their own Apple devices via the private CloudKit database with no account or login.
   2. Edits made on two devices, including offline edits later reconciled, appear correctly on both with no lost records (last-writer-wins on append-only events verified).
   3. A fresh install on a clean device restores the user's full history from private iCloud.
   4. Deleting data removes it from the CloudKit private DB as well as locally — confirmed by a clean reinstall showing nothing.
+
 **Plans**: TBD
 
 ### Phase 5: Snapshot Contract + Descriptive Trends Engine
+
 **Goal**: Establish the single most important architectural seam — a `Sendable` value-type snapshot contract (`DaySnapshot`/`Insight`) — and build an isolated insights package (no SwiftData/SwiftUI imports) that produces descriptive trend results, all unit-tested against synthetic fixtures with no database or UI.
 **Mode:** mvp
 **Depends on**: Phase 1
 **Requirements**: INST-01
 **Success Criteria** (what must be TRUE):
+
   1. The insights engine is a standalone Swift package importing neither SwiftData nor SwiftUI, consuming value-type snapshots and returning `Insight` values with no I/O.
   2. The engine produces descriptive trends of symptoms and factors over time, anchored on absolute calendar dates (not assumed cycle phase).
   3. The engine's trend logic is covered by Swift Testing against synthetic fixtures, including a "suppressed, no bleeding for months" fixture, with no simulator/iCloud dependency.
+
 **Plans**: TBD
 
 ### Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer
+
 **Goal**: Add symptom-to-cycle-phase mapping to the engine and build the cross-cutting insight-honesty layer — minimum-sample gating, a confidence indicator, non-causal language, and dismissal — that every present and future insight must pass through.
 **Mode:** mvp
 **Depends on**: Phase 5
 **Requirements**: INST-02, INST-04
 **Success Criteria** (what must be TRUE):
+
   1. The engine maps symptoms onto cycle phases when a reliable cycle exists and gracefully omits phase mapping for suppressed/irregular users instead of inventing a phase.
   2. Every insight the engine emits carries a confidence indicator and non-causal language ("possible association," never "trigger/causes/will").
   3. Low-confidence or under-sampled findings are withheld rather than ranked, enforced by a shared min-sample gate.
   4. Each insight is dismissable ("this isn't right"), and the dismissal is recorded.
+
 **Plans**: TBD
 
 ### Phase 7: Correlation & Trigger Discovery
+
 **Goal**: Build the product's differentiating capability — discovery of correlations/triggers across logged factors (symptoms vs food, sleep, activity, cycle) — with statistical rigor (min-sample, effect size, multiple-comparison awareness) routed entirely through the honesty layer.
 **Mode:** mvp
 **Depends on**: Phase 6
 **Requirements**: INST-03
 **Success Criteria** (what must be TRUE):
+
   1. The engine surfaces correlations/triggers across logged factors using the user's own data.
   2. No correlation is shown below the minimum sample/observation threshold, and findings carry effect size plus a plain-language confidence.
   3. Spurious low-confidence correlations are suppressed rather than displayed, and every shown correlation uses non-causal "possible association" framing inherited from the honesty layer.
+
 **Plans**: TBD
 
 ### Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard
+
 **Goal**: Connect the persistence layer to the isolated engine — the Repository maps `@Model` rows to snapshots, an InsightsCoordinator runs the engine off-main with debounced/windowed recompute and persists `CachedInsight` (which also syncs), and a Swift Charts dashboard surfaces the live insights to the user.
 **Mode:** mvp
 **Depends on**: Phase 4, Phase 7
 **Requirements**: (none — integration phase wiring INST-01..04 into the live app)
 **Success Criteria** (what must be TRUE):
+
   1. User opens an insights dashboard and sees their real logged data rendered as trend, cycle-phase, and correlation insights via Swift Charts.
   2. Insights recompute off the main thread after new data is logged without UI jank, and cached results load instantly on app open.
   3. Charts handle gaps, sparse data, and suppressed periods gracefully (absolute-date axis, accessible labels), and cached insights survive across devices via sync.
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 9: HealthKit Import
+
 **Goal**: Add HealthKit as a purely additive read-only source — import cycle, sleep, workouts, and nutrition into `ImportedSample`, funneled through the same snapshot pipeline, with contextual permission prompts and full usability when access is denied.
 **Mode:** mvp
 **Depends on**: Phase 8
 **Requirements**: DATA-05
 **Success Criteria** (what must be TRUE):
+
   1. User can import cycle, sleep, workouts, and nutrition from Apple HealthKit (read-only) and that data flows into the same insights pipeline.
   2. Permission is requested incrementally and contextually (with in-app rationale before the system sheet), not as one mega-prompt at launch.
   3. If HealthKit access is fully denied, the app remains fully usable via manual logging, and empty reads never render as "you have no symptoms."
+
 **Plans**: TBD
 
 ### Phase 10: Doctor-Ready PDF Report
+
 **Goal**: Generate a clinician-credible, on-device vector PDF for a user-chosen date range that labels each data source (self-reported vs Apple Health), carries "self-tracked, not diagnostic" framing, and is shared via the system share sheet with no silent upload.
 **Mode:** mvp
 **Depends on**: Phase 9
 **Requirements**: RPRT-01, RPRT-02, RPRT-03
 **Success Criteria** (what must be TRUE):
+
   1. User can generate a structured, dated PDF report for a chosen date range, produced entirely on-device.
   2. The report labels each data point's source (self-reported vs Apple Health) and carries a clear "self-tracked, not diagnostic" note.
   3. User can share/export the PDF via the system share sheet with no automatic cloud upload.
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 11: Personalized Recommendations
+
 **Goal**: Compose data-driven, non-prescriptive recommendations on top of the proven correlation engine — framed as discussion prompts about the user's own patterns, routed through the honesty layer, never as medical instructions.
 **Mode:** mvp
 **Depends on**: Phase 8
 **Requirements**: INST-05
 **Success Criteria** (what must be TRUE):
+
   1. User receives personalized recommendations derived from patterns in their own data (e.g. "you tend to feel better when…").
   2. Recommendations are phrased as discussion prompts, never as medical instructions ("take X"/"stop Y"), and inherit the honesty layer's confidence and non-causal framing.
   3. Recommendations are only shown when supported by sufficient data and are dismissable.
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 12: Flare Early-Warning
+
 **Goal**: Build the hardest, riskiest capability dead last — a heuristic, probabilistic, non-diagnostic flare early-warning derived from the user's personal history, fully gated by the honesty layer and withheld when confidence is low.
 **Mode:** mvp
 **Depends on**: Phase 11
 **Requirements**: INST-06
 **Success Criteria** (what must be TRUE):
+
   1. User receives a heuristic, non-diagnostic flare early-warning derived from their own history, presented with a confidence indicator and uncertainty-first, non-causal language.
   2. The warning is withheld when confidence/data is insufficient (it can say "not enough data" rather than always producing an answer) and is never delivered as a speculative push notification.
   3. The early-warning passes through the same min-sample gate, confidence, and dismiss controls as every other insight, and carries pervasive "not medical advice" framing.
+
 **Plans**: TBD
 **UI hint**: yes
 
