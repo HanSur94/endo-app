@@ -144,4 +144,88 @@ struct SchemaMigrationTests {
         let meds = try ctx.fetch(FetchDescriptor<SchemaV1.Medication>())
         #expect(meds.isEmpty, "Medication must be queryable (empty) after V2→V3 migration.")
     }
+
+    // Phase 6 (Plan 06-03): the V3→V4 additive migration is data-preserving — a V3 store survives the
+    // lightweight reopen at V4 with ZERO data loss (T-06-11), and the new DismissedInsight entity is
+    // queryable (empty). Closes the A1 discipline for the Phase-6 model. Clones the V2→V3 case +1 version.
+    @Test func v3Store_survivesLightweightMigrationToV4_withNoDataLoss() async throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("endo-migration-v4-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let storeURL = dir.appendingPathComponent("store.sqlite")
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Known V3 fixture values to assert survive the migration to V4 (covers the V3-new models too).
+        let dayID = UUID()
+        let bleedID = UUID()
+        let bleedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let symptomID = UUID()
+        let painID = UUID()
+        let factorID = UUID()
+        let factorAt = Date(timeIntervalSince1970: 1_695_000_000)
+        let medID = UUID()
+        let suppressedStart = Date(timeIntervalSince1970: 1_690_000_000)
+
+        // 1. Open a store at the V3 schema (NO migration plan) and write V3 rows across every V3 model.
+        do {
+            let v3Schema = Schema(versionedSchema: SchemaV3.self)
+            // Force `.none` (see V1 note above) — local-only migration store, no CloudKit mirroring (P-2).
+            let v3Config = ModelConfiguration(schema: v3Schema, url: storeURL, cloudKitDatabase: .none)
+            let v3Container = try ModelContainer(for: v3Schema, configurations: v3Config)
+            let ctx = ModelContext(v3Container)
+            ctx.insert(SchemaV1.DayEntry(id: dayID, note: "v3 day"))
+            ctx.insert(SchemaV1.BleedingEvent(id: bleedID, occurredAt: bleedAt, flowRaw: "heavy", clots: false))
+            ctx.insert(SchemaV1.TreatmentState(startedAt: suppressedStart, modeRaw: "naturallyCycling"))
+            ctx.insert(SchemaV1.SymptomReading(id: symptomID, typeRaw: "fatigue", severity: 7))
+            ctx.insert(SchemaV1.PainPoint(id: painID, regionRaw: "lowerAbdomenPelvis", severity: 4))
+            ctx.insert(SchemaV1.FactorReading(id: factorID, occurredOn: factorAt, kindRaw: "stress", level: 6))
+            ctx.insert(SchemaV1.Medication(id: medID, name: "Ibuprofen"))
+            try ctx.save()
+            // v3Container goes out of scope here, releasing the store file.
+        }
+
+        // 2. Reopen the SAME store file at SchemaV4 via the lightweight migration plan (V3→V4).
+        let v4Container = try makeModelContainer(url: storeURL)
+        let ctx = ModelContext(v4Container)
+
+        // 3. Assert ALL V3 rows survived, readable through the V4 schema.
+        let days = try ctx.fetch(FetchDescriptor<SchemaV1.DayEntry>())
+        #expect(days.count == 1)
+        #expect(days.first?.id == dayID)
+        #expect(days.first?.note == "v3 day")
+
+        let bleeds = try ctx.fetch(FetchDescriptor<SchemaV1.BleedingEvent>())
+        #expect(bleeds.count == 1)
+        #expect(bleeds.first?.id == bleedID)
+        #expect(bleeds.first?.occurredAt == bleedAt)
+        #expect(bleeds.first?.flowRaw == "heavy")
+        #expect(bleeds.first?.clots == false)
+
+        let states = try ctx.fetch(FetchDescriptor<SchemaV1.TreatmentState>())
+        #expect(states.count == 1)
+        #expect(states.first?.modeRaw == "naturallyCycling")
+
+        let symptoms = try ctx.fetch(FetchDescriptor<SchemaV1.SymptomReading>())
+        #expect(symptoms.count == 1)
+        #expect(symptoms.first?.id == symptomID)
+        #expect(symptoms.first?.severity == 7)
+
+        let pains = try ctx.fetch(FetchDescriptor<SchemaV1.PainPoint>())
+        #expect(pains.count == 1)
+        #expect(pains.first?.id == painID)
+
+        let factors = try ctx.fetch(FetchDescriptor<SchemaV1.FactorReading>())
+        #expect(factors.count == 1)
+        #expect(factors.first?.id == factorID)
+        #expect(factors.first?.kindRaw == "stress")
+        #expect(factors.first?.level == 6)
+
+        let meds = try ctx.fetch(FetchDescriptor<SchemaV1.Medication>())
+        #expect(meds.count == 1)
+        #expect(meds.first?.id == medID)
+
+        // 4. The new V4-only model is queryable post-migration (empty, but the entity exists).
+        let dismissed = try ctx.fetch(FetchDescriptor<SchemaV1.DismissedInsight>())
+        #expect(dismissed.isEmpty, "DismissedInsight must be queryable (empty) after V3→V4 migration.")
+    }
 }
