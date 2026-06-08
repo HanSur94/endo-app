@@ -135,7 +135,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Ship the CloudKit entitlement + Background Modes (runtime-gated, no signing for CI; A1 de-risk first) + AccountAvailability seam + account-aware SyncMode resolved before container construction (DATA-02 config/account-detection level)
+- [x] 04-01-PLAN.md — Ship the CloudKit entitlement + Background Modes (runtime-gated, no signing for CI; A1 de-risk first) + AccountAvailability seam + account-aware SyncMode resolved before container construction (DATA-02 config/account-detection level) ✅ A1 held — Simulator suite GREEN with no team; P-2 guard proven (0 CloudKit mirroring errors)
 
 **Wave 2** *(blocked on 04-01)*
 
@@ -272,7 +272,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
 | 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 4/4 | Complete   | 2026-06-08 |
-| 4. Private CloudKit Sync | 0/TBD | Not started | - |
+| 4. Private CloudKit Sync | 1/3 | In progress | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 0/TBD | Not started | - |
 | 7. Correlation & Trigger Discovery | 0/TBD | Not started | - |

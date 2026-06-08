@@ -120,8 +120,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 data + 03-02 UI; meds-taken E2E proven in 03-04 testMedicationTaken_persistsAcrossReopen) |
 | CHCK-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-04 DailyCheckInView fast sheet + Home CTA + notification deep-link + auto-suppress; CheckInFlowUITests GREEN incl. empty-confirm adherence) |
 | CHCK-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 scheduler seam + fatigue logic; 03-03 opt-in UI/JIT-permission/quiet-hours/denied-state) — on-device delivery + system prompt are deferred human-verify at the phase gate (03-VALIDATION Manual-Only) |
-| DATA-02 | Phase 4 — Private CloudKit Sync | Pending |
-| DATA-03 | Phase 4 — Private CloudKit Sync | Pending |
+| DATA-02 | Phase 4 — Private CloudKit Sync | In progress (04-01 config/account-detection level: private-DB-only entitlement + account-aware SyncMode.resolve + composition-root wiring; A1 held, P-2 guard proven). Device-only multi-device proof routed to 04-03 HUMAN-UAT. |
+| DATA-03 | Phase 4 — Private CloudKit Sync | In progress (04-01 ships the runtime gate + account seam; offline/reinstall/last-writer-wins ride NSPersistentCloudKitContainer defaults). Device-only proof routed to 04-03 HUMAN-UAT. |
 | DATA-04 | Phase 4 — Private CloudKit Sync | Pending |
 | INST-01 | Phase 5 — Snapshot Contract + Descriptive Trends Engine | Pending |
 | INST-02 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Pending |
