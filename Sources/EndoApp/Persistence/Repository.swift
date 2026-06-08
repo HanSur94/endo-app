@@ -118,6 +118,16 @@ protocol Repository {
     /// nil≠0, `hasNote` presence-only, the current suppressed flag stamped onto every snapshot. The
     /// insights engine consumes only `[DaySnapshot]` and never touches the store. Consent-gated.
     func daySnapshots() throws -> [DaySnapshot]
+
+    // MARK: Phase 6 — dismissal CRUD (INST-04, D-09/D-10). Consent-gated; append-only; dedupe-on-read.
+
+    /// Durably record that the user dismissed the insight identified by `signalKey` (D-09). APPEND-ONLY:
+    /// inserts ONE `DismissedInsight` row — never mutates/dedupes on write (cross-device duplicates
+    /// collapse harmlessly on read). MUST NOT be called before consent (ONBD-01).
+    func dismissInsight(signalKey: String) throws
+    /// The deduped set of all dismissed signalKeys (D-10/D-12). Read-side `Set` dedupe collapses any
+    /// append-only duplicates. The insights engine consumes this `Set` in Phase 8. Consent-gated.
+    func dismissedSignalKeys() throws -> Set<String>
 }
 
 /// SwiftData-backed `Repository` over a `ModelContext`.
@@ -539,6 +549,23 @@ struct SwiftDataRepository: Repository {
                 hasNote: noteDays.contains(key),
                 suppressed: suppressed)
         }
+    }
+
+    // MARK: - Phase 6 dismissal CRUD (INST-04, D-09/D-10)
+
+    func dismissInsight(signalKey: String) throws {
+        assertConsented()   // ONBD-01 / V4 — first statement, like every sibling write.
+        // APPEND-ONLY: a dismissal is a new event row (the CloudKit "prefer append-only events" rule).
+        // Cross-device duplicates collapse harmlessly on read via `Set` (dismissedSignalKeys) — we NEVER
+        // dedupe or delete on write.
+        context.insert(SchemaV1.DismissedInsight(signalKey: signalKey))
+        try context.save()
+    }
+
+    func dismissedSignalKeys() throws -> Set<String> {
+        assertConsented()   // ONBD-01 / V4 — first statement, like every sibling read.
+        // Dedupe-on-read: a `Set` collapses any append-only duplicates; drop nil keys (CloudKit-optional).
+        return Set(try context.fetch(FetchDescriptor<SchemaV1.DismissedInsight>()).compactMap(\.signalKey))
     }
 
     /// Project one day's raw `@Model` rows into the Sendable `EndoInsights.DaySnapshot`. Defensive
