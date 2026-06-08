@@ -20,6 +20,10 @@ final class AppDependencies {
     /// The terminology/identity preference store (ONBD-03, D-07). UserDefaults-backed, outside the
     /// synced store.
     let terminologyStore: TerminologyStore
+    /// The local-notification scheduling seam (CHCK-02, D-17). Concrete `UNUserNotificationCenter`
+    /// wrapper; the Settings reminders section drives it (the `.environment(\.notificationScheduler,…)`
+    /// injection at the App root is wired in Plan 04 alongside the deep-link delegate).
+    let notificationScheduler: any NotificationScheduler
 
     init() {
         // Test-only, launch-arg-guarded deterministic reset (used by EndoAppUITests). When the
@@ -63,6 +67,7 @@ final class AppDependencies {
         }
         self.consentStore = UserDefaultsConsentStore()
         self.terminologyStore = TerminologyStore()
+        self.notificationScheduler = SystemNotificationScheduler()
     }
 
     /// Recovery helper (D-22 resilience): delete an unreadable default SwiftData store (and its
@@ -113,5 +118,24 @@ extension EnvironmentValues {
     var terminologyStore: TerminologyStore {
         get { self[TerminologyStoreKey.self] }
         set { self[TerminologyStoreKey.self] = newValue }
+    }
+}
+
+/// Environment key carrying the app's `NotificationScheduler` (CHCK-02 / D-17 injection seam).
+private struct NotificationSchedulerKey: EnvironmentKey {
+    // Same main-actor-safe default pattern as the consent store: the scheduler is `@MainActor`-isolated
+    // and SwiftUI reads environment values on the main actor, so constructing the default under
+    // `assumeIsolated` is safe and satisfies the nonisolated `EnvironmentKey.defaultValue` requirement
+    // under Swift 6.
+    static var defaultValue: any NotificationScheduler {
+        MainActor.assumeIsolated { SystemNotificationScheduler() }
+    }
+}
+
+extension EnvironmentValues {
+    /// The injected notification scheduler the reminders settings section drives (CHCK-02, D-17).
+    var notificationScheduler: any NotificationScheduler {
+        get { self[NotificationSchedulerKey.self] }
+        set { self[NotificationSchedulerKey.self] = newValue }
     }
 }
