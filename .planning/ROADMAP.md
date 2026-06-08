@@ -143,7 +143,7 @@ Plans:
 
 **Wave 3** *(blocked on 04-01 + 04-02)*
 
-- [ ] 04-03-PLAN.md — HUMAN-UAT plan: device-only protocol for the 4 DATA criteria (multi-device sync / offline reconcile / reinstall restore / delete-purge) + manual CloudKit schema-deploy + DEVELOPMENT_TEAM steps; blocking human-verify checkpoint (DATA-02/03/04, human_needed)
+- [x] 04-03-PLAN.md — HUMAN-UAT plan: device-only protocol for the 4 DATA criteria (multi-device sync / offline reconcile / reinstall restore / delete-purge) + manual CloudKit schema-deploy + DEVELOPMENT_TEAM steps; blocking human-verify checkpoint (DATA-02/03/04, human_needed) ✅ 04-HUMAN-UAT.md authored (5 scenarios + Part A setup + P-1 caveat + 5.1.3(ii) review note); no fabricated automated sync tests (D-16); blocking checkpoint auto-approved under AUTO_MODE — device DATA-02/03/04 run surfaced to the phase verification gate
 
 ### Phase 5: Snapshot Contract + Descriptive Trends Engine
 
@@ -272,7 +272,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
 | 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 4/4 | Complete   | 2026-06-08 |
-| 4. Private CloudKit Sync | 1/3 | In progress | - |
+| 4. Private CloudKit Sync | 3/3 | Plans complete — device DATA-02/03/04 human-gated (04-HUMAN-UAT) | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 0/TBD | Not started | - |
 | 7. Correlation & Trigger Discovery | 0/TBD | Not started | - |

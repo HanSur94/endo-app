@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-02-PLAN.md (Phase 4 Wave 2)
-last_updated: "2026-06-08T18:16:20.000Z"
-last_activity: 2026-06-08 -- Completed 04-02 (Settings sync line + DATA-04 deleteDay completeness)
+stopped_at: Completed 04-03-PLAN.md (Phase 4 Wave 3 — HUMAN-UAT authored; device DATA-02/03/04 gated to user)
+last_updated: "2026-06-08T18:21:23.000Z"
+last_activity: 2026-06-08 -- Completed 04-03 (04-HUMAN-UAT device-only protocol; blocking checkpoint auto-approved)
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 14
-  completed_plans: 13
-  percent: 29
+  completed_plans: 14
+  percent: 31
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 ## Current Position
 
 Phase: 4 (Private CloudKit Sync) — EXECUTING
-Plan: 2 of 3
-Status: Executing Phase 4 (Wave 1 complete)
-Last activity: 2026-06-08 -- Completed 04-01 (CloudKit entitlement + account-aware SyncMode)
+Plan: 3 of 3 (all plans executed; phase verification gate next)
+Status: Executing Phase 4 (Waves 1–3 complete; device DATA-02/03/04 human-gated via 04-HUMAN-UAT)
+Last activity: 2026-06-08 -- Completed 04-03 (04-HUMAN-UAT device-only protocol authored)
 
-Progress: [███░░░░░░░] 27%
+Progress: [███░░░░░░░] 31%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [███░░░░░░░] 27%
 | Phase 03 P04 | ~30min | 3 tasks | 9 files |
 | Phase 04 P01 | ~22min | 3 tasks | 9 files |
 | Phase 04 P02 | ~7min | 2 tasks | 3 files |
+| Phase 04 P03 | ~2min | 1 task + checkpoint | 1 doc |
 
 ## Accumulated Context
 
@@ -83,6 +84,7 @@ Recent decisions affecting current work:
 - [03-03]: Reminders + manage-meds Settings slice landed (CHCK-02 / LIFE-03). New ReminderSettings is a UserDefaults device-pref store (enabled default OFF, times, quiet-hours as minutes-of-day Ints) — never in the synced store (A2/T-03-12). NotificationScheduler is now injected via EnvironmentValues.notificationScheduler + NotificationSchedulerKey (MainActor.assumeIsolated default), mirroring ConsentStoreKey; the actual .environment(...) injection at the App root is DEFERRED to Plan 04 (deep-link delegate owns the App-root files). JIT discipline: requestAuthorization lives ONLY in enableReminders() (master-toggle ON path); onAppear does a passive authorizationStatus() read for the denied-state UI. Settings Manage-meds add bounds free-text via SwiftDataRepository.maxNoteLength and removes via soft-archive behind .confirmationDialog. Copy note: reused the landed ReminderCopy constants ("Whenever you have a moment, your daily check-in is ready.") instead of the UI-SPEC literal "here's…" which fails the 'her' gendered-token audit. On-device notification DELIVERY + system permission prompt + denied-state + quiet-hours suppression + soft-archive UI are DEFERRED human-verify (auto-approved under AUTO_MODE) — surfaced to the phase verification gate (03-VALIDATION Manual-Only rows).
 - [03-04]: Phase 3 COMPLETE. Fast DailyCheckInView sheet (symptoms -> 6 factor sections -> bleeding, nothing mandatory) reachable from a prominent Home CTA (home.dailyCheckInButton) or a reminder notification deep-link. KEY a11y learning carried forward: a `checkin.section.<factor>` id on the `Section` ITSELF collapses child controls into one element — put the section id on the section HEADER `Text` instead (the Plan-02 mood-row collapse, now generalized). Deep-link = an @Observable CheckInRouter injected via EnvironmentKey; the nonisolated UNUserNotificationCenterDelegate flips it on the MainActor (capture a local `let router` to dodge Swift 6 sending-self), and HomeView (built ONLY in AppGate .consented) presents the sheet — so a deep-link can never surface health UI before consent (T-03-14). 'Same as yesterday' prefills sticky context only (meds/sleep/activity); empty confirm writes checkInMarker only; confirm calls scheduler.cancelToday() (D-19b). The .environment(\.notificationScheduler/\.checkInRouter) root injection (deferred by 03-03) is wired here. Integration catch: 03-03's new Settings sections pushed the withdraw button below the fold, silently breaking ConsentFlowUITests on the full suite (03-03 never ran the full UI suite) — fixed with a scroll-into-view. CHCK-01/02 + LIFE-03 proven E2E (incl. mandatory medication-taken persistence); full Phase-3 suite GREEN.
 - [04-01]: Private CloudKit ACTIVATED (runtime-gated). A1 HELD — the CloudKit entitlement (private-DB-only iCloud.com.endoapp.ios + CloudKit service + aps-environment=development) does NOT break the unsigned Simulator build; full suite GREEN with no DEVELOPMENT_TEAM, so no pivot to per-configuration gating. SyncMode is now account-aware: SyncMode.resolve(_:) consults an injectable AccountAvailability seam (Sendable, NOT @MainActor; SystemAccountAvailability reads FileManager.default.ubiquityIdentityToken synchronously — D-03/P-5, never the async accountStatus, never logs the token). makeModelContainer takes syncMode: SyncMode = .localOnly as its FIRST param; the composition root (AppDependencies) RESOLVES the mode from the seam BEFORE building the container (P-2) and injects \\.accountAvailability for SettingsView (04-02). KEY P-2 CATCH: once the entitlement ships in the target, ModelConfiguration(schema:url:) (the url: overload + SchemaMigrationTests' direct constructions) silently INFER .automatic CloudKit and mis-activate sync on local-only stores — must pass cloudKitDatabase: .none EXPLICITLY on every local path (dropped 14 CloudKit mirroring errors → 0). DEVELOPMENT_TEAM stays a COMMENTED placeholder in project.yml (D-02 user-setup). The 4 real multi-device DATA criteria are device-only → routed to 04-03 HUMAN-UAT.
+- [04-03]: Phase-4 plans all executed. 04-HUMAN-UAT.md authored — the device-only protocol for the four DATA criteria CI cannot reach: 5 scenarios (DATA-02 sync-no-login / DATA-03a offline-reconcile-LWW / DATA-03b reinstall-restore / DATA-04 delete-purge / sign-out grace), each with PASS/FAIL boxes; one-time prerequisites (set DEVELOPMENT_TEAM in project.yml, deploy CloudKit schema Development→Production, P-3); a paste-ready 5.1.3(ii) review note (P-4); and the P-1 sign-out data-loss caveat documented honestly + an acknowledgement box (accepted for v1, custom CKSyncEngine deferred). NO fabricated automated sync tests (D-16) — the negative grep gate (XCUIApplication/@Test) is satisfied. DATA-02/03/04 stay 'code-complete + HUMAN-UAT pending' in REQUIREMENTS traceability (not fully checked) — the automatable scope is GREEN; the device run + P-1 acknowledgement are surfaced to the user at the phase verification gate. Blocking human-verify checkpoint auto-approved under AUTO_MODE. Docs-only plan → no build/test ritual, no regression to the 84/84 suite.
 - [04-02]: Sync state surfaced + DATA-04 local half closed. SettingsView reads \\.accountAvailability (injected by 04-01) for a subtle, NON-blocking "iCloud sync: On/Off" line (settings.sync.status) — no spinner/toggle/conflict UI (D-12), and never surfaces the token/account id (T-04-07); the footer states the private-iCloud posture (D-13). PrivacyPolicyText was VERIFY-ONLY (left unchanged): the private-iCloud note + every PrivacyPolicyTests phrase already present; the optional P-1 sign-out sentence was NOT added (avoids needless regression risk against the phrase asserts). KEY DATA-04 FIX (TDD RED→GREEN): deleteDay previously cascaded symptom/pain/bleeding/dayEntry but ORPHANED the Phase-3 FactorReading rows — a real bug, since an orphan would still mirror to the private CloudKit DB after a delete (GDPR Art.17 / T-04-06). RED test logged a FactorReading + asserted zero remain after deleteDay (failed); fix adds `for reading in try factorReadings(on: day) { context.delete(reading) }` (hard delete, D-09/D-10). CRITICAL GUARD (T-04-08): a day-delete must NOT over-delete non-day-scoped definitions — a guard test proves a saved Medication definition survives (TreatmentState likewise untouched). Full suite GREEN (84/84). The device-only cloud-purge proof (reinstall shows nothing) stays routed to 04-03 HUMAN-UAT.
 - [03-01]: Phase-3 data spine landed — unified FactorReading @Model (kindRaw + valueRaw/amount/level/note columns) discriminates all six factor kinds; Sendable FactorDay snapshot is the insights seam with nil!=0 honesty (missing stress/mood row -> nil; logged level-0 -> 0). Additive SchemaV3 + lightweight v2toV3 migration (A1 closed for Phase-3 models). Medication is a soft-archive definition; per-day "taken" is a .medication FactorReading keyed by med-id. KEY DEVIATION: quiet-hours uses a QuietHours{start,end} value type, NOT ClosedRange<DateComponents> — a midnight-crossing window (start>end) traps ClosedRange's invariant. Reminder copy must avoid the 'her' substring ('here's' fails the gendered-token audit). NotificationScheduler fatigue logic is pure free functions (isInQuietHours/shouldFireToday); UN calls are the thin shell. Local notifications need NO entitlement (project.yml unchanged).
 
@@ -102,10 +104,13 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none)* | | | |
+| Phase 4 device-UAT | Run DATA-02/03/04 on ≥2 real devices (same iCloud account) per 04-HUMAN-UAT Part B | Pending user (phase gate) | 04-03 |
+| Phase 4 setup | Set DEVELOPMENT_TEAM + deploy CloudKit schema Development→Production (04-HUMAN-UAT Part A) | Pending user (before release) | 04-03 |
+| Phase 4 caveat | Explicit P-1 iCloud sign-out data-loss acknowledgement for v1 | Auto-approved under AUTO_MODE; user-confirm at phase gate | 04-03 |
+| Phase 4 review | Paste 5.1.3(ii) review note into App Store Connect (04-HUMAN-UAT A4) | Pending (before submission) | 04-03 |
 
 ## Session Continuity
 
-Last session: 2026-06-08T18:16:20Z
-Stopped at: Completed 04-02-PLAN.md (Phase 4 Wave 2)
+Last session: 2026-06-08T18:21:23Z
+Stopped at: Completed 04-03-PLAN.md (Phase 4 Wave 3 — HUMAN-UAT authored; all Phase-4 plans executed)
 Resume file: None
