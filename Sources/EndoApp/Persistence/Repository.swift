@@ -395,6 +395,7 @@ struct SwiftDataRepository: Repository {
     // MARK: - Phase 3 factor value-snapshot reads (D-11)
 
     func factorReadings(on day: Date) throws -> [SchemaV1.FactorReading] {
+        assertConsented()   // WR-05: reads health rows — assert the ONBD-01 precondition like its siblings.
         let cal = Calendar.current
         return try context.fetch(FetchDescriptor<SchemaV1.FactorReading>())
             .filter { cal.isDate($0.occurredOn, inSameDayAs: day) }
