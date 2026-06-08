@@ -1,18 +1,83 @@
-// Requirement: SYMP-04 — edit or delete any past entry.
+// Requirement: SYMP-04 — edit or delete any past entry (D-06).
 //
-// Nyquist Wave 0 (Plan 02-01 Task 1): RED placeholder. Turns GREEN in Plan 02-04 Task 1.
-//
-// Symbol-free RED body (the edit/delete + cascade seam arrives in Plan 02-04).
+// Edit updates a day's records in place (no duplicate). Delete removes the DayEntry AND cascades its
+// child SymptomReading / PainPoint / BleedingEvent so a subsequent bleedingDays() no longer includes
+// the day (the cycle math recomputes from a clean event set, D-06 / RESEARCH Pattern 4).
 import Testing
 import Foundation
+import SwiftData
 @testable import EndoApp
 
 @Suite("SYMP-04 edit / delete")
 struct EditDeleteTests {
 
-    // RED: turns GREEN in Plan 02-04 Task 1 when edit/delete + child cascade is implemented.
-    @Test func edit_updates_delete_removes_withChildCascade() async throws {
-        #expect(Bool(false),
-                "RED: edit/delete seam not yet implemented — editing updates a day's records and deleting removes the day + cascades children. Turns GREEN in Plan 02-04 Task 1.")
+    /// Log a full day (symptom + pain point + bleeding + note) through the Repository.
+    private func logFullDay(_ repo: SwiftDataRepository, on day: Date) throws {
+        try repo.upsertSymptom(type: .fatigue, severity: 5, on: day)
+        try repo.setPainPoint(region: .lowerAbdomenPelvis, severity: 6, on: day)
+        try repo.setBleeding(intensity: .medium, clots: false, on: day)
+        try repo.setNote("rough day", on: day)
+    }
+
+    // Re-opening a logged day and changing the symptom severity UPDATES the SymptomReading (no dup).
+    @Test func edit_updatesSymptomSeverity_noDuplicate() async throws {
+        let container = try makeModelContainer(inMemory: true)
+        let repo = SwiftDataRepository(context: ModelContext(container))
+        let day = Date(timeIntervalSince1970: 1_700_000_000)
+
+        try logFullDay(repo, on: day)
+        // Edit: same (day, symptom), new severity.
+        try repo.upsertSymptom(type: .fatigue, severity: 9, on: day)
+
+        let readings = try repo.symptomReadings(on: day)
+        let fatigue = readings.filter { $0.typeRaw == SymptomType.fatigue.rawValue }
+        #expect(fatigue.count == 1, "Editing a symptom must update, not duplicate.")
+        #expect(fatigue.first?.severity == 9)
+    }
+
+    // Delete removes the DayEntry AND cascades its child records (symptom/pain/bleeding).
+    @Test func delete_removesDay_andCascadesChildren() async throws {
+        let container = try makeModelContainer(inMemory: true)
+        let ctx = ModelContext(container)
+        let repo = SwiftDataRepository(context: ctx)
+        let day = Date(timeIntervalSince1970: 1_700_000_000)
+
+        try logFullDay(repo, on: day)
+        // Sanity: everything exists before delete.
+        #expect(try repo.symptomReadings(on: day).count == 1)
+        #expect(try repo.painPoints(on: day).count == 1)
+
+        try repo.deleteDay(day)
+
+        // Every child record AND the DayEntry are gone (full cascade).
+        #expect(try ctx.fetch(FetchDescriptor<SchemaV1.SymptomReading>()).isEmpty,
+                "deleteDay must cascade-delete SymptomReadings.")
+        #expect(try ctx.fetch(FetchDescriptor<SchemaV1.PainPoint>()).isEmpty,
+                "deleteDay must cascade-delete PainPoints.")
+        #expect(try ctx.fetch(FetchDescriptor<SchemaV1.BleedingEvent>()).isEmpty,
+                "deleteDay must cascade-delete BleedingEvents.")
+        #expect(try ctx.fetch(FetchDescriptor<SchemaV1.DayEntry>()).isEmpty,
+                "deleteDay must remove the DayEntry.")
+    }
+
+    // After deleting a bleeding day, bleedingDays() no longer includes it — the cycle recomputes
+    // from a clean event set (D-06).
+    @Test func delete_removesDayFromBleedingDays_cycleRecomputes() async throws {
+        let container = try makeModelContainer(inMemory: true)
+        let repo = SwiftDataRepository(context: ModelContext(container))
+        let cal = Calendar.current
+        let dayA = cal.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let dayB = cal.date(byAdding: .day, value: 1, to: dayA)!
+
+        try repo.setBleeding(intensity: .medium, clots: false, on: dayA)
+        try repo.setBleeding(intensity: .light, clots: false, on: dayB)
+        #expect(try repo.bleedingDays().count == 2)
+
+        try repo.deleteDay(dayA)
+
+        let remaining = try repo.bleedingDays()
+        #expect(remaining.count == 1, "A deleted bleeding day must drop out of bleedingDays().")
+        #expect(!remaining.contains { cal.isDate($0.day, inSameDayAs: dayA) })
+        #expect(remaining.contains { cal.isDate($0.day, inSameDayAs: dayB) })
     }
 }
