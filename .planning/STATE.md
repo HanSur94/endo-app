@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md (Phase 4 Wave 3 — HUMAN-UAT authored; all Phase-4 plans executed)
-last_updated: "2026-06-08T19:22:07.818Z"
-last_activity: 2026-06-08 -- Completed 04-03 (04-HUMAN-UAT device-only protocol authored)
+stopped_at: Completed 05-01-PLAN.md (Phase 5 Wave 1 — EndoInsights package wired + DaySnapshot/Insight contract)
+last_updated: "2026-06-08T21:46:00.000Z"
+last_activity: 2026-06-08 -- Completed 05-01 (EndoInsights package + snapshot/Insight contract)
 progress:
   total_phases: 12
-  completed_phases: 3
-  total_plans: 14
-  completed_plans: 14
-  percent: 31
+  completed_phases: 4
+  total_plans: 17
+  completed_plans: 15
+  percent: 35
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 4 — Private CloudKit Sync
+**Current focus:** Phase 5 — Snapshot Contract + Descriptive Trends Engine
 
 ## Current Position
 
-Phase: 4 (Private CloudKit Sync) — EXECUTING
-Plan: 3 of 3 (all plans executed; phase verification gate next)
-Status: Ready to execute
-Last activity: 2026-06-08 -- Completed 04-03 (04-HUMAN-UAT device-only protocol authored)
+Phase: 5 (Snapshot Contract + Descriptive Trends Engine) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 5
+Last activity: 2026-06-08 -- Completed 05-01 (EndoInsights package + snapshot/Insight contract)
 
-Progress: [███░░░░░░░] 31%
+Progress: [████░░░░░░] 35%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [███░░░░░░░] 31%
 | Phase 04 P01 | ~22min | 3 tasks | 9 files |
 | Phase 04 P02 | ~7min | 2 tasks | 3 files |
 | Phase 04 P03 | ~2min | 1 task + checkpoint | 1 doc |
+| Phase 05 P01 | ~22min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,7 @@ Recent decisions affecting current work:
 - [04-01]: Private CloudKit ACTIVATED (runtime-gated). A1 HELD — the CloudKit entitlement (private-DB-only iCloud.com.endoapp.ios + CloudKit service + aps-environment=development) does NOT break the unsigned Simulator build; full suite GREEN with no DEVELOPMENT_TEAM, so no pivot to per-configuration gating. SyncMode is now account-aware: SyncMode.resolve(_:) consults an injectable AccountAvailability seam (Sendable, NOT @MainActor; SystemAccountAvailability reads FileManager.default.ubiquityIdentityToken synchronously — D-03/P-5, never the async accountStatus, never logs the token). makeModelContainer takes syncMode: SyncMode = .localOnly as its FIRST param; the composition root (AppDependencies) RESOLVES the mode from the seam BEFORE building the container (P-2) and injects \\.accountAvailability for SettingsView (04-02). KEY P-2 CATCH: once the entitlement ships in the target, ModelConfiguration(schema:url:) (the url: overload + SchemaMigrationTests' direct constructions) silently INFER .automatic CloudKit and mis-activate sync on local-only stores — must pass cloudKitDatabase: .none EXPLICITLY on every local path (dropped 14 CloudKit mirroring errors → 0). DEVELOPMENT_TEAM stays a COMMENTED placeholder in project.yml (D-02 user-setup). The 4 real multi-device DATA criteria are device-only → routed to 04-03 HUMAN-UAT.
 - [04-03]: Phase-4 plans all executed. 04-HUMAN-UAT.md authored — the device-only protocol for the four DATA criteria CI cannot reach: 5 scenarios (DATA-02 sync-no-login / DATA-03a offline-reconcile-LWW / DATA-03b reinstall-restore / DATA-04 delete-purge / sign-out grace), each with PASS/FAIL boxes; one-time prerequisites (set DEVELOPMENT_TEAM in project.yml, deploy CloudKit schema Development→Production, P-3); a paste-ready 5.1.3(ii) review note (P-4); and the P-1 sign-out data-loss caveat documented honestly + an acknowledgement box (accepted for v1, custom CKSyncEngine deferred). NO fabricated automated sync tests (D-16) — the negative grep gate (XCUIApplication/@Test) is satisfied. DATA-02/03/04 stay 'code-complete + HUMAN-UAT pending' in REQUIREMENTS traceability (not fully checked) — the automatable scope is GREEN; the device run + P-1 acknowledgement are surfaced to the user at the phase verification gate. Blocking human-verify checkpoint auto-approved under AUTO_MODE. Docs-only plan → no build/test ritual, no regression to the 84/84 suite.
 - [04-02]: Sync state surfaced + DATA-04 local half closed. SettingsView reads \\.accountAvailability (injected by 04-01) for a subtle, NON-blocking "iCloud sync: On/Off" line (settings.sync.status) — no spinner/toggle/conflict UI (D-12), and never surfaces the token/account id (T-04-07); the footer states the private-iCloud posture (D-13). PrivacyPolicyText was VERIFY-ONLY (left unchanged): the private-iCloud note + every PrivacyPolicyTests phrase already present; the optional P-1 sign-out sentence was NOT added (avoids needless regression risk against the phrase asserts). KEY DATA-04 FIX (TDD RED→GREEN): deleteDay previously cascaded symptom/pain/bleeding/dayEntry but ORPHANED the Phase-3 FactorReading rows — a real bug, since an orphan would still mirror to the private CloudKit DB after a delete (GDPR Art.17 / T-04-06). RED test logged a FactorReading + asserted zero remain after deleteDay (failed); fix adds `for reading in try factorReadings(on: day) { context.delete(reading) }` (hard delete, D-09/D-10). CRITICAL GUARD (T-04-08): a day-delete must NOT over-delete non-day-scoped definitions — a guard test proves a saved Medication definition survives (TreatmentState likewise untouched). Full suite GREEN (84/84). The device-only cloud-purge proof (reinstall shows nothing) stays routed to 04-03 HUMAN-UAT.
+- [05-01]: EndoInsights keystone landed. A real Foundation-only local SPM package (zero deps = the SC1 compiler boundary) is wired via project.yml (top-level `packages:`, app `dependencies: - package: EndoInsights`, scheme `- package: EndoInsights/EndoInsightsTests`) and its Swift Testing target PROVABLY runs inside the single `xcodebuild test -scheme EndoApp` command — the SPM scheme test-target path works on XcodeGen 2.45.4 / Xcode 26.5, so the framework-target fallback was NOT needed (Open Question 1 resolved). The contract: DaySnapshot (+SymptomPoint/PainPoint), generic Insight (+InsightKind reserving Ph6-12 cases / TrendWindow / InsightConfidence lifted from CycleSummary.Confidence / InsightPoint) — all public, Sendable, Equatable, Foundation-only, with nil=unlogged honesty (absence != 0) and hasNote presence-only (no health prose in the snapshot). KEY: Insight.id is DERIVED deterministically (kind+window+signalKey → a pure-Foundation FNV-1a → RFC-4122 v5 UUID) via the engine-facing `Insight.derived(...)`; no UUID()-defaulting init is reachable, so [Insight] stays exactly Equatable for Plan-02 fixtures (Pitfall 4). Enum sourcing = Option D (D-18): package-local enum copies with raw values matching the app's VERBATIM (data-only, no plainLabel) — 17 app files untouched; Plan 03 maps app-enum → package-enum at the daySnapshots() boundary (raw values match for a passthrough; a Plan-03 parity test guards drift). A D-12 boundary-lint @Test (#filePath source scan asserting Foundation-only imports) ships in EndoInsightsTests as belt-and-suspenders. Full suite GREEN: app Swift Testing 87/87 + 8 UI + EndoInsights 9/9. One pre-existing UI-test flake (CheckInFlowUITests.testMedicationTaken — toggle tap/read race) failed once under full-suite load then passed in isolation AND on the next full run; logged to deferred-items.md, out of scope (this plan touches no app logic).
 - [03-01]: Phase-3 data spine landed — unified FactorReading @Model (kindRaw + valueRaw/amount/level/note columns) discriminates all six factor kinds; Sendable FactorDay snapshot is the insights seam with nil!=0 honesty (missing stress/mood row -> nil; logged level-0 -> 0). Additive SchemaV3 + lightweight v2toV3 migration (A1 closed for Phase-3 models). Medication is a soft-archive definition; per-day "taken" is a .medication FactorReading keyed by med-id. KEY DEVIATION: quiet-hours uses a QuietHours{start,end} value type, NOT ClosedRange<DateComponents> — a midnight-crossing window (start>end) traps ClosedRange's invariant. Reminder copy must avoid the 'her' substring ('here's' fails the gendered-token audit). NotificationScheduler fatigue logic is pure free functions (isInQuietHours/shouldFireToday); UN calls are the thin shell. Local notifications need NO entitlement (project.yml unchanged).
 
 ### Pending Todos
@@ -111,6 +113,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T18:21:23Z
-Stopped at: Completed 04-03-PLAN.md (Phase 4 Wave 3 — HUMAN-UAT authored; all Phase-4 plans executed)
+Last session: 2026-06-08T21:46:00Z
+Stopped at: Completed 05-01-PLAN.md (Phase 5 Wave 1 — EndoInsights package wired + DaySnapshot/Insight contract)
 Resume file: None

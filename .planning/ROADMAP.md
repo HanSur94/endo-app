@@ -161,7 +161,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — De-risk first: package-test-in-scheme SMOKE (create Foundation-only EndoInsights local SPM package + wire project.yml packages/dependency/scheme test target; prove the @Test runs + suite green; framework-target fallback) + the value contract (DaySnapshot + SymptomPoint/PainPoint + Insight + Kind/Window/Confidence/Point + package-local snapshot enums, Option D). Deterministic Insight.id. (SC1)
+- [x] 05-01-PLAN.md — De-risk first: package-test-in-scheme SMOKE (create Foundation-only EndoInsights local SPM package + wire project.yml packages/dependency/scheme test target; prove the @Test runs + suite green; framework-target fallback) + the value contract (DaySnapshot + SymptomPoint/PainPoint + Insight + Kind/Window/Confidence/Point + package-local snapshot enums, Option D). Deterministic Insight.id. (SC1) — DONE 2026-06-08 (SPM scheme test-target path proven; fallback not needed; SC1 holds; 9 package tests + 87 app tests green)
 
 **Wave 2** *(blocked on 05-01; the two plans are file-disjoint and run in parallel)*
 
