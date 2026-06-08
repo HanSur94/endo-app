@@ -27,10 +27,13 @@ struct DayLogEditorView: View {
 
     // Local editable draft state (committed to the store only on Save).
     @State private var severities: [SymptomType: Int] = [:]   // selected symptom -> severity
+    @State private var painSeverities: [BodyRegion: Int] = [:] // marked body region -> severity
     @State private var flow: FlowIntensity?
     @State private var clots = false
     @State private var note = ""
     @State private var didLoad = false
+    @State private var showingDeleteConfirmation = false
+    @State private var hasExistingLog = false
 
     private var terminology: Terminology {
         Terminology(preference: terminologyStore.preference)
@@ -43,8 +46,10 @@ struct DayLogEditorView: View {
     var body: some View {
         Form {
             symptomSection
+            bodyMapSection
             bleedingSection
             noteSection
+            deleteSection
         }
         .navigationTitle(day.formatted(date: .abbreviated, time: .omitted))
         .navigationBarTitleDisplayMode(.inline)
@@ -53,6 +58,18 @@ struct DayLogEditorView: View {
                 Button("Save", action: save)
                     .accessibilityIdentifier("daylog.saveButton")
             }
+        }
+        .confirmationDialog(
+            "Delete this day's log?",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive, action: deleteDay)
+                .accessibilityIdentifier("daylog.deleteConfirm")
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the symptoms, pain areas, bleeding, and note logged for this day. "
+                 + "It cannot be undone.")
         }
         .onAppear(perform: loadExistingState)
     }
@@ -84,6 +101,28 @@ struct DayLogEditorView: View {
                     }
                 }
                 .padding(.vertical, 2)
+            }
+        }
+    }
+
+    private var bodyMapSection: some View {
+        Section("Pain areas") {
+            BodyMapView(severities: $painSeverities)
+                .accessibilityIdentifier("daylog.bodyMap")
+        }
+    }
+
+    @ViewBuilder
+    private var deleteSection: some View {
+        // Only offer delete for a day that already has logged data (an edit of a past/existing day).
+        if hasExistingLog {
+            Section {
+                Button(role: .destructive) {
+                    showingDeleteConfirmation = true
+                } label: {
+                    Text("Delete this day")
+                }
+                .accessibilityIdentifier("daylog.deleteButton")
             }
         }
     }
@@ -145,22 +184,37 @@ struct DayLogEditorView: View {
         let cal = Calendar.current
 
         let readings = (try? modelContext.fetch(FetchDescriptor<SchemaV1.SymptomReading>())) ?? []
-        for reading in readings where cal.isDate(reading.occurredOn, inSameDayAs: day) {
+        let dayReadings = readings.filter { cal.isDate($0.occurredOn, inSameDayAs: day) }
+        for reading in dayReadings {
             if let raw = reading.typeRaw, let value = SymptomType(rawValue: raw) {
                 severities[value] = reading.severity ?? 6
             }
         }
 
+        let points = (try? modelContext.fetch(FetchDescriptor<SchemaV1.PainPoint>())) ?? []
+        let dayPoints = points.filter { cal.isDate($0.occurredOn, inSameDayAs: day) }
+        for point in dayPoints {
+            if let region = BodyRegion(raw: point.regionRaw) {
+                painSeverities[region] = point.severity ?? 6
+            }
+        }
+
         let events = (try? modelContext.fetch(FetchDescriptor<SchemaV1.BleedingEvent>())) ?? []
-        if let event = events.first(where: { cal.isDate($0.occurredAt, inSameDayAs: day) }) {
-            flow = FlowIntensity(raw: event.flowRaw)
-            clots = event.clots ?? false
+        let dayEvent = events.first { cal.isDate($0.occurredAt, inSameDayAs: day) }
+        if let dayEvent {
+            flow = FlowIntensity(raw: dayEvent.flowRaw)
+            clots = dayEvent.clots ?? false
         }
 
         let entries = (try? modelContext.fetch(FetchDescriptor<SchemaV1.DayEntry>())) ?? []
-        if let entry = entries.first(where: { cal.isDate($0.date, inSameDayAs: day) }) {
-            note = entry.note ?? ""
+        let dayEntry = entries.first { cal.isDate($0.date, inSameDayAs: day) }
+        if let dayEntry {
+            note = dayEntry.note ?? ""
         }
+
+        // The day is an EDIT (offer delete) when any record already exists for it.
+        hasExistingLog = !dayReadings.isEmpty || !dayPoints.isEmpty
+            || dayEvent != nil || dayEntry != nil
     }
 
     /// Commit the draft through the Repository (Task 1) and dismiss.
@@ -174,12 +228,27 @@ struct DayLogEditorView: View {
                 try? repo.removeSymptom(type: type, on: day)
             }
         }
+        // Pain points: a marked region writes a PainPoint; an unmarked region (nil) is removed.
+        for region in BodyRegion.allCases {
+            if let severity = painSeverities[region] {
+                try? repo.setPainPoint(region: region, severity: severity, on: day)
+            } else {
+                try? repo.removePainPoint(region: region, on: day)
+            }
+        }
         // Bleeding (+ clots): nil flow clears the day's bleeding.
         try? repo.setBleeding(intensity: flow, clots: flow == nil ? false : clots, on: day)
         // Note (bounded + empty -> nil at the seam). Always called so the day gets a `DayEntry`
         // anchor — even a symptom/bleeding-only day appears in the home `@Query(DayEntry)` history.
         try? repo.setNote(note, on: day)
 
+        dismiss()
+    }
+
+    /// Delete the whole day (SYMP-04): cascades symptoms / pain points / bleeding / DayEntry, then
+    /// dismisses. SwiftData observation refreshes the home history + cycle summary immediately (D-06).
+    private func deleteDay() {
+        try? repository.deleteDay(day)
         dismiss()
     }
 }

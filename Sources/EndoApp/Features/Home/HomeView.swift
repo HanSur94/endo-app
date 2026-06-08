@@ -59,6 +59,14 @@ struct HomeView: View {
                                 dayRow(day)
                             }
                             .accessibilityIdentifier("home.dayRow.\(index)")
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    delete(day.date)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                .accessibilityIdentifier("home.dayRow.\(index).delete")
+                            }
                         }
                     }
                 }
@@ -81,6 +89,14 @@ struct HomeView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Actions
+
+    /// Delete a whole day's log (SYMP-04 / D-06). The `@Query` re-renders the list AND any derived
+    /// cycle summary immediately — no manual refresh.
+    private func delete(_ date: Date) {
+        try? SwiftDataRepository(context: modelContext).deleteDay(date)
     }
 
     // MARK: - Row

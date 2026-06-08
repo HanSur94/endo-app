@@ -47,6 +47,8 @@ protocol Repository {
     /// Insert or update the day's pain point for `region` (consumed by Plan 04's body map).
     /// Severity clamped `0...10`.
     func setPainPoint(region: BodyRegion, severity: Int, on day: Date) throws
+    /// Remove the day's pain point for `region`, if any (an unmarked body-map region).
+    func removePainPoint(region: BodyRegion, on day: Date) throws
     /// Upsert (when `intensity != nil`) or remove (when `intensity == nil`) the day's bleeding event.
     func setBleeding(intensity: FlowIntensity?, clots: Bool, on day: Date) throws
     /// Set the day's free-text note on its `DayEntry` (created if absent). Bounded to `maxNoteLength`;
@@ -134,6 +136,14 @@ struct SwiftDataRepository: Repository {
         try context.save()
     }
 
+    func removePainPoint(region: BodyRegion, on day: Date) throws {
+        assertConsented()
+        for point in try painPoints(on: day) where point.regionRaw == region.rawValue {
+            context.delete(point)
+        }
+        try context.save()
+    }
+
     func setBleeding(intensity: FlowIntensity?, clots: Bool, on day: Date) throws {
         assertConsented()
         let existing = try bleedingEvents(on: day)
@@ -210,13 +220,15 @@ struct SwiftDataRepository: Repository {
 
     private static func clampSeverity(_ value: Int) -> Int { min(10, max(0, value)) }
 
-    private func symptomReadings(on day: Date) throws -> [SchemaV1.SymptomReading] {
+    /// All symptom readings recorded on `day` (consumed by the editor preload + edit/delete tests).
+    func symptomReadings(on day: Date) throws -> [SchemaV1.SymptomReading] {
         let cal = Calendar.current
         return try context.fetch(FetchDescriptor<SchemaV1.SymptomReading>())
             .filter { cal.isDate($0.occurredOn, inSameDayAs: day) }
     }
 
-    private func painPoints(on day: Date) throws -> [SchemaV1.PainPoint] {
+    /// All pain points recorded on `day` (consumed by the body-map preload + SYMP-02 binding tests).
+    func painPoints(on day: Date) throws -> [SchemaV1.PainPoint] {
         let cal = Calendar.current
         return try context.fetch(FetchDescriptor<SchemaV1.PainPoint>())
             .filter { cal.isDate($0.occurredOn, inSameDayAs: day) }
