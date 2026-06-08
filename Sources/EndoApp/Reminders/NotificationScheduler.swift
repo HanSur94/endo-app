@@ -6,8 +6,11 @@
 // are a thin, mockable shell — XCUITest cannot assert system notifications, so the logic must be
 // reachable without the notification center.
 //
-// NO capability/entitlement is added to project.yml: local notifications need none (no
-// aps-environment, no Background Modes — those are for remote/push, which this app does not use).
+// This LOCAL reminder scheduler needs NO entitlement of its own: local notifications via
+// `UNUserNotificationCenter` require neither `aps-environment` nor Background Modes. Phase 4 DID add
+// both `aps-environment` (EndoApp.entitlements) and `UIBackgroundModes: remote-notification`
+// (Info.plist) — but those exist solely for CloudKit silent push-sync and are UNRELATED to this
+// scheduler. The local reminder path here continues to work whether or not CloudKit/push is configured.
 //
 // Copy posture (D-21): reminder copy is GENTLE and NON-COERCIVE — no streaks, no guilt. Audited by
 // CopyAuditTests (incl. the "her" substring guard — the body avoids "here's").
