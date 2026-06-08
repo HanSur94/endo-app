@@ -1,11 +1,12 @@
 ---
 phase: 3
 slug: lifestyle-logging-fast-daily-check-in-reminders
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 platform: ios-swiftui
 created: 2026-06-08
+reviewed_at: 2026-06-08
 ---
 
 # Phase 3 — UI Design Contract
