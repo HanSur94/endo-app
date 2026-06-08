@@ -52,6 +52,55 @@ final class LoggingFlowUITests: XCTestCase {
         //   assert the row is gone (home.dayRow.0 no longer exists)
     }
 
+    // GREEN (Plan 02-02): the day-log vertical slice — log today's symptom + severity + bleeding +
+    // note, Save, and the day appears in the reverse-chronological history. (Edit/delete + body map
+    // land in Plan 04; this asserts only the Plan-02-02 slice.)
+    func testLogToday_savesAndAppearsInHistory() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest-reset"]
+        app.launch()
+
+        let grantButton = app.buttons["consent.grantButton"]
+        XCTAssertTrue(grantButton.waitForExistence(timeout: 10))
+        grantButton.tap()
+
+        let logToday = app.buttons["home.logTodayButton"]
+        XCTAssertTrue(logToday.waitForExistence(timeout: 10))
+        logToday.tap()
+
+        // Select a symptom -> its SeverityControl appears.
+        let fatigue = app.buttons["daylog.symptom.fatigue"]
+        XCTAssertTrue(fatigue.waitForExistence(timeout: 10),
+                      "The day-log editor must show the symptom chips.")
+        fatigue.tap()
+        XCTAssertTrue(app.sliders["daylog.severitySlider"].waitForExistence(timeout: 5),
+                      "Selecting a symptom reveals its 0–10 SeverityControl.")
+
+        // Record bleeding flow (scroll it into view — the severity control pushes it below the fold).
+        let bleeding = app.buttons["daylog.bleeding.medium"]
+        var scrolls = 0
+        while !bleeding.exists && scrolls < 6 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(bleeding.waitForExistence(timeout: 5),
+                      "The bleeding flow control must be reachable in the editor.")
+        bleeding.tap()
+
+        // Type a note (scroll it into view if needed).
+        let note = app.textFields["daylog.note"]
+        scrolls = 0
+        while !note.exists && scrolls < 6 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(note.waitForExistence(timeout: 5))
+        note.tap()
+        note.typeText("rough day")
+        saveScreenshot(app, named: "logging-03-editor")
+
+        // Save -> editor dismisses, the day appears as the first history row.
+        app.buttons["daylog.saveButton"].tap()
+        let firstRow = app.descendants(matching: .any)["home.dayRow.0"]
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 10),
+                      "After Save the logged day must appear as home.dayRow.0.")
+        saveScreenshot(app, named: "logging-04-history")
+    }
+
     // RED (Wave 0): with suppressed mode on, the home cycle summary must show the suppressed state
     // and never a cycle-day / "not enough data" value. Fails until Plan 04 ships the home + toggle.
     func testSuppressedModeShowsNoCycleSummary() throws {

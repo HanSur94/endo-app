@@ -20,7 +20,7 @@ struct SettingsView: View {
     @State private var pronouns: String = ""
 
     var body: some View {
-        // No own NavigationStack — pushed onto the shell's stack (WalkingSkeletonView).
+        // No own NavigationStack — pushed onto the shell's stack (HomeView's NavigationStack).
         Form {
                 // (b) Terminology customization (D-07).
                 Section("How Endo-App refers to things") {

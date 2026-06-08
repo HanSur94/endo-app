@@ -1,6 +1,10 @@
 // Requirement: ONBD-01 end-to-end proof — a real XCUITest that drives the running app and proves
 // the GDPR consent gate behaves: gate shown on a fresh launch, no logging UI reachable before
-// consent, grant -> walking skeleton, log increments, withdraw -> re-gated.
+// consent, grant -> the real HomeView logging surface, log a day, withdraw -> re-gated.
+//
+// Plan 02-02: WalkingSkeletonView was retired; the gate's post-consent surface is now `HomeView`
+// (`home.logTodayButton` / `home.settingsButton`). The invariant under test is unchanged — no
+// logging UI is reachable before consent and the app re-gates on withdrawal.
 //
 // The `-uitest-reset` launch argument (handled in AppDependencies) makes every run deterministic:
 // the consent flag is cleared and the SwiftData store is in-memory, so the app always starts at
@@ -27,9 +31,8 @@ final class ConsentFlowUITests: XCTestCase {
         // surface as a static text OR other element depending on the OS — match by identifier
         // across any element type.
         let disclaimer = app.descendants(matching: .any)["onboarding.disclaimer"]
-        let logButton = app.buttons["skeleton.logButton"]
-        let countLabel = app.staticTexts["skeleton.countLabel"]
-        let settingsButton = app.buttons["skeleton.settingsButton"]
+        let logButton = app.buttons["home.logTodayButton"]
+        let settingsButton = app.buttons["home.settingsButton"]
         let withdrawButton = app.buttons["settings.withdrawButton"]
 
         // 1. CONSENT GATE shown on a fresh launch.
@@ -40,32 +43,29 @@ final class ConsentFlowUITests: XCTestCase {
             XCTAssertTrue(disclaimer.waitForExistence(timeout: 5),
                           "Disclaimer must be visible before consent")
             // No logging UI before consent (no processing before opt-in).
-            XCTAssertFalse(logButton.exists, "Log button must NOT exist before consent")
+            XCTAssertFalse(logButton.exists, "Logging UI must NOT exist before consent")
             saveScreenshot(app, named: "01-consent-gate")
         }
 
-        // 2. Grant consent -> walking skeleton, count starts at 0.
+        // 2. Grant consent -> the real HomeView logging surface appears.
         XCTContext.runActivity(named: "02 - after consent") { _ in
             grantButton.tap()
             XCTAssertTrue(logButton.waitForExistence(timeout: 10),
-                          "Log button must appear after consent")
-            XCTAssertTrue(countLabel.waitForExistence(timeout: 5))
-            XCTAssertEqual(countLabel.label, "0 day(s) logged",
-                           "Count must start at 0 on a fresh in-memory store")
+                          "Home 'Log today' button must appear after consent")
             saveScreenshot(app, named: "02-after-consent")
         }
 
-        // 3. Log a day -> count increments to 1.
+        // 3. Log a day via the editor -> the day appears in history.
         XCTContext.runActivity(named: "03 - after log") { _ in
             logButton.tap()
-            let oneLogged = countLabel.label == "1 day(s) logged"
-            let predicate = NSPredicate(format: "label == %@", "1 day(s) logged")
-            if !oneLogged {
-                expectation(for: predicate, evaluatedWith: countLabel)
-                waitForExpectations(timeout: 5)
-            }
-            XCTAssertEqual(countLabel.label, "1 day(s) logged",
-                           "Count must increment to 1 after logging a day")
+            let symptom = app.buttons["daylog.symptom.fatigue"]
+            XCTAssertTrue(symptom.waitForExistence(timeout: 10),
+                          "The day-log editor must present after tapping Log today")
+            symptom.tap()
+            app.buttons["daylog.saveButton"].tap()
+            let firstRow = app.descendants(matching: .any)["home.dayRow.0"]
+            XCTAssertTrue(firstRow.waitForExistence(timeout: 10),
+                          "A saved day must appear in the home history list")
             saveScreenshot(app, named: "03-after-log")
         }
 

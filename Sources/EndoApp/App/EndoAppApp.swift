@@ -6,8 +6,8 @@ import SwiftUI
 /// Builds `AppDependencies` (the SwiftData `ModelContainer` behind the `SyncMode` flag — `.none`
 /// local-only by default — and the `ConsentStore`), injects them into the SwiftUI Environment, and
 /// renders `AppGate` as the root so the entire app is consent-gated (ONBD-01). No health record is
-/// reachable before consent because `WalkingSkeletonView` lives only in `AppGate`'s `.consented`
-/// branch.
+/// reachable before consent because the logging UI (`HomeView`) lives only in `AppGate`'s
+/// `.consented` branch.
 @main
 struct EndoAppApp: App {
     @State private var dependencies = AppDependencies()

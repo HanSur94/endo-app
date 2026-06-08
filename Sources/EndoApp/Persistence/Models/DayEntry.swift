@@ -1,7 +1,8 @@
 // Requirement: DATA-01 — CloudKit-safe, append-only SwiftData schema.
 //
-// The walking-skeleton record: the simplest @Model that proves the end-to-end persistence loop
-// (write one record → read it back) used by `WalkingSkeletonView`.
+// The per-day anchor record: the simplest @Model that proves the end-to-end persistence loop
+// (write one record → read it back). Phase 2's `HomeView` queries it for the day history, and the
+// day-log editor writes the day's free-text note onto it.
 //
 // CloudKit-safety rules enforced here (D-17): every stored property is optional/defaulted, NO
 // `@Attribute(.unique)`, identity via an app-generated `id` UUID (D-20). No cycle field of any

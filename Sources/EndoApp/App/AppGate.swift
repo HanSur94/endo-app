@@ -2,13 +2,14 @@
 //
 // `AppGate` is the top-level route for the whole app. It reads the injected consent state and
 // shows EITHER the consent prompt (when not consented) OR the main shell (when consented). The
-// critical security invariant (threat T-01-03): `WalkingSkeletonView` — the ONLY path that writes a
-// health record — is constructed exclusively in the `.consented` branch. No health-data processing
-// is reachable before opt-in.
+// critical security invariant (threat T-01-03 / T-02-06): `HomeView` — the ONLY path that constructs
+// the health-data logging UI — is built exclusively in the `.consented` branch. No health-data
+// processing is reachable before opt-in.
 //
 // The `.notConsented` branch renders the warm `OnboardingView` (disclaimer ONBD-02 + privacy link
 // ONBD-04 before the explicit consent action ONBD-01). The `.consented` branch renders the main
-// shell (`WalkingSkeletonView`, which routes to `SettingsView` for withdraw + customization).
+// shell (`HomeView` — day history + "Log today" editor, routing to `SettingsView` for withdraw +
+// customization). `HomeView` replaced the Phase-1 `WalkingSkeletonView` in Plan 02-02.
 import SwiftUI
 
 struct AppGate: View {
@@ -22,8 +23,8 @@ struct AppGate: View {
             // Warm onboarding: disclaimer (ONBD-02) + privacy link (ONBD-04) before consent (ONBD-01).
             OnboardingView()
         case .consented:
-            // The ONLY branch that constructs the health-data write path (T-01-03).
-            WalkingSkeletonView()
+            // The ONLY branch that constructs the health-data logging UI (T-01-03 / T-02-06).
+            HomeView()
         }
     }
 }
