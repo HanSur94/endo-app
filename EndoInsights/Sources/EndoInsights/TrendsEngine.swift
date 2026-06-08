@@ -20,7 +20,11 @@
 import Foundation
 
 /// Pure descriptive-trends engine. No store, no UI, no I/O, no logging — value-in/value-out.
-public enum TrendsEngine {
+///
+/// Package-INTERNAL (Phase 6, D-13): `InsightsEngine` is the single public producer; this is composed
+/// behind it + the `HonestyGate`. Tests reach it via `@testable import EndoInsights` (Pitfall 4: zero
+/// external call sites, so the demotion breaks nothing).
+enum TrendsEngine {
 
     // MARK: - Tunable, unit-asserted constants (no buried magic numbers — D-08).
 
