@@ -63,6 +63,26 @@ struct CyclePhaseMapperTests {
         #expect(insights.isEmpty, "Fewer than 2 cycles must yield NO cycle-phase insights.")
     }
 
+    // MARK: WR-05 — a short cycle whose estimated windows OVERLAP yields ZERO insights (no order-dependent
+    // mis-attribution of overlap days).
+
+    @Test func shortOverlappingCycle_yieldsNoPhases() async throws {
+        let insights = phases(Fixtures.shortOverlappingCycleFixture())
+        #expect(insights.isEmpty, "Overlapping phase windows must yield NO cycle-phase insights, not an order-dependent mapping (WR-05).")
+    }
+
+    @Test func windowsOverlap_isOrderIndependent() async throws {
+        // Two windows that share a day are detected as overlapping regardless of their order in the array.
+        let d0 = Fixtures.day(0), d4 = Fixtures.day(4), d2 = Fixtures.day(2), d6 = Fixtures.day(6)
+        let menstrual = CyclePhaseMapper.PhaseWindow(phase: .menstrual, lower: d0, upper: d4)
+        let ovulatory = CyclePhaseMapper.PhaseWindow(phase: .ovulatory, lower: d2, upper: d6)  // shares days 2…4
+        #expect(CyclePhaseMapper.windowsOverlap([menstrual, ovulatory]))
+        #expect(CyclePhaseMapper.windowsOverlap([ovulatory, menstrual]))  // order-independent
+        // Disjoint windows do not overlap.
+        let disjoint = CyclePhaseMapper.PhaseWindow(phase: .luteal, lower: Fixtures.day(10), upper: Fixtures.day(14))
+        #expect(!CyclePhaseMapper.windowsOverlap([menstrual, disjoint]))
+    }
+
     // MARK: Determinism — same fixture + same injected today → exactly equal [Insight].
 
     @Test func determinism_sameInputs_equalInsights() async throws {

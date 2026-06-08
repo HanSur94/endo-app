@@ -182,10 +182,33 @@ enum CyclePhaseMapper {
         // Guard against degenerate (inverted) follicular/luteal ranges for very short cycles.
         if folLower <= folUpper { windows.append(PhaseWindow(phase: .follicular, lower: folLower, upper: folUpper)) }
         if lutLower <= lutUpper { windows.append(PhaseWindow(phase: .luteal, lower: lutLower, upper: lutUpper)) }
+
+        // WR-05: overlap resolution must be EXPLICIT and order-INDEPENDENT, never "whichever window appears
+        // first in the array wins". For a short median cycle or a wide band the windows can overlap (e.g.
+        // bleeding runs into the ovulation band: `bleedEnd >= ovLower`). Attributing an overlap day by array
+        // position is not an honest, defensible mapping — so if ANY constructed window pair overlaps, the
+        // cycle is too short to phase-map honestly: return [] (consistent with the irregular short-circuit,
+        // D-03), rather than silently mis-attributing days.
+        guard !windowsOverlap(windows) else { return [] }
         return windows
     }
 
+    /// True if ANY two of the constructed phase windows share a day (inclusive ranges). Order-independent —
+    /// it compares every unordered pair, so it does not depend on array insertion order (WR-05).
+    static func windowsOverlap(_ windows: [PhaseWindow]) -> Bool {
+        for i in windows.indices {
+            for j in windows.indices where j > i {
+                // Inclusive ranges overlap iff each starts on or before the other's end.
+                if windows[i].lower <= windows[j].upper && windows[j].lower <= windows[i].upper {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
     /// The estimated phase a calendar day falls in, or `nil` if it is outside the current cycle's windows.
+    /// Windows are guaranteed non-overlapping by `phaseWindows` (WR-05), so `first` is unambiguous here.
     static func phase(for day: Date, in windows: [PhaseWindow], calendar: Calendar) -> CyclePhase? {
         let d = calendar.startOfDay(for: day)
         return windows.first { $0.lower <= d && d <= $0.upper }?.phase
@@ -221,7 +244,10 @@ enum CyclePhaseMapper {
             // Deterministic symptom order.
             for type in counts.keys.sorted(by: { $0.rawValue < $1.rawValue }) {
                 let logged = counts[type] ?? 0
-                guard logged >= 1 else { continue }     // ≥1 co-occurrence; ≥2-cycle floor is the gate's job (Plan 02)
+                // Emit the candidate at its REAL evidence count; the HonestyGate enforces
+                // `sampleSize >= minSample(.cyclePhase) == 2` and WITHHOLDS a single-day (n=1) coincidental
+                // association (CR-01/WR-02). This producer no longer relies on a non-existent gate self-gate.
+                guard logged >= 1 else { continue }     // skip zero-count entries; the n>=2 floor is the GATE's job (now LIVE).
                 let label = displayName(type)
                 let phaseLabel = phaseName(phase)
                 out.append(Insight.derived(
@@ -234,7 +260,10 @@ enum CyclePhaseMapper {
                     headline: "\(label) tended to co-occur with your \(phaseLabel) phase",
                     detail: "\(label) was logged on \(logged) of \(totalDays) of your estimated \(phaseLabel)-phase days — a descriptive co-occurrence only.",
                     confidence: confidence,
-                    points: []
+                    points: [],
+                    // sampleSize = the per-association logged-occurrence count — the REAL evidence count for
+                    // this (phase, symptom) association. The gate drops it when < minSample(.cyclePhase).
+                    sampleSize: logged
                 ))
             }
         }

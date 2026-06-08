@@ -197,4 +197,23 @@ enum Fixtures {
         days += (3...9).map { snapshot(offset: -$0, symptoms: [SymptomPoint(type: .pelvicPain, severity: 5)]) }
         return days
     }
+
+    /// WR-05: a SHORT but REGULAR cycle whose estimated phase windows OVERLAP. Starts at offsets
+    /// -48, -32, -16, 0 → gaps 16/16/16 (spread 0, count 3 → `phaseConfidence == .medium`, so it clears
+    /// the confidence/regularity gates). With median 16 and a 5-day current bleed (offsets 0…4): band = 2,
+    /// nextStart = +16, ovCenter = +2, ovLower = 0, ovUpper = +4 — so the menstrual window [0…4] and the
+    /// ovulatory window [0…4] OVERLAP. The mapper MUST treat this as too short to phase-map honestly and
+    /// yield ZERO `.cyclePhase` insights (overlap days must NOT be attributed by array order). Symptom logs
+    /// are placed inside the (overlapping) windows so the ONLY reason for emptiness is the overlap guard.
+    static func shortOverlappingCycleFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for start in [-48, -32, -16, 0] {
+            for d in 0...4 { days.append(snapshot(offset: start + d, flow: .medium)) }
+        }
+        // Symptom logs in the overlap region (offsets 0…4) — present, but must still emit nothing.
+        for off in 0...4 {
+            days.append(snapshot(offset: off, symptoms: [SymptomPoint(type: .pelvicPain, severity: 5)]))
+        }
+        return days
+    }
 }
