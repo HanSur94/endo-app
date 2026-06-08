@@ -16,14 +16,14 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Symptom Tracking
 
-- [ ] **SYMP-01**: User can log endo-specific symptoms (pain, fatigue, GI/"endo belly", urinary, mood, brain fog, etc.) with severity
+- [x] **SYMP-01**: User can log endo-specific symptoms (pain, fatigue, GI/"endo belly", urinary, mood, brain fog, etc.) with severity
 - [ ] **SYMP-02**: User can record pain location on a body map with severity
 - [ ] **SYMP-03**: User can add free-text notes to a day's entry
 - [ ] **SYMP-04**: User can edit or delete any past entry
 
 ### Cycle & Bleeding
 
-- [ ] **CYCL-01**: User can log bleeding/flow as a first-class event, independent of any predicted cycle
+- [x] **CYCL-01**: User can log bleeding/flow as a first-class event, independent of any predicted cycle
 - [ ] **CYCL-02**: User can track their menstrual cycle with predictions that tolerate irregular cycles
 - [ ] **CYCL-03**: User on continuous hormonal treatment can use a "suppressed / no cycle" mode and the app stays fully useful
 - [ ] **CYCL-04**: Cycle-day is shown as derived/optional with a confidence indicator (never assumes a 28-day cycle)
@@ -107,11 +107,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ONBD-03 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete |
 | ONBD-04 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete |
 | DATA-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete (01-02) |
-| SYMP-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| SYMP-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | SYMP-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | SYMP-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | SYMP-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
-| CYCL-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| CYCL-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | CYCL-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | CYCL-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | CYCL-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |

@@ -73,7 +73,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans, 3 waves
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Nyquist Wave 0 (failing E2E + RED unit suites) + additive SchemaV2 (SymptomReading/PainPoint/BleedingEvent+clots) + lightweight V1→V2 migration w/ data-survival test + pure Domain enums (SYMP-01, CYCL-01 at persistence level)
+- [x] 02-01-PLAN.md — Nyquist Wave 0 (failing E2E + RED unit suites) + additive SchemaV2 (SymptomReading/PainPoint/BleedingEvent+clots) + lightweight V1→V2 migration w/ data-survival test + pure Domain enums (SYMP-01, CYCL-01 at persistence level)
 
 **Wave 2** *(blocked on 02-01; the two plans are file-disjoint and run in parallel)*
 
@@ -243,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
-| 2. Core Symptom & Cycle/Bleeding Logging | 0/4 | Planned | - |
+| 2. Core Symptom & Cycle/Bleeding Logging | 1/4 | In Progress|  |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/TBD | Not started | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |

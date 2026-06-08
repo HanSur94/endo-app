@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-PLAN.md (Phase 1 complete — all six requirement suites GREEN; ready for verification)
-last_updated: "2026-06-08T09:26:26.172Z"
-last_activity: 2026-06-08 -- Completed Phase 1 Plan 02 (DATA-01 + ONBD-01 GREEN)
+stopped_at: Completed 02-01-PLAN.md (additive SchemaV2 + lightweight V1->V2 migration + Domain enums + Nyquist Wave-0 scaffold; SYMP-01/CYCL-01 GREEN at persistence level)
+last_updated: "2026-06-08T11:38:30.000Z"
+last_activity: 2026-06-08 -- Completed Phase 2 Plan 01 (SchemaV2 + migration; A1 closed)
 progress:
   total_phases: 12
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 8
+  total_plans: 11
+  completed_plans: 5
+  percent: 10
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 1 — foundations-schema-privacy-posture-claims-policy
+**Current focus:** Phase 2 — core-symptom-cycle-bleeding-logging
 
 ## Current Position
 
-Phase: 1 (foundations-schema-privacy-posture-claims-policy) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-06-08 -- Completed Phase 1 Plan 02 (DATA-01 + ONBD-01 GREEN)
+Phase: 2 (core-symptom-cycle-bleeding-logging) — EXECUTING
+Plan: 1 of 4 complete
+Status: 02-01 complete — additive SchemaV2 + V1->V2 migration + Domain enums landed; Plans 02-02/03/04 next
+Last activity: 2026-06-08 -- Completed Phase 2 Plan 01 (SchemaV2 + migration; A1 closed)
 
-Progress: [█░░░░░░░░░] 6%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [█░░░░░░░░░] 6%
 
 *Updated after each plan completion*
 | Phase 1 P03 | ~16min | 3 tasks | 17 files |
+| Phase 2 P01 | 35 | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Recent decisions affecting current work:
 - [01-01]: SWIFT_VERSION 6.0 needs no Wave-0 pin (RESEARCH A3 resolved) — built cleanly under Xcode 26.5. Simulator destination for Phase 1 = `platform=iOS Simulator,name=iPhone 16` (deployment target stays iOS 18). EndoAppTests needs `GENERATE_INFOPLIST_FILE: YES` to code-sign.
 - [01-02]: `@Model` types nested under `SchemaV1` (referenced as `SchemaV1.DayEntry` etc.); `VersionedSchema.versionIdentifier` must be `static let` and `ConsentStore` must be `@MainActor` under the Swift 6 language mode. Consent flag lives in `UserDefaults` (outside the synced store). Repository surface: `add(_:)` / `allDayEntries()`. Consent injected via `\.consentStore` EnvironmentKey from `AppDependencies`.
 - [Phase ?]: [01-03]: Terminology copy choke-point (bleedingNoun/cycleNoun) — all bleeding/cycle copy resolves through it; cycle noun stays neutral 'cycle' (D-08). ClaimsPolicy encodes forbidden verbs + gendered tokens as testable data. TerminologyStore injected via terminologyStore EnvironmentKey. Withdraw consent re-gates AppGate via the @Observable ConsentStore state flip. Phase 1 complete — all six requirement suites GREEN.
+- [Phase ?]: [02-01]: A1 closed — SwiftData entity identity is the class name; additively listing the same SchemaV1.* classes under a new SchemaV2 VersionedSchema is lightweight-migration-safe (proven by an on-disk V1->V2 round-trip). MigrationStage.lightweight only (never .custom). New CloudKit-safe models SymptomReading/PainPoint + BleedingEvent.clots. AppDependencies recovers from an unmigratable store instead of crashing.
 
 ### Pending Todos
 
@@ -88,6 +90,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T07:38:41.057Z
-Stopped at: Completed 01-03-PLAN.md (Phase 1 complete — all six requirement suites GREEN; ready for verification)
+Last session: 2026-06-08T11:38:30.000Z
+Stopped at: Completed 02-01-PLAN.md (additive SchemaV2 + V1->V2 migration + Domain enums + Wave-0 scaffold; A1 closed)
 Resume file: None
