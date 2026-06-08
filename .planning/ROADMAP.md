@@ -165,7 +165,7 @@ Plans:
 
 **Wave 2** *(blocked on 05-01; the two plans are file-disjoint and run in parallel)*
 
-- [ ] 05-02-PLAN.md — Pure TrendsEngine.trends(from:asOf:) (TDD): 7/30/90/all-time windows on absolute calendar dates, per-symptom/per-factor descriptive stats + direction, min-data threshold, suppressed/no-bleeding SC3 gate, absence≠0 honesty, deterministic Equatable outputs + synthetic fixtures + D-12 boundary lint (INST-01, SC2, SC3)
+- [x] 05-02-PLAN.md — Pure TrendsEngine.trends(from:asOf:) (TDD): 7/30/90/all-time windows on absolute calendar dates, per-symptom/per-factor descriptive stats + direction, min-data threshold, suppressed/no-bleeding SC3 gate, absence≠0 honesty, deterministic Equatable outputs + synthetic fixtures + D-12 boundary lint (INST-01, SC2, SC3) — DONE 2026-06-08 (TrendsEngine GREEN; SC3 fixture emits no bleeding/cycle trend; minLoggedDays=3 threshold; dedicated Foundation-only boundary lint; 22 package + 87 app tests green)
 - [ ] 05-03-PLAN.md — App-side Repository.daySnapshots() store→[DaySnapshot] mapping (TDD): consent-gated, mirrors factorDays/bleedingDays, app-enum→package-enum boundary (Option D) with a parity guard + honesty (nil≠0, flow nil w/o bleeding, suppressed propagates) — in-memory ModelContainer mapping tests (keeps SwiftData out of the package, SC1)
 
 ### Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer

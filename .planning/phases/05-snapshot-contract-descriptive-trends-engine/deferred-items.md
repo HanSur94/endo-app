@@ -18,3 +18,11 @@ Items discovered during execution that are NOT caused by this phase's changes
   failure cannot be caused by these changes.
 - **Disposition:** Deferred (UI-test stability hardening, candidate for a tap-then-poll
   assertion). Not blocking Phase 5.
+
+## Flaky UI test recurred (Plan 05-02 full-suite run)
+
+- Same `testMedicationTaken_persistsAcrossReopen` failed once under full-suite load during
+  Plan 05-02 (XCTAssertEqual `Optional("0")` != `Optional("1")` at `CheckInFlowUITests.swift:211`),
+  then PASSED in isolation on retry ("TEST SUCCEEDED", 1 test, 0 failures). Plan 05-02 adds only a
+  pure Foundation-only `TrendsEngine` + package tests — no app/UI/medication code touched, so it
+  cannot be the cause. Still deferred (UI-test stability hardening).

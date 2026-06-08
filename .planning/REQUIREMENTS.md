@@ -123,7 +123,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DATA-02 | Phase 4 — Private CloudKit Sync | Code-complete + HUMAN-UAT pending (04-01 private-DB-only entitlement + account-aware SyncMode.resolve + composition-root wiring, A1 held / P-2 guard proven; 04-02 non-blocking Settings On/Off line). Device-only multi-device proof captured in 04-HUMAN-UAT (04-03) Part B Scenario 1 — human-gated at the phase verification gate. |
 | DATA-03 | Phase 4 — Private CloudKit Sync | Code-complete + HUMAN-UAT pending (04-01 runtime gate + account seam; offline/reinstall/last-writer-wins ride NSPersistentCloudKitContainer defaults). Device-only offline-reconcile + reinstall-restore proof captured in 04-HUMAN-UAT (04-03) Part B Scenarios 2–3 — human-gated. |
 | DATA-04 | Phase 4 — Private CloudKit Sync | Code-complete + HUMAN-UAT pending (04-02 closes the automatable LOCAL half: deleteDay removes every day-scoped record incl. FactorReading — no orphan survives to mirror; locked by EditDeleteTests + a med-survives guard, TDD RED→GREEN). Device-only cloud-purge proof (delete→reinstall shows nothing) captured in 04-HUMAN-UAT (04-03) Part B Scenario 4 — human-gated. |
-| INST-01 | Phase 5 — Snapshot Contract + Descriptive Trends Engine | Pending |
+| INST-01 | Phase 5 — Snapshot Contract + Descriptive Trends Engine | Engine complete (05-01 contract + 05-02 TrendsEngine); user-visible charts render in Phase 8 |
 | INST-02 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Pending |
 | INST-04 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Pending |
 | INST-03 | Phase 7 — Correlation & Trigger Discovery | Pending |
