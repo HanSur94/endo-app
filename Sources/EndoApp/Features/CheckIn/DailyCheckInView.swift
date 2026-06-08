@@ -12,9 +12,10 @@
 // bleeding draft state: those are events, and carrying them forward fabricates data. Prefilled values
 // are fully editable before saving.
 //
-// After a successful commit the sheet calls `scheduler.cancelToday()` (injected via
-// `@Environment(\.notificationScheduler)`) to auto-suppress today's reminder (D-19b) — the repeating
-// daily trigger re-fires tomorrow on its own.
+// After a successful commit the sheet dismisses immediately and fires `scheduler.cancelToday()`
+// (injected via `@Environment(\.notificationScheduler)`) as an independent task to auto-suppress
+// today's reminder (D-19b). Suppression records a today-logged marker (CR-01) consulted at delivery —
+// the repeating daily trigger is NOT removed, so it re-fires tomorrow on its own.
 //
 // MV pattern (D-12): NO ViewModel — the view reads/writes through a `SwiftDataRepository` built from
 // the injected `modelContext`, mirroring `DayLogEditorView`. HONESTY (D-07/D-08, T-03-06): stress +
@@ -470,18 +471,25 @@ struct DailyCheckInView: View {
         guard let snapshot = (try? repository.factorDays())?
             .first(where: { cal.isDate($0.day, inSameDayAs: yesterday) }) else { return }
 
+        // WR-04: prefill must FULLY REPLACE the sticky-context draft with yesterday's snapshot — never
+        // blend yesterday's values with whatever `loadExistingState` left behind. Every sticky field is
+        // assigned from the snapshot, using the snapshot's nil AS nil, so the result equals yesterday's
+        // sticky context exactly.
         // Meds taken (sticky context).
         medsTaken = Set(snapshot.medicationsTaken)
         tookPRN = snapshot.tookPRN
-        // Sleep (sticky context).
+        // Sleep (sticky context) — reset hours+set-flag from the snapshot atomically.
         if let hours = snapshot.sleepHours {
             sleepHours = hours
             sleepHoursSet = true
+        } else {
+            sleepHours = 0
+            sleepHoursSet = false
         }
         sleepQuality = snapshot.sleepQuality
-        // Activity (sticky context).
+        // Activity (sticky context) — reset type/minutes/intensity from the snapshot atomically.
         activityType = snapshot.activityType
-        if let minutes = snapshot.activityMinutes { activityMinutes = minutes }
+        activityMinutes = snapshot.activityMinutes ?? 0
         activityIntensity = snapshot.activityIntensity
 
         // NOTE: deliberately NOT prefilling foodTags/foodNote — food is a per-day event, not sticky
@@ -593,12 +601,14 @@ struct DailyCheckInView: View {
         }
     }
 
-    /// Auto-suppress today's reminder (D-19b) then dismiss. `cancelToday()` removes only today's
-    /// pending delivery; the repeating daily request re-fires tomorrow on its own.
+    /// Auto-suppress today's reminder (D-19b) and dismiss. WR-06: dismissal is NOT gated on the
+    /// best-effort notification side effect — dismiss immediately and fire the suppression as a fully
+    /// independent task so a slow/hanging notification-center call never delays the sheet closing.
+    /// `cancelToday()` records the today-logged marker; the repeating registration stays intact and
+    /// re-fires tomorrow (CR-01).
     private func autoSuppressAndDismiss() {
-        Task {
-            await notificationScheduler.cancelToday()
-            dismiss()
-        }
+        let scheduler = notificationScheduler
+        Task { await scheduler.cancelToday() }
+        dismiss()
     }
 }
