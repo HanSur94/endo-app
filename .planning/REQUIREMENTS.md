@@ -9,7 +9,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Onboarding & Privacy
 
-- [ ] **ONBD-01**: User gives explicit, withdrawable consent before any health data is processed (GDPR Art. 9)
+- [x] **ONBD-01**: User gives explicit, withdrawable consent before any health data is processed (GDPR Art. 9)
 - [ ] **ONBD-02**: App surfaces clear "not medical advice / not a medical device" framing in onboarding and alongside insights
 - [ ] **ONBD-03**: App uses inclusive, non-assumptive language and lets the user customize identity/terminology
 - [ ] **ONBD-04**: User can read an in-app privacy policy explaining on-device + private iCloud storage and no third-party sharing
@@ -56,7 +56,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Data, Sync & Platform
 
-- [ ] **DATA-01**: Data persists on-device (SwiftData) using a CloudKit-safe, append-only schema
+- [x] **DATA-01**: Data persists on-device (SwiftData) using a CloudKit-safe, append-only schema
 - [ ] **DATA-02**: Data syncs across the user's own Apple devices via private iCloud (CloudKit), with no account/login
 - [ ] **DATA-03**: Sync survives multi-device, offline, and reinstall scenarios without data loss
 - [ ] **DATA-04**: Deleting data removes it from the private CloudKit store too, not just locally
@@ -102,11 +102,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ONBD-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| ONBD-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete (01-02) |
 | ONBD-02 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
 | ONBD-03 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
 | ONBD-04 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
-| DATA-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| DATA-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete (01-02) |
 | SYMP-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | SYMP-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | SYMP-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |

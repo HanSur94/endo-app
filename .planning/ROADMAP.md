@@ -49,7 +49,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — Wave 2: CloudKit-safe VersionedSchema + local-only container + consent gate + skeleton write/read (DATA-01, ONBD-01 GREEN — the walking-skeleton happy path)
+- [x] 01-02-PLAN.md — Wave 2: CloudKit-safe VersionedSchema + local-only container + consent gate + skeleton write/read (DATA-01, ONBD-01 GREEN — the walking-skeleton happy path)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -228,7 +228,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundations — Schema, Privacy Posture & Claims Policy | 0/3 | Not started | - |
+| 1. Foundations — Schema, Privacy Posture & Claims Policy | 2/3 | In progress | - |
 | 2. Core Symptom & Cycle/Bleeding Logging | 0/TBD | Not started | - |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/TBD | Not started | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
