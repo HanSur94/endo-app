@@ -72,9 +72,11 @@ public struct Insight: Sendable, Equatable, Identifiable {
     public let confidence: InsightConfidence
     public let points: [InsightPoint]
 
-    /// Memberwise init. Callers in the engine MUST prefer `derived(...)` so `id` stays deterministic;
-    /// this init takes an explicit `id` and never defaults it to a random `UUID()`.
-    public init(
+    /// Memberwise init. Callers MUST go through `derived(...)` so `id` stays deterministic. This init is
+    /// `internal` (IN-01): only `derived(...)` (same module) may supply an explicit `id`, so an external
+    /// caller can never pass a random `UUID()` and silently break `[Insight]` Equatable-by-value fixtures.
+    /// It never defaults `id` to a random `UUID()`.
+    init(
         id: UUID,
         kind: InsightKind,
         headline: String,
