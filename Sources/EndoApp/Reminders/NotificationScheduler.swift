@@ -120,7 +120,11 @@ private func minutesOfDay(_ components: DateComponents) -> Int {
 
 /// A UserDefaults-backed marker of the last calendar day the user completed a check-in. Read at
 /// notification delivery to suppress today's reminder; never written to the synced/health store.
-struct ReminderSuppressionStore: Sendable {
+///
+/// Not `Sendable` (it wraps a non-Sendable `UserDefaults`); it is only ever constructed and read
+/// synchronously where it is used (the scheduler stamps it, the delegate reads it in `willPresent`),
+/// never passed across a concurrency boundary as a value.
+struct ReminderSuppressionStore {
     private let defaults: UserDefaults
     private let key = "reminders.lastLoggedDay"   // device-pref namespace (mirrors ReminderSettings)
 
