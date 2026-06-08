@@ -70,4 +70,50 @@ struct SchemaRoundTripTests {
         #expect(state.id != UUID(uuidString: "00000000-0000-0000-0000-000000000000"))
         #expect(state.startedAt == startedAt)
     }
+
+    // (d) CYCL-01: BleedingEvent additively carries an optional `clots` flag. It round-trips with
+    //     `clots: true` AND with `clots: nil` (absence ≠ recorded false). flowRaw still round-trips.
+    @Test func bleedingEvent_clots_roundTrips_trueAndNil() async throws {
+        let container = try makeModelContainer(inMemory: true)
+        let ctx = ModelContext(container)
+
+        let withClots = UUID()
+        let withoutClots = UUID()
+        ctx.insert(SchemaV1.BleedingEvent(id: withClots, flowRaw: "heavy", clots: true))
+        ctx.insert(SchemaV1.BleedingEvent(id: withoutClots, flowRaw: "spotting", clots: nil))
+        try ctx.save()
+
+        let fetched = try ctx.fetch(FetchDescriptor<SchemaV1.BleedingEvent>())
+        #expect(fetched.count == 2)
+        let a = try #require(fetched.first { $0.id == withClots })
+        #expect(a.flowRaw == "heavy")
+        #expect(a.clots == true)
+        let b = try #require(fetched.first { $0.id == withoutClots })
+        #expect(b.flowRaw == "spotting")
+        #expect(b.clots == nil, "Absent clots must persist as nil — never coerced to false.")
+    }
+
+    // (e) CYCL-01/SYMP-01/02: the two new SchemaV2 models round-trip through the in-memory store.
+    @Test func symptomReading_and_painPoint_roundTrip() async throws {
+        let container = try makeModelContainer(inMemory: true)
+        let ctx = ModelContext(container)
+
+        let sID = UUID()
+        let pID = UUID()
+        ctx.insert(SchemaV1.SymptomReading(id: sID, typeRaw: "pelvicPain", severity: 7))
+        ctx.insert(SchemaV1.PainPoint(id: pID, regionRaw: "lowerBack", severity: 3))
+        try ctx.save()
+
+        let symptoms = try ctx.fetch(FetchDescriptor<SchemaV1.SymptomReading>())
+        #expect(symptoms.count == 1)
+        #expect(symptoms.first?.id == sID)
+        #expect(symptoms.first?.typeRaw == "pelvicPain")
+        #expect(symptoms.first?.severity == 7)
+
+        let pains = try ctx.fetch(FetchDescriptor<SchemaV1.PainPoint>())
+        #expect(pains.count == 1)
+        #expect(pains.first?.id == pID)
+        #expect(pains.first?.regionRaw == "lowerBack")
+        #expect(pains.first?.severity == 3)
+    }
 }

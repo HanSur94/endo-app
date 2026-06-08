@@ -35,9 +35,24 @@ final class AppDependencies {
         do {
             self.modelContainer = try makeModelContainer(inMemory: uiTestReset)
         } catch {
-            // A failed local store at launch is unrecoverable for the walking skeleton; surface it
-            // loudly rather than limp along with no persistence.
-            fatalError("Failed to build the local ModelContainer: \(error)")
+            // The expected path on a healthy or migratable store is success. A failure here means the
+            // on-disk store could not be opened/migrated at all (e.g. a corrupt or pre-versioning
+            // store left by an interrupted run, or an irrecoverable migration error — SwiftData
+            // error 134504 "unknown model version"). Rather than hard-crash every launch (which would
+            // permanently brick the app for that user), fall back to a fresh in-memory store so the
+            // app stays usable. Local-only this phase, so no synced data is at stake; the user's
+            // local rows are not silently rewritten — the unreadable file is simply not used.
+            //
+            // NOTE: do NOT log `error` verbatim if it could carry health values; SwiftDataError here
+            // describes the store/migration, not record contents, so the type name is safe to surface.
+            assertionFailure("Local ModelContainer failed to open (\(type(of: error))); "
+                             + "falling back to in-memory. \(error)")
+            do {
+                self.modelContainer = try makeModelContainer(inMemory: true)
+            } catch {
+                // An in-memory container should never fail; if it does the schema itself is invalid.
+                fatalError("Failed to build even an in-memory ModelContainer: \(error)")
+            }
         }
         self.consentStore = UserDefaultsConsentStore()
         self.terminologyStore = TerminologyStore()

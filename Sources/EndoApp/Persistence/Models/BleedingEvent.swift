@@ -30,12 +30,18 @@ extension SchemaV1 {
         var flowRaw: String?
         /// Optional free-text note.
         var note: String?
+        /// SchemaV2 additive growth (CYCL-01, D-07): an optional "clots" flag. Optional + defaulted
+        /// (`nil`) so the change is lightweight-migration-safe and CloudKit-safe; absence (`nil`) is
+        /// "not recorded", NOT a recorded `false` (honesty principle — absence ≠ fact).
+        var clots: Bool? = nil
 
-        init(id: UUID = UUID(), occurredAt: Date = .now, flowRaw: String? = nil, note: String? = nil) {
+        init(id: UUID = UUID(), occurredAt: Date = .now, flowRaw: String? = nil,
+             note: String? = nil, clots: Bool? = nil) {
             self.id = id
             self.occurredAt = occurredAt
             self.flowRaw = flowRaw
             self.note = note
+            self.clots = clots
         }
     }
 }
