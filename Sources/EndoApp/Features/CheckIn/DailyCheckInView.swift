@@ -143,7 +143,7 @@ struct DailyCheckInView: View {
     /// Quick multi-select symptom chips (skippable). Mirrors the editor's symptom pattern but kept
     /// fast — a moderate default severity when first selected, refinable via the revealed control.
     private var symptomSection: some View {
-        Section("Symptoms") {
+        Section {
             ForEach(SymptomType.allCases, id: \.self) { type in
                 let isSelected = severities[type] != nil
                 VStack(alignment: .leading, spacing: 8) {
@@ -167,8 +167,9 @@ struct DailyCheckInView: View {
                 }
                 .padding(.vertical, 2)
             }
+        } header: {
+            Text("Symptoms").accessibilityIdentifier("checkin.section.symptoms")
         }
-        .accessibilityIdentifier("checkin.section.symptoms")
     }
 
     /// Food & drink (LIFE-01, D-03): multi-select tags + optional free-text. Neutral category tags,
@@ -196,14 +197,13 @@ struct DailyCheckInView: View {
 
             if foodTags.isEmpty && foodNote.isEmpty { notLoggedPlaceholder }
         } header: {
-            Text("Food & drink")
+            Text("Food & drink").accessibilityIdentifier("checkin.section.food")
         }
-        .accessibilityIdentifier("checkin.section.food")
     }
 
     /// Activity (LIFE-02, D-04): single-select type + duration + text-labelled intensity.
     private var activitySection: some View {
-        Section("Activity") {
+        Section {
             ForEach(ActivityType.allCases, id: \.self) { type in
                 Button {
                     activityType = (activityType == type) ? nil : type
@@ -244,13 +244,14 @@ struct DailyCheckInView: View {
             } else {
                 notLoggedPlaceholder
             }
+        } header: {
+            Text("Activity").accessibilityIdentifier("checkin.section.activity")
         }
-        .accessibilityIdentifier("checkin.section.activity")
     }
 
     /// Sleep (LIFE-03, D-05): hours (0.5h steps) + text-labelled quality.
     private var sleepSection: some View {
-        Section("Sleep") {
+        Section {
             Stepper(value: $sleepHours, in: 0...24, step: 0.5) {
                 HStack {
                     Text("Hours")
@@ -274,8 +275,9 @@ struct DailyCheckInView: View {
             .accessibilityIdentifier("checkin.sleep.quality")
 
             if !sleepHoursSet && sleepQuality == nil { notLoggedPlaceholder }
+        } header: {
+            Text("Sleep").accessibilityIdentifier("checkin.section.sleep")
         }
-        .accessibilityIdentifier("checkin.section.sleep")
     }
 
     /// Medication (LIFE-03, D-06): per-day "taken today" toggles over the saved list + a PRN toggle.
@@ -308,14 +310,13 @@ struct DailyCheckInView: View {
             Toggle("As-needed pain relief", isOn: $tookPRN)
                 .accessibilityIdentifier("checkin.medication.prn")
         } header: {
-            Text("Medication")
+            Text("Medication").accessibilityIdentifier("checkin.section.medication")
         }
-        .accessibilityIdentifier("checkin.section.medication")
     }
 
     /// Stress (LIFE-03, D-07): reveal-on-opt-in `SeverityControl`. `stress` stays nil until opt-in.
     private var stressSection: some View {
-        Section("Stress") {
+        Section {
             if loggingStress, stress != nil {
                 SeverityControl(severity: stressBinding)
                     .accessibilityIdentifier("checkin.stress")
@@ -337,8 +338,9 @@ struct DailyCheckInView: View {
                 }
                 .accessibilityIdentifier("checkin.stress.log")
             }
+        } header: {
+            Text("Stress").accessibilityIdentifier("checkin.section.stress")
         }
-        .accessibilityIdentifier("checkin.section.stress")
     }
 
     /// Mood (LIFE-03, D-08): an overall 1–5 day-mood, text-labelled + SF Symbols. Stays nil until tapped.
@@ -371,14 +373,13 @@ struct DailyCheckInView: View {
 
             if mood == nil { notLoggedPlaceholder }
         } header: {
-            Text("Overall mood for the day")
+            Text("Overall mood for the day").accessibilityIdentifier("checkin.section.mood")
         }
-        .accessibilityIdentifier("checkin.section.mood")
     }
 
     /// Bleeding (reuses the Phase-2 flow control). An EVENT — never prefilled by "Same as yesterday".
     private var bleedingSection: some View {
-        Section(terminology.bleedingNoun.capitalized) {
+        Section {
             ForEach(FlowIntensity.allCases, id: \.self) { intensity in
                 Button {
                     flow = (flow == intensity) ? nil : intensity
@@ -397,8 +398,10 @@ struct DailyCheckInView: View {
             Toggle("Clots", isOn: $clots)
                 .accessibilityIdentifier("checkin.clotsToggle")
                 .disabled(flow == nil)
+        } header: {
+            Text(terminology.bleedingNoun.capitalized)
+                .accessibilityIdentifier("checkin.section.bleeding")
         }
-        .accessibilityIdentifier("checkin.section.bleeding")
     }
 
     /// The inline "Checked in for today." adherence confirmation (D-15) shown after an empty confirm.
