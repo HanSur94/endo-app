@@ -352,7 +352,7 @@ struct SwiftDataRepository: Repository {
 
     func setStress(_ level: Int?, on day: Date) throws {
         assertConsented()
-        try setScaleReading(kind: .stress, level: level.map { Self.clampSeverity($0) }, on: day)
+        try setScaleReading(kind: .stress, level: level.map { Self.clampStress($0) }, on: day)
     }
 
     func setMood(_ level: Int?, on day: Date) throws {
@@ -525,6 +525,12 @@ struct SwiftDataRepository: Repository {
 
     /// Mood clamp 1...5 (D-08). Distinct from `clampSeverity` (0...10).
     private static func clampMood(_ value: Int) -> Int { min(5, max(1, value)) }
+
+    /// Stress clamp 0...10 (FactorDay.stress scale). Dedicated helper (WR-02 sibling fix WR-04) so the
+    /// stress range is INDEPENDENT of symptom-severity changes: it shares the 0...10 range with
+    /// `clampSeverity` today, but a future change to the symptom-severity range must NOT silently
+    /// re-clamp stress.
+    private static func clampStress(_ value: Int) -> Int { min(10, max(0, value)) }
 
     /// ActivityIntensity <-> stored `level` (0 = low, 1 = medium, 2 = high).
     private static func intensityLevel(_ intensity: ActivityIntensity) -> Int {
