@@ -131,11 +131,14 @@ enum TrendsEngine {
                     headline: "\(label) logged on \(daysPresent) of \(daysWithAnyLog) days you tracked anything",
                     detail: "You logged \(label.lowercased()) on \(daysPresent) of the \(daysWithAnyLog) days you tracked anything \(windowPhrase(window)).",
                     confidence: confidence(forLoggedDays: daysPresent),
-                    points: frequencyPoints(recent, predicate: { $0.symptoms.contains { $0.type == type } })
+                    points: frequencyPoints(recent, predicate: { $0.symptoms.contains { $0.type == type } }),
+                    // sampleSize = the days-with-any-log this trend self-gated on (>= minLoggedDays == 3 ==
+                    // minSample(.trend)), so the gate's min-sample floor never re-drops a valid trend (no-regression).
+                    sampleSize: daysWithAnyLog
                 ))
             } else {
                 out.append(notEnoughData(signal: "symptom.\(type.rawValue).frequency",
-                                         label: label, window: window))
+                                         label: label, window: window, loggedDays: daysWithAnyLog))
             }
 
             // --- Severity-mean trend (nil severities excluded from the denominator) ---
@@ -160,7 +163,9 @@ enum TrendsEngine {
                     // in the Phase 8 chart) and blur a summary statistic into the daily series. The mean
                     // already lives in the headline/detail. (Mirrors stress/mood, which return only their
                     // own series.)
-                    points: severityPoints(recent, type: type)
+                    points: severityPoints(recent, type: type),
+                    // sampleSize = the count of non-nil severity readings this mean self-gated on (>= 3).
+                    sampleSize: severities.count
                 ))
             }
         }
@@ -193,7 +198,9 @@ enum TrendsEngine {
                 headline: "Poor sleep on \(poorDays) of \(sleepDays) logged sleep days",
                 detail: "You rated sleep poor on \(poorDays) of the \(sleepDays) days you logged sleep \(windowPhrase(window)).",
                 confidence: confidence(forLoggedDays: sleepDays),
-                points: frequencyPoints(recent.filter { $0.sleepQuality != nil }, predicate: { $0.sleepQuality == .poor })))
+                points: frequencyPoints(recent.filter { $0.sleepQuality != nil }, predicate: { $0.sleepQuality == .poor }),
+                // sampleSize = the days sleep quality was logged this frequency self-gated on (>= 3).
+                sampleSize: sleepDays))
         }
         return out
     }
@@ -212,7 +219,9 @@ enum TrendsEngine {
             headline: "\(label.capitalized) averaged \(format(mean)) \(windowPhrase(window))",
             detail: "Average logged \(label) was \(format(mean))\(directionPhrase(dir, window: window)).",
             confidence: confidence(forLoggedDays: readings.count),
-            points: [InsightPoint(date: lastDay(recent), value: mean)])
+            points: [InsightPoint(date: lastDay(recent), value: mean)],
+            // sampleSize = the count of non-nil readings this mean self-gated on (>= 3).
+            sampleSize: readings.count)
     }
 
     // MARK: - Bleeding-day frequency, GATED on !suppressed && bleedingDayCount >= 1 (SC3).
@@ -230,18 +239,28 @@ enum TrendsEngine {
             headline: "Bleeding logged on \(bleedingDayCount) of \(total) days",
             detail: "You logged bleeding on \(bleedingDayCount) of the \(total) days you tracked \(windowPhrase(window)).",
             confidence: confidence(forLoggedDays: bleedingDayCount),
-            points: frequencyPoints(recent, predicate: { $0.flow != nil }))]
+            points: frequencyPoints(recent, predicate: { $0.flow != nil }),
+            // sampleSize = the days tracked in this window this bleeding frequency self-gated on. A bleeding
+            // trend can legitimately carry only 1–2 bleeding days, but `total` (days-with-any-log) is the
+            // real denominator and is >= minSample(.trend) whenever a meaningful window exists; using
+            // `total` keeps the gate from re-dropping a valid sparse bleeding trend (no-regression).
+            sampleSize: total)]
     }
 
     // MARK: - "Not enough data" honesty Insight (D-08).
 
-    static func notEnoughData(signal: String, label: String, window: TrendWindow) -> Insight {
+    static func notEnoughData(signal: String, label: String, window: TrendWindow, loggedDays: Int = 0) -> Insight {
         Insight.derived(
             kind: .trend, window: window, signalKey: "\(signal).insufficient",
             headline: "\(label): not enough data yet",
             detail: "Not enough data yet to describe \(label.lowercased()) \(windowPhrase(window)) — keep logging.",
             confidence: .none,
-            points: [])
+            points: [],
+            // The honest sub-threshold signal carries its actual (small) count. The typed
+            // `isInsufficiencyNotice` marker — NOT the `.insufficient` signalKey suffix (WR-01) — is what
+            // exempts it from BOTH the confidence floor and the min-sample drop in HonestyGate.
+            sampleSize: loggedDays,
+            isInsufficiencyNotice: true)
     }
 
     // MARK: - Pure helpers (each independently testable).

@@ -16,17 +16,20 @@ import Foundation
 @Suite("INST-04 HonestyGate — the single insight choke-point")
 struct HonestyGateTests {
 
-    // A descriptive, non-causal headline/detail used in synthetic gate-only candidates.
+    // A descriptive, non-causal headline/detail used in synthetic gate-only candidates. `sampleSize`
+    // defaults to 5 (>= minSample(.trend)/.cyclePhase) so the candidate clears the min-sample backstop
+    // unless a test deliberately under-samples it.
     private func candidate(
         kind: InsightKind,
         signalKey: String,
         confidence: InsightConfidence,
+        sampleSize: Int = 5,
         headline: String = "Pelvic pain logged on 3 of 5 days you tracked anything",
         detail: String = "You logged pelvic pain on 3 of the 5 days you tracked anything in the last 7 days."
     ) -> Insight {
         Insight.derived(
             kind: kind, window: .last7, signalKey: signalKey,
-            headline: headline, detail: detail, confidence: confidence, points: []
+            headline: headline, detail: detail, confidence: confidence, points: [], sampleSize: sampleSize
         )
     }
 
@@ -44,19 +47,32 @@ struct HonestyGateTests {
         #expect(gated.count == 1, "An at-floor (.low) insight must survive the confidence floor.")
     }
 
-    // MARK: (b) The `.insufficient` "not enough data yet" carve-out is KEPT below the floor.
+    // MARK: (b) The typed `isInsufficiencyNotice` "not enough data yet" carve-out is KEPT below the floor.
 
     @Test func insufficientCarveOut_isKept_despiteNoneConfidence() async throws {
-        // Mirrors TrendsEngine.notEnoughData: signalKey ends `.insufficient`, confidence .none.
+        // Mirrors TrendsEngine.notEnoughData: typed `isInsufficiencyNotice == true`, confidence .none,
+        // sampleSize below every floor — yet the typed carve-out keeps it (WR-01).
         let carveOut = Insight.derived(
             kind: .trend, window: .last7, signalKey: "symptom.fatigue.frequency.insufficient",
             headline: "Fatigue: not enough data yet",
             detail: "Not enough data yet to describe fatigue in the last 7 days — keep logging.",
-            confidence: .none, points: []
+            confidence: .none, points: [], sampleSize: 1, isInsufficiencyNotice: true
         )
         let gated = HonestyGate.apply([carveOut], dismissed: [])
-        #expect(gated.count == 1, "The '.insufficient' honest sub-threshold signal must be KEPT (carve-out).")
-        #expect(gated.first?.signalKey.hasSuffix(".insufficient") == true)
+        #expect(gated.count == 1, "The typed insufficiency carve-out must be KEPT despite .none confidence and sampleSize 1.")
+        #expect(gated.first?.isInsufficiencyNotice == true)
+    }
+
+    // WR-01: the carve-out is keyed on the TYPED marker, NOT the signalKey suffix. A forged signalKey
+    // ending `.insufficient` WITHOUT the marker does NOT bypass the confidence floor.
+    @Test func forgedInsufficientSuffix_withoutTypedMarker_doesNotBypassFloor() async throws {
+        let forged = Insight.derived(
+            kind: .trend, window: .last7, signalKey: "factor.bogus.frequency.insufficient",
+            headline: "Bogus signal", detail: "A low-confidence signal whose key merely ends insufficient.",
+            confidence: .none, points: [], sampleSize: 5, isInsufficiencyNotice: false
+        )
+        let gated = HonestyGate.apply([forged], dismissed: [])
+        #expect(gated.isEmpty, "A signalKey ending '.insufficient' must NOT bypass the floor without the typed marker (WR-01).")
     }
 
     // MARK: (c) Dismissal-exclusion by signalKey (D-11).
@@ -78,6 +94,40 @@ struct HonestyGateTests {
         let c = candidate(kind: .trend, signalKey: "symptom.c.frequency", confidence: .low)
         let gated = HonestyGate.apply([a, b, c], dismissed: [])
         #expect(gated.map(\.signalKey) == ["symptom.a.frequency", "symptom.b.frequency", "symptom.c.frequency"])
+    }
+
+    // MARK: (b') CR-01/WR-02 — the min-sample backstop is LIVE: under-sampled candidates are WITHHELD.
+
+    @Test func underSampledCyclePhaseAssociation_isWithheldByGate() async throws {
+        // A single-day (n=1) cyclePhase co-occurrence at sufficient confidence — sampleSize 1 <
+        // minSample(.cyclePhase) == 2. The gate MUST withhold it (the #1 under-sampled bypass, CR-01).
+        let n1 = candidate(
+            kind: .cyclePhase, signalKey: "cyclePhase.luteal.symptom.pelvicPain",
+            confidence: .medium, sampleSize: 1,
+            headline: "Pelvic pain tended to co-occur with your luteal phase",
+            detail: "Pelvic pain was logged on 1 of 1 of your estimated luteal-phase days — a descriptive co-occurrence only."
+        )
+        let gated = HonestyGate.apply([n1], dismissed: [])
+        #expect(gated.isEmpty, "An n=1 cyclePhase association (sampleSize < minSample(.cyclePhase)) must be WITHHELD (CR-01).")
+    }
+
+    @Test func wellSampledCyclePhaseAssociation_survivesGate() async throws {
+        // The same association logged on >= 2 in-phase days at sufficient confidence survives.
+        let n2 = candidate(
+            kind: .cyclePhase, signalKey: "cyclePhase.luteal.symptom.pelvicPain",
+            confidence: .medium, sampleSize: 2,
+            headline: "Pelvic pain tended to co-occur with your luteal phase",
+            detail: "Pelvic pain was logged on 2 of 4 of your estimated luteal-phase days — a descriptive co-occurrence only."
+        )
+        let gated = HonestyGate.apply([n2], dismissed: [])
+        #expect(gated.count == 1, "A cyclePhase association at sampleSize >= minSample(.cyclePhase) must survive.")
+    }
+
+    @Test func validTrend_atMinSample_isNotDroppedByGate() async throws {
+        // No-regression: a trend at sampleSize == minSample(.trend) == 3 must NOT be dropped.
+        let trend = candidate(kind: .trend, signalKey: "symptom.pelvicPain.frequency", confidence: .low, sampleSize: 3)
+        let gated = HonestyGate.apply([trend], dismissed: [])
+        #expect(gated.count == 1, "A trend at sampleSize == minSample(.trend) must survive (no-regression, Pitfall 1).")
     }
 
     // MARK: (d) MANDATORY — ZERO forbidden (causal) terms across EVERY fixture's emitted insights (D-08).
@@ -113,10 +163,44 @@ struct HonestyGateTests {
         }
     }
 
+    // MARK: (d') CR-02 — fail-closed: a runtime-interpolated forbidden term is WITHHELD in the gated output.
+
+    @Test func runtimeForbiddenTermInDetail_isWithheld_inGatedOutput() async throws {
+        // A producer copy bug a STATIC fixture cannot cover: a forbidden causal term lands in a
+        // runtime-interpolated detail. The gate must WITHHOLD it in release (fail-closed), not surface it.
+        // (Built via the internal memberwise init to bypass the debug `assertionFailure`, so this test
+        // verifies the RELEASE drop behavior, which is the durable guarantee — not the debug assert.)
+        let causal = Insight(
+            id: DeterministicUUID.make(kind: .cyclePhase, window: .allTime, signalKey: "cyclePhase.luteal.symptom.pelvicPain"),
+            kind: .cyclePhase,
+            headline: "Pelvic pain tended to co-occur with your luteal phase",
+            detail: "Your luteal phase triggers pelvic pain.",   // runtime-interpolated causal claim
+            window: .allTime, confidence: .medium, points: [],
+            signalKey: "cyclePhase.luteal.symptom.pelvicPain", sampleSize: 5, isInsufficiencyNotice: false
+        )
+        // Sanity: this copy genuinely violates the policy.
+        #expect(ForbiddenTerms.violation(in: causal.detail) != nil)
+        let gated = HonestyGate.applyReleaseScan([causal], dismissed: [])
+        #expect(gated.isEmpty, "A causal-term insight must be WITHHELD in the gated output, even in release (CR-02).")
+    }
+
     // MARK: ForbiddenTerms unit behavior.
 
     @Test func forbiddenTerms_flagsCausal_passesDescriptive() async throws {
         #expect(ForbiddenTerms.violation(in: "this may cause pain") != nil)
         #expect(ForbiddenTerms.violation(in: "tended to co-occur with") == nil)
+    }
+
+    // WR-03: the expanded list catches causal inflections/connectives it previously false-negated on.
+    @Test func forbiddenTerms_catchesExpandedCausalInflections() async throws {
+        #expect(ForbiddenTerms.violation(in: "stress worsens your luteal phase") != nil)   // was a false-negative
+        #expect(ForbiddenTerms.violation(in: "this caused the flare") != nil)              // "caused" ⊂ "cause"
+        #expect(ForbiddenTerms.violation(in: "this is triggering pain") != nil)            // "triggering" ⊂ "trigger"
+        #expect(ForbiddenTerms.violation(in: "exercise improves your mood") != nil)
+        #expect(ForbiddenTerms.violation(in: "rest reduces pelvic pain") != nil)
+        #expect(ForbiddenTerms.violation(in: "poor sleep linked to fatigue") != nil)
+        #expect(ForbiddenTerms.violation(in: "leading to more flares") != nil)
+        // A descriptive co-occurrence (the producer's actual posture) still passes clean.
+        #expect(ForbiddenTerms.violation(in: "Fatigue tended to co-occur with your follicular phase") == nil)
     }
 }

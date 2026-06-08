@@ -76,6 +76,17 @@ public struct Insight: Sendable, Equatable, Identifiable {
     /// layer (Plan 02/03) matches on, and the same string `id` is derived from — so it survives
     /// recomputation across sessions (D-09). Additive (RESEARCH OQ1): the value stays `Equatable`/`Sendable`.
     public let signalKey: String
+    /// The number of data points (days-with-any-log / logged co-occurrences) this insight is based on —
+    /// the REAL evidence count the producer self-gated on (WR-02/CR-01). The `HonestyGate` enforces
+    /// `sampleSize >= minSample(for: kind)` as a genuine backstop, turning `minSample` from dead
+    /// documentation (IN-01) into the actual superset-filter control. NOT folded into `id` derivation
+    /// (the value count must not change the stable identity an insight is dismissed by — D-09/Pitfall 4).
+    public let sampleSize: Int
+    /// `true` ONLY for the deliberate honest "not enough data yet" sub-threshold signal
+    /// (`TrendsEngine.notEnoughData`). The confidence-floor carve-out keys on THIS typed marker, not on a
+    /// forgeable `signalKey` string suffix (WR-01) — so a future producer cannot accidentally cross the
+    /// floor by naming a key `.insufficient`. NOT folded into `id` derivation.
+    public let isInsufficiencyNotice: Bool
 
     /// Memberwise init. Callers MUST go through `derived(...)` so `id` stays deterministic. This init is
     /// `internal` (IN-01): only `derived(...)` (same module) may supply an explicit `id`, so an external
@@ -89,7 +100,9 @@ public struct Insight: Sendable, Equatable, Identifiable {
         window: TrendWindow,
         confidence: InsightConfidence,
         points: [InsightPoint],
-        signalKey: String
+        signalKey: String,
+        sampleSize: Int,
+        isInsufficiencyNotice: Bool
     ) {
         self.id = id
         self.kind = kind
@@ -99,6 +112,8 @@ public struct Insight: Sendable, Equatable, Identifiable {
         self.confidence = confidence
         self.points = points
         self.signalKey = signalKey
+        self.sampleSize = sampleSize
+        self.isInsufficiencyNotice = isInsufficiencyNotice
     }
 
     /// THE engine-facing factory. Derives `id` deterministically from `kind` + `window` + `signalKey`
@@ -107,6 +122,11 @@ public struct Insight: Sendable, Equatable, Identifiable {
     ///
     /// - Parameter signalKey: a stable string identifying the signal this insight is about
     ///   (e.g. `"symptom.pelvicPain.severity"` or `"factor.sleep.poor.frequency"`).
+    /// - Parameter sampleSize: the real evidence count this insight is based on (days-with-any-log for a
+    ///   trend; logged co-occurrences for a cyclePhase association). The `HonestyGate` drops any insight
+    ///   below `minSample(for: kind)`. Additive — does NOT participate in `id` derivation (Pitfall 4).
+    /// - Parameter isInsufficiencyNotice: `true` ONLY for the honest "not enough data yet" signal so the
+    ///   gate's confidence-floor carve-out keys on a typed marker, not a forgeable signalKey suffix (WR-01).
     public static func derived(
         kind: InsightKind,
         window: TrendWindow,
@@ -114,7 +134,9 @@ public struct Insight: Sendable, Equatable, Identifiable {
         headline: String,
         detail: String,
         confidence: InsightConfidence,
-        points: [InsightPoint]
+        points: [InsightPoint],
+        sampleSize: Int,
+        isInsufficiencyNotice: Bool = false
     ) -> Insight {
         Insight(
             id: DeterministicUUID.make(kind: kind, window: window, signalKey: signalKey),
@@ -124,7 +146,9 @@ public struct Insight: Sendable, Equatable, Identifiable {
             window: window,
             confidence: confidence,
             points: points,
-            signalKey: signalKey
+            signalKey: signalKey,
+            sampleSize: sampleSize,
+            isInsufficiencyNotice: isInsufficiencyNotice
         )
     }
 }

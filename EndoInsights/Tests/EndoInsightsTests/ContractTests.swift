@@ -14,22 +14,22 @@ struct ContractTests {
 
     @Test func derivedId_isStableForSameInputs() {
         let a = Insight.derived(kind: .trend, window: .last30, signalKey: "symptom.pelvicPain.severity",
-                                headline: "h", detail: "d", confidence: .medium, points: [])
+                                headline: "h", detail: "d", confidence: .medium, points: [], sampleSize: 5)
         let b = Insight.derived(kind: .trend, window: .last30, signalKey: "symptom.pelvicPain.severity",
-                                headline: "different copy", detail: "different", confidence: .low, points: [])
-        // Same kind+window+signalKey ⇒ same id, regardless of copy/confidence/points.
+                                headline: "different copy", detail: "different", confidence: .low, points: [], sampleSize: 9)
+        // Same kind+window+signalKey ⇒ same id, regardless of copy/confidence/points/sampleSize.
         #expect(a.id == b.id)
     }
 
     @Test func derivedId_differsForDifferentSignals() {
         let a = Insight.derived(kind: .trend, window: .last30, signalKey: "symptom.pelvicPain.severity",
-                                headline: "h", detail: "d", confidence: .medium, points: [])
+                                headline: "h", detail: "d", confidence: .medium, points: [], sampleSize: 5)
         let bySignal = Insight.derived(kind: .trend, window: .last30, signalKey: "symptom.fatigue.severity",
-                                       headline: "h", detail: "d", confidence: .medium, points: [])
+                                       headline: "h", detail: "d", confidence: .medium, points: [], sampleSize: 5)
         let byWindow = Insight.derived(kind: .trend, window: .last7, signalKey: "symptom.pelvicPain.severity",
-                                       headline: "h", detail: "d", confidence: .medium, points: [])
+                                       headline: "h", detail: "d", confidence: .medium, points: [], sampleSize: 5)
         let byKind = Insight.derived(kind: .correlation, window: .last30, signalKey: "symptom.pelvicPain.severity",
-                                     headline: "h", detail: "d", confidence: .medium, points: [])
+                                     headline: "h", detail: "d", confidence: .medium, points: [], sampleSize: 14)
         #expect(a.id != bySignal.id)
         #expect(a.id != byWindow.id)
         #expect(a.id != byKind.id)
@@ -37,7 +37,7 @@ struct ContractTests {
 
     @Test func derivedId_isWellFormedV5UUID() {
         let i = Insight.derived(kind: .trend, window: .allTime, signalKey: "factor.sleep.poor.frequency",
-                                headline: "h", detail: "d", confidence: .high, points: [])
+                                headline: "h", detail: "d", confidence: .high, points: [], sampleSize: 30)
         // RFC-4122 version nibble == 5 (b[6] high nibble), variant bits 10xx (b[8] top two bits).
         let v = i.id.uuid.6 >> 4
         let variant = i.id.uuid.8 >> 6
@@ -50,10 +50,10 @@ struct ContractTests {
     @Test func insight_isEquatable_includingDeterministicId() {
         let a = Insight.derived(kind: .trend, window: .last90, signalKey: "k",
                                 headline: "h", detail: "d", confidence: .low,
-                                points: [InsightPoint(date: Date(timeIntervalSince1970: 0), value: 1)])
+                                points: [InsightPoint(date: Date(timeIntervalSince1970: 0), value: 1)], sampleSize: 7)
         let b = Insight.derived(kind: .trend, window: .last90, signalKey: "k",
                                 headline: "h", detail: "d", confidence: .low,
-                                points: [InsightPoint(date: Date(timeIntervalSince1970: 0), value: 1)])
+                                points: [InsightPoint(date: Date(timeIntervalSince1970: 0), value: 1)], sampleSize: 7)
         #expect(a == b)
     }
 
