@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Core Symptom & Cycle/Bleeding Logging** - Endo-credible symptom + body-map logging and an irregular/suppression-tolerant bleeding & cycle model (completed 2026-06-08)
 - [x] **Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders** - Contextual factor logging plus a fast daily check-in and fatigue-aware reminders (completed 2026-06-08)
 - [x] **Phase 4: Private CloudKit Sync** - Cross-device private iCloud sync that survives offline/reinstall and truly purges on delete (completed 2026-06-08)
-- [ ] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures
+- [x] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures (completed 2026-06-08)
 - [ ] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
 - [ ] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors
 - [ ] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard
@@ -166,7 +166,7 @@ Plans:
 **Wave 2** *(blocked on 05-01; the two plans are file-disjoint and run in parallel)*
 
 - [x] 05-02-PLAN.md — Pure TrendsEngine.trends(from:asOf:) (TDD): 7/30/90/all-time windows on absolute calendar dates, per-symptom/per-factor descriptive stats + direction, min-data threshold, suppressed/no-bleeding SC3 gate, absence≠0 honesty, deterministic Equatable outputs + synthetic fixtures + D-12 boundary lint (INST-01, SC2, SC3) — DONE 2026-06-08 (TrendsEngine GREEN; SC3 fixture emits no bleeding/cycle trend; minLoggedDays=3 threshold; dedicated Foundation-only boundary lint; 22 package + 87 app tests green)
-- [ ] 05-03-PLAN.md — App-side Repository.daySnapshots() store→[DaySnapshot] mapping (TDD): consent-gated, mirrors factorDays/bleedingDays, app-enum→package-enum boundary (Option D) with a parity guard + honesty (nil≠0, flow nil w/o bleeding, suppressed propagates) — in-memory ModelContainer mapping tests (keeps SwiftData out of the package, SC1)
+- [x] 05-03-PLAN.md — App-side Repository.daySnapshots() store→[DaySnapshot] mapping (TDD): consent-gated, mirrors factorDays/bleedingDays, app-enum→package-enum boundary (Option D) with a parity guard + honesty (nil≠0, flow nil w/o bleeding, suppressed propagates) — in-memory ModelContainer mapping tests (keeps SwiftData out of the package, SC1) — DONE 2026-06-08 (daySnapshots() is the sole @Model→DaySnapshot projection; 7-enum parity guard closes the Option-D drift trap; shared projectFactors() helper; 109 app + 22 package/UI tests green)
 
 ### Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer
 
