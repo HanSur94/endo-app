@@ -78,7 +78,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Wave 2** *(blocked on 02-01; the two plans are file-disjoint and run in parallel)*
 
 - [x] 02-02-PLAN.md — Day-log editor vertical slice: real HomeView (replaces WalkingSkeletonView) + DayLogEditorView (symptom multi-select + severity + bleeding + note) + extended Repository (SYMP-01/03, CYCL-01 GREEN end-to-end)
-- [ ] 02-03-PLAN.md — Pure value-type CycleMath + CycleSummary (derived median, range+confidence, suppressed-emits-nothing, sparse-not-enough; never 28) with regular/irregular/suppressed/sparse fixtures (CYCL-02/03/04 at logic level)
+- [x] 02-03-PLAN.md — Pure value-type CycleMath + CycleSummary (derived median, range+confidence, suppressed-emits-nothing, sparse-not-enough; never 28) with regular/irregular/suppressed/sparse fixtures (CYCL-02/03/04 at logic level)
 
 **Wave 3** *(blocked on 02-02 + 02-03)*
 
@@ -243,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
-| 2. Core Symptom & Cycle/Bleeding Logging | 2/4 | In Progress|  |
+| 2. Core Symptom & Cycle/Bleeding Logging | 3/4 | In Progress|  |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/TBD | Not started | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |

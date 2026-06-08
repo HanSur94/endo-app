@@ -24,9 +24,9 @@ Requirements for the initial release. Each maps to a roadmap phase.
 ### Cycle & Bleeding
 
 - [x] **CYCL-01**: User can log bleeding/flow as a first-class event, independent of any predicted cycle
-- [ ] **CYCL-02**: User can track their menstrual cycle with predictions that tolerate irregular cycles
-- [ ] **CYCL-03**: User on continuous hormonal treatment can use a "suppressed / no cycle" mode and the app stays fully useful
-- [ ] **CYCL-04**: Cycle-day is shown as derived/optional with a confidence indicator (never assumes a 28-day cycle)
+- [x] **CYCL-02**: User can track their menstrual cycle with predictions that tolerate irregular cycles
+- [x] **CYCL-03**: User on continuous hormonal treatment can use a "suppressed / no cycle" mode and the app stays fully useful
+- [x] **CYCL-04**: Cycle-day is shown as derived/optional with a confidence indicator (never assumes a 28-day cycle)
 
 ### Lifestyle Logging
 
@@ -112,9 +112,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | SYMP-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | SYMP-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | CYCL-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
-| CYCL-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
-| CYCL-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
-| CYCL-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| CYCL-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
+| CYCL-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
+| CYCL-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | LIFE-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
 | LIFE-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
 | LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
