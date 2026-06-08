@@ -3,11 +3,21 @@
   Truthful Privacy Manifest (T-01-01 mitigation, RESEARCH §Security Domain).
   - NSPrivacyTracking: false           (the app does no tracking)
   - NSPrivacyTrackingDomains: empty    (no tracking domains)
-  - NSPrivacyCollectedDataTypes: empty (the app collects nothing off-device)
+  - NSPrivacyCollectedDataTypes: empty (nothing is collected by the developer — see CloudKit note)
   - NSPrivacyAccessedAPITypes: one entry — UserDefaults with required-reason CA92.1
     (the app reads/writes only its own consent + terminology flags).
-  Revisit in Phase 4 when CloudKit sync flips on (declare the CloudKit reason; reconfirm
-  empty collected-types is still truthful — private CloudKit is the user's own iCloud, not collection).
+
+  Phase 4 (resolved 2026-06-08): CloudKit private-database sync is now runtime-active
+  (ModelContainer+Config `.private(...)`, gated on a signed-in iCloud account). Reconfirmed:
+  - NSPrivacyCollectedDataTypes stays EMPTY and truthful. Health data is mirrored ONLY to the
+    user's OWN private iCloud database (the user's iCloud identity, Apple-encrypted, not readable
+    by the developer and never sent to any third-party controller). Under Apple's definition this
+    is NOT "data collection" by the app/developer, so no collected-data-type entry is required.
+  - NSPrivacyTracking stays false: private CloudKit is not "tracking" (no linkage across apps/sites,
+    no third-party data, not used to track the user).
+  - NSPrivacyAccessedAPITypes needs no new entry: the account presence check reads
+    FileManager.ubiquityIdentityToken (a CloudKit/iCloud availability probe), which is NOT one of
+    Apple's required-reason API categories; CloudKit itself does not require a manifest reason entry.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
