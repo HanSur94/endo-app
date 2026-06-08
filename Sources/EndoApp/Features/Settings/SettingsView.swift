@@ -12,12 +12,15 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.consentStore) private var consent
     @Environment(\.terminologyStore) private var terminologyStore
+    @Environment(\.modelContext) private var modelContext
 
     @State private var showingWithdrawConfirmation = false
 
     // Local editable copies of the free-text fields, committed back to the store on change.
     @State private var displayName: String = ""
     @State private var pronouns: String = ""
+    // Suppressed / no-cycle mode (CYCL-03, D-09) — reflects the latest TreatmentState.
+    @State private var suppressed = false
 
     var body: some View {
         // No own NavigationStack — pushed onto the shell's stack (HomeView's NavigationStack).
@@ -32,6 +35,21 @@ struct SettingsView: View {
                     TextField("Pronouns (optional)", text: $pronouns)
                         .textInputAutocapitalization(.never)
                     TextField("Display name (optional)", text: $displayName)
+                }
+
+                // Suppressed / no-cycle mode (CYCL-03, D-09). When on, the home cycle summary shows
+                // NOTHING cycle-related — the app stays fully useful for symptom + bleeding logging.
+                Section {
+                    Toggle(isOn: suppressedBinding) {
+                        Text("Cycle tracking is off")
+                    }
+                    .accessibilityIdentifier("settings.suppressedToggle")
+                } footer: {
+                    Text(
+                        "Turn this on if you don't have a cycle right now — for example on continuous "
+                        + "treatment. Endo-App stops showing any cycle estimate, and you can still log "
+                        + "symptoms and bleeding as usual."
+                    )
                 }
 
                 // (c) Privacy reachable from Settings (ONBD-04).
@@ -64,6 +82,7 @@ struct SettingsView: View {
             .onAppear {
                 displayName = terminologyStore.preference.displayName ?? ""
                 pronouns = terminologyStore.preference.pronouns ?? ""
+                suppressed = (try? SwiftDataRepository(context: modelContext).isSuppressed()) ?? false
             }
             .onChange(of: displayName) { _, newValue in commitFreeText(displayName: newValue, pronouns: pronouns) }
             .onChange(of: pronouns) { _, newValue in commitFreeText(displayName: displayName, pronouns: newValue) }
@@ -86,6 +105,18 @@ struct SettingsView: View {
     }
 
     // MARK: - Bindings / persistence
+
+    /// Writes the suppressed / no-cycle mode through the Repository (CYCL-03). A new timestamped
+    /// `TreatmentState` is appended; `isSuppressed()` reads the latest.
+    private var suppressedBinding: Binding<Bool> {
+        Binding(
+            get: { suppressed },
+            set: { newValue in
+                suppressed = newValue
+                try? SwiftDataRepository(context: modelContext).setSuppressed(newValue)
+            }
+        )
+    }
 
     private var bleedingTermBinding: Binding<TerminologyPreference.BleedingTerm> {
         Binding(

@@ -29,14 +29,11 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             List {
-                // Reserved cycle-summary slot — Plan 04 fills it (suppressed / derived-cycle copy).
+                // Cycle summary (CYCL-02/03/04): suppressed -> off-state line; sparse -> "not enough
+                // data yet"; else cycle-day + next-period RANGE + confidence. Recomputes via @Query.
                 Section {
-                    Color.clear
-                        .frame(height: 0)
-                        .accessibilityHidden(true)
-                        .accessibilityIdentifier("home.cycleSummary")
+                    CycleSummaryView()
                 }
-                .listRowBackground(Color.clear)
 
                 Section {
                     Button {

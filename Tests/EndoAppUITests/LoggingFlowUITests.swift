@@ -21,8 +21,8 @@ final class LoggingFlowUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    // RED (Wave 0): the happy-path logging flow. Asserts the home "Log today" entry point exists
-    // after consent — which fails until the real home screen ships (Plans 02/04).
+    // GREEN (Plan 02-04): the full happy-path logging flow — consent → log today (symptom+severity →
+    // body region+severity → bleeding → note) → save → the day appears → edit → delete → row gone.
     func testLoggingFlow() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uitest-reset"]
@@ -34,22 +34,74 @@ final class LoggingFlowUITests: XCTestCase {
                       "Consent grant button must exist on fresh launch")
         grantButton.tap()
 
-        // RED: the real home screen with a "Log today" entry does not exist yet.
         let logToday = app.buttons["home.logTodayButton"]
         XCTAssertTrue(logToday.waitForExistence(timeout: 10),
-                      "RED: home.logTodayButton must appear after consent — ships in Plan 02-02/04.")
+                      "home.logTodayButton must appear after consent.")
         saveScreenshot(app, named: "logging-01-home")
+        logToday.tap()
 
-        // Plan 04 turns GREEN: the full intended flow (documented; not yet executable):
-        //   logToday.tap()
-        //   tap daylog.symptom.fatigue → set daylog.severitySlider
-        //   tap bodymap.region.lowerAbdomenPelvis → set its severity
-        //   set daylog.bleeding.medium
-        //   enter daylog.note
-        //   tap daylog.saveButton
-        //   assert app.descendants(matching: .any)["home.dayRow.0"].exists
-        //   tap home.dayRow.0 to edit → tap daylog.deleteButton
-        //   assert the row is gone (home.dayRow.0 no longer exists)
+        // Symptom + severity.
+        let fatigue = app.buttons["daylog.symptom.fatigue"]
+        XCTAssertTrue(fatigue.waitForExistence(timeout: 10),
+                      "The day-log editor must show the symptom chips.")
+        fatigue.tap()
+        XCTAssertTrue(app.sliders["daylog.severitySlider"].waitForExistence(timeout: 5),
+                      "Selecting a symptom reveals its 0–10 SeverityControl.")
+
+        // Body region + severity (the accessible body map, SYMP-02).
+        let region = app.descendants(matching: .any)["bodymap.region.lowerAbdomenPelvis"]
+        var scrolls = 0
+        while !region.exists && scrolls < 8 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(region.waitForExistence(timeout: 5),
+                      "The body map must expose a tappable lowerAbdomenPelvis region.")
+        region.tap()
+        // The region severity sheet presents — set a value and dismiss.
+        let regionDone = app.buttons["bodymap.region.lowerAbdomenPelvis.done"]
+        XCTAssertTrue(regionDone.waitForExistence(timeout: 5),
+                      "Tapping a region presents its severity sheet.")
+        regionDone.tap()
+
+        // Bleeding flow (scroll into view — controls below the fold).
+        let bleeding = app.buttons["daylog.bleeding.medium"]
+        scrolls = 0
+        while !bleeding.exists && scrolls < 8 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(bleeding.waitForExistence(timeout: 5),
+                      "The bleeding flow control must be reachable in the editor.")
+        bleeding.tap()
+
+        // Note.
+        let note = app.textFields["daylog.note"]
+        scrolls = 0
+        while !note.exists && scrolls < 8 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(note.waitForExistence(timeout: 5))
+        note.tap()
+        note.typeText("rough day")
+        saveScreenshot(app, named: "logging-03-editor")
+
+        // Save → the day appears as the first history row.
+        app.buttons["daylog.saveButton"].tap()
+        let firstRow = app.descendants(matching: .any)["home.dayRow.0"]
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 10),
+                      "After Save the logged day must appear as home.dayRow.0.")
+        saveScreenshot(app, named: "logging-04-history")
+
+        // Edit → the editor re-opens preloaded → delete the day.
+        firstRow.tap()
+        let deleteButton = app.buttons["daylog.deleteButton"]
+        scrolls = 0
+        while !deleteButton.exists && scrolls < 8 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 10),
+                      "Re-opening a logged day must offer a delete affordance (SYMP-04).")
+        deleteButton.tap()
+        let confirm = app.buttons["daylog.deleteConfirm"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5),
+                      "Delete must require confirmation.")
+        confirm.tap()
+
+        // The row is gone — delete cascaded and the @Query refreshed (D-06).
+        XCTAssertTrue(firstRow.waitForNonExistence(timeout: 10),
+                      "After delete the day must disappear from history (home.dayRow.0 gone).")
+        saveScreenshot(app, named: "logging-05-after-delete")
     }
 
     // GREEN (Plan 02-02): the day-log vertical slice — log today's symptom + severity + bleeding +
@@ -101,8 +153,8 @@ final class LoggingFlowUITests: XCTestCase {
         saveScreenshot(app, named: "logging-04-history")
     }
 
-    // RED (Wave 0): with suppressed mode on, the home cycle summary must show the suppressed state
-    // and never a cycle-day / "not enough data" value. Fails until Plan 04 ships the home + toggle.
+    // GREEN (Plan 02-04): with suppressed mode on, the home cycle summary shows ONLY the suppressed
+    // off-state and never a cycle-day / "not enough data yet" value (CYCL-03, the no-phantom-cycle E2E).
     func testSuppressedModeShowsNoCycleSummary() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-uitest-reset"]
@@ -113,16 +165,44 @@ final class LoggingFlowUITests: XCTestCase {
                       "Consent grant button must exist on fresh launch")
         grantButton.tap()
 
-        // RED: the suppressed toggle + cycle summary do not exist yet (ship in Plan 02-04).
+        // Open Settings and turn suppressed mode on.
+        let settings = app.buttons["home.settingsButton"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10))
+        settings.tap()
+
         let suppressedToggle = app.switches["settings.suppressedToggle"]
+        var scrolls = 0
+        while !suppressedToggle.exists && scrolls < 8 { app.swipeUp(); scrolls += 1 }
         XCTAssertTrue(suppressedToggle.waitForExistence(timeout: 10),
-                      "RED: settings.suppressedToggle must exist — ships in Plan 02-04.")
+                      "settings.suppressedToggle must exist.")
+        // Flip the switch ON. A SwiftUI Toggle in a Form can swallow a centre tap, so tap the
+        // trailing edge where the switch thumb sits, and retry until the value reads ON.
+        var toggleTries = 0
+        while (suppressedToggle.value as? String) != "1" && toggleTries < 4 {
+            suppressedToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+            toggleTries += 1
+        }
+        XCTAssertEqual(suppressedToggle.value as? String, "1",
+                       "The suppressed toggle must read ON after tapping.")
         saveScreenshot(app, named: "logging-02-suppressed")
 
-        // Plan 04 turns GREEN: with the toggle on,
-        //   assert app.descendants(matching: .any)["home.cycleSummary.suppressed"].exists
-        //   assert NOT app.descendants(matching: .any)["home.cycleSummary.notEnoughData"].exists
-        //   assert no cycle-day text is shown anywhere.
+        // Back to Home (the Settings back chevron lives in the navigation bar).
+        let back = app.navigationBars["Settings"].buttons.element(boundBy: 0)
+        XCTAssertTrue(back.waitForExistence(timeout: 5), "Settings back button must exist.")
+        back.tap()
+
+        // The cycle summary shows the suppressed off-state — and NOTHING cycle-derivable.
+        _ = app.buttons["home.logTodayButton"].waitForExistence(timeout: 10)   // confirm we're Home
+        saveScreenshot(app, named: "logging-06-suppressed-home")
+        let suppressedLine = app.descendants(matching: .any)["home.cycleSummary.suppressed"]
+        XCTAssertTrue(suppressedLine.waitForExistence(timeout: 10),
+                      "Suppressed mode must show the cycle-tracking-off line.")
+        XCTAssertFalse(app.descendants(matching: .any)["home.cycleSummary.notEnoughData"].exists,
+                       "Suppressed mode must NOT show a 'not enough data' value.")
+        XCTAssertFalse(app.descendants(matching: .any)["home.cycleSummary.cycleDay"].exists,
+                       "Suppressed mode must NOT show a cycle-day.")
+        XCTAssertFalse(app.descendants(matching: .any)["home.cycleSummary.nextWindow"].exists,
+                       "Suppressed mode must NOT show a next-period window.")
     }
 
     // MARK: - Screenshot helper (verbatim from ConsentFlowUITests)

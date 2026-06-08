@@ -106,8 +106,8 @@ struct BodyMapView: View {
                             lineWidth: severity == nil ? 1 : 2)
             )
         }
+        .buttonStyle(.plain)
         .contentShape(RoundedRectangle(cornerRadius: 10))   // hit-test == the visible ≥44pt tile
-        .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(region.plainLabel))
         .accessibilityValue(Text(accessibilityValue(for: region)))
         .accessibilityAddTraits(.isButton)

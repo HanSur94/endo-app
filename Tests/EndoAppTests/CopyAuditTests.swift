@@ -47,4 +47,47 @@ struct CopyAuditTests {
                     "Every Domain plainLabel must be a non-empty string.")
         }
     }
+
+    // MARK: - Cycle-summary copy (Plan 02-04 Task 2): the no-over-claim half (CYCL-02/03/04, Pitfall 5)
+
+    /// Every fixed string CycleSummaryView can render, lowercased for substring auditing.
+    private var allCycleCopy: [String] { CycleSummaryCopy.auditableStrings }
+
+    // No cycle string contains a forbidden medical-purpose / causal verb ("predict"/"trigger"/"will"…).
+    @Test func cycleCopy_containsNoForbiddenVerb() {
+        for copy in allCycleCopy {
+            let lower = copy.lowercased()
+            for verb in ClaimsPolicy.forbiddenVerbs {
+                #expect(!lower.contains(verb.lowercased()),
+                        "Cycle copy \"\(copy)\" must not contain forbidden verb \"\(verb)\".")
+            }
+        }
+    }
+
+    // No cycle string contains a gendered token.
+    @Test func cycleCopy_containsNoGenderedToken() {
+        for copy in allCycleCopy {
+            let lower = copy.lowercased()
+            for token in ClaimsPolicy.forbiddenGenderedTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Cycle copy \"\(copy)\" must not contain gendered token \"\(token)\".")
+            }
+        }
+    }
+
+    // The confidence indicator is plain-language (never "predicted"); the surface is non-empty.
+    @Test func cycleCopy_isPlainLanguage_andNonEmpty() {
+        #expect(!allCycleCopy.isEmpty)
+        for copy in allCycleCopy {
+            #expect(!copy.trimmingCharacters(in: .whitespaces).isEmpty,
+                    "Every cycle string must be non-empty.")
+            #expect(!copy.lowercased().contains("predict"),
+                    "Cycle copy must not use prediction framing: \"\(copy)\".")
+        }
+        // The suppressed line emits nothing cycle-derivable — it must read as an off-state, not a value.
+        #expect(CycleSummaryCopy.suppressed.lowercased().contains("off"),
+                "The suppressed line must read as an off-state.")
+        // The sparse line is the honest "not enough data" framing, never a fabricated value.
+        #expect(CycleSummaryCopy.notEnoughData.lowercased().contains("not enough data"))
+    }
 }

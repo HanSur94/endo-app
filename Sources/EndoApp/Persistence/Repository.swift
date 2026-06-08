@@ -63,6 +63,9 @@ protocol Repository {
     func bleedingDays() throws -> [BleedingDay]
     /// `true` when the latest `TreatmentState` is "suppressed" (CYCL-03 no-cycle mode).
     func isSuppressed() throws -> Bool
+    /// Write the user's suppressed / no-cycle mode (CYCL-03, D-09). `true` -> "suppressed",
+    /// `false` -> "naturallyCycling". A new first-class timestamped `TreatmentState` (append-only).
+    func setSuppressed(_ suppressed: Bool) throws
 }
 
 /// SwiftData-backed `Repository` over a `ModelContext`.
@@ -214,6 +217,16 @@ struct SwiftDataRepository: Repository {
         let states = try context.fetch(FetchDescriptor<SchemaV1.TreatmentState>())
         guard let latest = states.max(by: { $0.startedAt < $1.startedAt }) else { return false }
         return latest.modeRaw == "suppressed"
+    }
+
+    func setSuppressed(_ suppressed: Bool) throws {
+        assertConsented()
+        // Append a new first-class, timestamped TreatmentState (D-19). `isSuppressed()` reads the
+        // latest by `startedAt`, so the newest write wins without mutating prior history.
+        context.insert(SchemaV1.TreatmentState(
+            startedAt: .now,
+            modeRaw: suppressed ? "suppressed" : "naturallyCycling"))
+        try context.save()
     }
 
     // MARK: - Day-bucketing helpers (Calendar-based; no epoch math — research §Don't Hand-Roll)
