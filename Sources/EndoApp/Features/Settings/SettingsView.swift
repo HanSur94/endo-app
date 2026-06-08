@@ -18,6 +18,9 @@ struct SettingsView: View {
     // The notification-scheduling seam (CHCK-02, D-17). Driven ONLY from the reminders enable/edit
     // handlers below — never at view init / onAppear, so permission stays just-in-time (D-20).
     @Environment(\.notificationScheduler) private var notificationScheduler
+    // The account-availability seam (DATA-02, injected by 04-01). Read-only — drives the subtle,
+    // non-blocking "iCloud sync: On/Off" line below (D-12). Never surfaces the token/account id.
+    @Environment(\.accountAvailability) private var accountAvailability
 
     @State private var showingWithdrawConfirmation = false
 
@@ -76,6 +79,24 @@ struct SettingsView: View {
                         "Turn this on if you don't have a cycle right now — for example on continuous "
                         + "treatment. Endo-App stops showing any cycle estimate, and you can still log "
                         + "symptoms and bleeding as usual."
+                    )
+                }
+
+                // iCloud sync status (D-12). A subtle, NON-blocking read of the account seam —
+                // no spinner, no toggle, no conflict UI. Just "On" when an iCloud account is
+                // available, "Off" otherwise (everything then stays on-device).
+                Section {
+                    HStack {
+                        Label("iCloud sync", systemImage: "icloud")
+                        Spacer()
+                        Text(accountAvailability.isICloudAvailable ? "On" : "Off")
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("settings.sync.status")
+                    }
+                } footer: {
+                    Text(
+                        "Endo-App syncs only to your own private iCloud — no third party, no account. "
+                        + "When iCloud is off, everything stays on this device."
                     )
                 }
 
