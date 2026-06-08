@@ -37,7 +37,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 ### Daily Check-in
 
 - [ ] **CHCK-01**: User can complete a fast daily check-in that logs the day quickly
-- [ ] **CHCK-02**: User can set configurable reminder notification(s) to log (designed to avoid notification fatigue)
+- [x] **CHCK-02**: User can set configurable reminder notification(s) to log (designed to avoid notification fatigue)
 
 ### Insights
 
@@ -119,7 +119,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | LIFE-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 data + 03-02 UI; E2E green) |
 | LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 data + 03-02 UI; meds-taken E2E in 03-04) |
 | CHCK-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
-| CHCK-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 scheduler seam + fatigue logic; UI in 03-03) |
+| CHCK-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 scheduler seam + fatigue logic; 03-03 opt-in UI/JIT-permission/quiet-hours/denied-state) — on-device delivery + system prompt are deferred human-verify at the phase gate (03-VALIDATION Manual-Only) |
 | DATA-02 | Phase 4 — Private CloudKit Sync | Pending |
 | DATA-03 | Phase 4 — Private CloudKit Sync | Pending |
 | DATA-04 | Phase 4 — Private CloudKit Sync | Pending |

@@ -109,7 +109,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Wave 2** *(blocked on 03-01; the two plans are file-disjoint and run in parallel)*
 
 - [x] 03-02-PLAN.md — Factor logging UI slice: DayLogEditorView factor sections (food/activity/sleep/meds/stress/mood) + LoggingFlowUITests (LIFE-01/02/03 GREEN end-to-end)
-- [ ] 03-03-PLAN.md — Reminders subsystem + manage-meds: ReminderSettings (UserDefaults, opt-in default-off) + SettingsView reminders & manage-meds sections + NotificationScheduler injection + human-verify checkpoint (CHCK-02, LIFE-03 meds)
+- [x] 03-03-PLAN.md — Reminders subsystem + manage-meds: ReminderSettings (UserDefaults, opt-in default-off) + SettingsView reminders & manage-meds sections + NotificationScheduler injection + human-verify checkpoint (CHCK-02, LIFE-03 meds)
 
 **Wave 3** *(blocked on 03-02 + 03-03)*
 
