@@ -231,6 +231,12 @@ struct SwiftDataRepository: Repository {
         for reading in try symptomReadings(on: day) { context.delete(reading) }
         for point in try painPoints(on: day) { context.delete(point) }
         for event in try bleedingEvents(on: day) { context.delete(event) }
+        // Phase-3 factor rows (food/activity/sleep/meds-taken/stress/mood) are day-scoped too — delete
+        // them so a deleted day leaves ZERO local orphans (DATA-04). An orphaned FactorReading would
+        // otherwise survive and still mirror to the user's private CloudKit store after a delete.
+        // Hard delete only (D-09/D-10 — no tombstone). NOT touched: Medication / TreatmentState
+        // definitions, which are NOT day-scoped and must survive a day-delete.
+        for reading in try factorReadings(on: day) { context.delete(reading) }
         for entry in try dayEntries(on: day) { context.delete(entry) }
         try context.save()
     }
