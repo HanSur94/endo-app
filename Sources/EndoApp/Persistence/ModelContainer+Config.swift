@@ -24,8 +24,9 @@ enum SyncMode {
 /// `SyncMode.current == .cloudKit` — inert in Phase 1.
 private let cloudKitContainerIdentifier = "iCloud.com.endoapp.ios"
 
-/// Builds the app's `ModelContainer` for the CURRENT schema (`SchemaV2`) behind the `SyncMode` flag,
-/// wiring the additive V1→V2 `EndoMigrationPlan` (D-11) so an existing V1 store migrates forward.
+/// Builds the app's `ModelContainer` for the CURRENT schema (`SchemaV3`) behind the `SyncMode` flag,
+/// wiring the additive `EndoMigrationPlan` (V1→V2→V3, D-11/D-10) so an existing V1/V2 store migrates
+/// forward.
 ///
 /// - Parameters:
 ///   - inMemory: when `true`, the store is in-memory only (the test seam used by the round-trip
@@ -34,8 +35,8 @@ private let cloudKitContainerIdentifier = "iCloud.com.endoapp.ios"
 ///   - url: an explicit on-disk store URL (used by the V1→V2 migration test to reopen the SAME
 ///     file at a newer schema). When `nil`, SwiftData uses its default store location.
 func makeModelContainer(inMemory: Bool = false, url: URL? = nil) throws -> ModelContainer {
-    // Bump to SchemaV2 (additive). The migration plan upgrades any existing V1 store.
-    let schema = Schema(versionedSchema: SchemaV2.self)
+    // Bump to SchemaV3 (additive). The migration plan upgrades any existing V1/V2 store.
+    let schema = Schema(versionedSchema: SchemaV3.self)
 
     // The D-10/D-21 switch: `.private(_:)` ONLY when sync is flipped on (Phase 4); `.none`
     // (local-first, no entitlement) is the Phase 1/2 default. DO NOT activate CloudKit here.
