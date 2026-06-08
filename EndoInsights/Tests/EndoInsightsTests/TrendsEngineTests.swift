@@ -62,9 +62,17 @@ struct TrendsEngineTests {
             $0.window == .last7 && $0.headline.localizedCaseInsensitiveContains("pelvic")
                 && $0.detail.localizedCaseInsensitiveContains("severity")
         })
-        // Mean encoded as an InsightPoint value (last point) — 6.0 exactly.
-        let mean = try #require(severity.points.last?.value)
-        #expect(mean == 6.0)
+        // The mean is reported in the headline (6.0); nil days are excluded from the denominator.
+        #expect(severity.headline.localizedCaseInsensitiveContains("6.0"),
+                "Mean severity (nil-day excluded) is 6.0 — NOT (6+6+0+6)/4.")
+        // WR-04: `points` is the honest per-day reading series ONLY — no spliced synthetic mean point.
+        // Every present daily reading here is 6, and points carry exactly the 3 logged-severity days
+        // (the nil-severity day contributes no point).
+        #expect(severity.points.count == 3, "points is the per-day reading series (nil-severity day omitted).")
+        #expect(severity.points.allSatisfy { $0.value == 6.0 })
+        // No two points share a date (no duplicate x-value / synthetic mean collision).
+        #expect(Set(severity.points.map(\.date)).count == severity.points.count,
+                "No duplicate x-values in the daily series (WR-04).")
     }
 
     @Test func symptomFrequency_isDaysPresentOverDaysWithAnyLog() async throws {
