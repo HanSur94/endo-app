@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders** - Contextual factor logging plus a fast daily check-in and fatigue-aware reminders (completed 2026-06-08)
 - [x] **Phase 4: Private CloudKit Sync** - Cross-device private iCloud sync that survives offline/reinstall and truly purges on delete (completed 2026-06-08)
 - [x] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures (completed 2026-06-08)
-- [ ] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
+- [x] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
 - [ ] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors
 - [ ] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard
 - [ ] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage
@@ -189,7 +189,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-02-PLAN.md — HonestyGate + ForbiddenTerms + public InsightsEngine; TrendsEngine internal (INST-04) [Wave 2]
+- [x] 06-02-PLAN.md — HonestyGate + ForbiddenTerms + public InsightsEngine; TrendsEngine internal (INST-04) [Wave 2] — DONE 2026-06-08 (single HonestyGate choke-point: dismissal-exclusion + min-sample SUPERSET filter (no points.count drop, Pitfall 1) + confidence floor with `.insufficient` carve-out + DEBUG forbidden-term assert; ForbiddenTerms package-local ClaimsPolicy mirror + D-08 connectives; InsightsEngine the LOCKED single public producer composing trends+cycle-phase through the gate; TrendsEngine demoted to internal after InsightsEngine existed; 39 package tests / 8 suites green incl. Phase-5 no-regression superset + zero-forbidden-terms scan; Foundation-only intact)
 
 ### Phase 7: Correlation & Trigger Discovery
 
