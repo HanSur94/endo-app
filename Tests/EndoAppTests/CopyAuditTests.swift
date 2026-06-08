@@ -101,6 +101,7 @@ struct CopyAuditTests {
             + ActivityIntensity.allCases.map(\.plainLabel)
             + SleepQuality.allCases.map(\.plainLabel)
             + ReminderCopy.auditableStrings
+            + CheckInCopy.auditableStrings
     }
 
     // GREEN (Plan 03-01): no Phase-3 copy contains a forbidden medical-purpose/causal verb.

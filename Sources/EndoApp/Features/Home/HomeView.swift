@@ -21,6 +21,14 @@ struct HomeView: View {
     @Query(sort: \SchemaV1.DayEntry.date, order: .reverse) private var days: [SchemaV1.DayEntry]
 
     @State private var editingDay: Date?
+    /// Presents the fast `DailyCheckInView` sheet (CHCK-01). Driven by the prominent Home CTA AND, via
+    /// the injected `@Observable CheckInRouter`, by the reminder notification deep-link (D-16).
+    @State private var presentingCheckIn = false
+
+    /// The deep-link router (D-16). The notification delegate flips `router.presentCheckIn`; this view
+    /// mirrors it into local `.sheet` state so the check-in sheet is presented INSIDE the consented
+    /// branch only (AppGate builds HomeView solely in `.consented`).
+    @Environment(\.checkInRouter) private var router
 
     private var terminology: Terminology {
         Terminology(preference: terminologyStore.preference)
@@ -33,6 +41,19 @@ struct HomeView: View {
                 // data yet"; else cycle-day + next-period RANGE + confidence. Recomputes via @Query.
                 Section {
                     CycleSummaryView()
+                }
+
+                // Prominent, accent-tinted fast "Daily check-in" CTA (CHCK-01 / D-16). Above the
+                // detailed "Log today" editor — a few taps to record the day, or just check in.
+                Section {
+                    Button {
+                        presentingCheckIn = true
+                    } label: {
+                        Label(CheckInCopy.title, systemImage: "checkmark.circle")
+                            .font(.headline)
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .accessibilityIdentifier("home.dailyCheckInButton")
                 }
 
                 Section {
@@ -83,6 +104,27 @@ struct HomeView: View {
             .sheet(item: $editingDay) { day in
                 NavigationStack {
                     DayLogEditorView(day: day)
+                }
+            }
+            // The fast daily check-in sheet (CHCK-01). Presented by the Home CTA or the deep-link.
+            .sheet(isPresented: $presentingCheckIn) {
+                NavigationStack {
+                    DailyCheckInView()
+                }
+            }
+            // Deep-link (D-16): when the notification delegate flips the router flag, present the sheet
+            // (and clear the flag so a later tap re-triggers). Mirrored INSIDE the consented branch only.
+            .onChange(of: router.presentCheckIn) { _, shouldPresent in
+                if shouldPresent {
+                    presentingCheckIn = true
+                    router.presentCheckIn = false
+                }
+            }
+            .onAppear {
+                // Honor a deep-link that arrived before HomeView was on screen (tap-to-launch).
+                if router.presentCheckIn {
+                    presentingCheckIn = true
+                    router.presentCheckIn = false
                 }
             }
         }
