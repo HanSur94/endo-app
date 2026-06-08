@@ -43,7 +43,7 @@ created: 2026-06-08
 | **Unit — honesty/sparse fixtures** | the **suppressed, no-bleeding-for-months** fixture yields NO bleeding/cycle trend (gate `!suppressed && bleedingDayCount>=1`); sub-threshold windows emit "not enough data"; nil never read as 0 | SC3 + the no-phantom-cycle / absence≠0 invariants |
 | **Boundary lint** | a test/grep asserting `EndoInsights/Sources` imports ONLY Foundation (no SwiftData/SwiftUI/UIKit) | SC1 belt-and-suspenders on the compiler boundary |
 | **App mapping unit** | `Repository.daySnapshots()` maps @Model rows → `[DaySnapshot]` correctly (symptoms/pain/bleeding/factors/suppressed), consent-gated | the SwiftData→contract seam stays app-side |
-| **Regression** | full existing suite (Phases 1–4) green after adding the package + any enum move/re-export | enum sourcing (Option C) touches app-wide references |
+| **Regression** | full existing suite (Phases 1–4) green after adding the package | Option D chosen — package-local enums + boundary mapping, so NO app-file enum churn; regression is just the full suite passing with the new package present |
 
 ---
 

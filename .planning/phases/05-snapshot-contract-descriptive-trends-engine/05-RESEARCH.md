@@ -532,7 +532,9 @@ struct SuppressedFixtureTests {
 | A7 | `suppressed`/bleeding gating: `!suppressed && bleedingDayCount >= 1` | Trend Math / SC3 | Core SC3 mechanism; mirrors proven `CycleMath` short-circuit. Low risk. |
 | A8 | `direction` omitted for `allTime` (no prior window) | Trend Math | Claude's discretion (D-07); first-half/second-half is an alternative. |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Both resolved during planning (plans 05-01..05-03): Q1 → 05-01 Task 1 package-test-in-scheme smoke + framework fallback; Q2 → Option D chosen (package-local enums + boundary mapping + enum-parity test), Option C not pursued.
 
 1. **Does `package: EndoInsights/EndoInsightsTests` actually execute under `xcodebuild test` on Xcode 26 / this exact toolchain?**
    - What we know: XcodeGen 2.45.4 supports the syntax (CHANGELOG 2.27.0); the spec documents it.
