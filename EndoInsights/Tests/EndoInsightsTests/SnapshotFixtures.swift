@@ -146,4 +146,55 @@ enum Fixtures {
             snapshot(offset: -2, symptoms: [SymptomPoint(type: .pelvicPain, severity: 3)]),
         ]
     }
+
+    // MARK: Phase-6 cycle fixtures (INST-02 — estimated phase mapping + honesty gates).
+
+    /// A REGULAR cycle: 4 period runs at tight, equal start-to-start gaps (~28 days, spread 0) so
+    /// `phaseConfidence` resolves `.medium`. `today` is injected at offset 0 (the last period start);
+    /// the current cycle's estimated phase windows lie in the FUTURE (offsets +1…+27) relative to it.
+    ///
+    /// Starts at offsets -84, -56, -28, 0 (gaps 28/28/28 → spread 0). The current run bleeds on
+    /// offsets 0,1,2 (menstrual). Per-phase symptom logs are placed on the estimated future windows
+    /// (band = max(2, 0/2) = 2, M = 28, ovCenter = +14):
+    ///   • luteal  (offsets +17…+27): pelvicPain logged on several days → a luteal association emits.
+    ///   • follicular (offsets +3…+11): fatigue logged → a follicular association emits.
+    static func regularCycleFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        // Four regular period runs (the current run is offsets 0,1,2).
+        for start in [-84, -56, -28, 0] {
+            for d in 0...2 { days.append(snapshot(offset: start + d, flow: .medium)) }
+        }
+        // Luteal-window symptom logs (offsets +17…+21): pelvic pain co-occurrence.
+        for off in 17...21 {
+            days.append(snapshot(offset: off, symptoms: [SymptomPoint(type: .pelvicPain, severity: 5)]))
+        }
+        // Follicular-window symptom logs (offsets +4…+7): fatigue co-occurrence.
+        for off in 4...7 {
+            days.append(snapshot(offset: off, symptoms: [SymptomPoint(type: .fatigue, severity: 4)]))
+        }
+        return days
+    }
+
+    /// An IRREGULAR cycle: starts at offsets 0, -20, -65 → gaps 20, 45 → spread 25 > 9 (Pitfall 3).
+    /// MUST yield ZERO `.cyclePhase` insights (the irregular gate, D-03). Symptom logs are present so
+    /// the only reason for emptiness is the spread gate, not absent data.
+    static func irregularCycleFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for start in [0, -20, -65] {
+            for d in 0...1 { days.append(snapshot(offset: start - d, flow: .medium)) }
+        }
+        // Symptom logs across the span — present, but must still emit nothing (spread > 9).
+        for off in stride(from: -1, through: -64, by: 7) {
+            days.append(snapshot(offset: off, symptoms: [SymptomPoint(type: .pelvicPain, severity: 5)]))
+        }
+        return days
+    }
+
+    /// An UNDER-SAMPLED cycle: a SINGLE period run (only one start → fewer than 2 start-to-start gaps).
+    /// MUST yield ZERO `.cyclePhase` insights (no phantom phase from one bleed).
+    static func underSampledCycleFixture() -> [DaySnapshot] {
+        var days = (0...2).map { snapshot(offset: -$0, flow: .medium) }
+        days += (3...9).map { snapshot(offset: -$0, symptoms: [SymptomPoint(type: .pelvicPain, severity: 5)]) }
+        return days
+    }
 }

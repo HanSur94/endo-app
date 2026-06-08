@@ -228,9 +228,11 @@ enum CyclePhaseMapper {
                     kind: .cyclePhase,
                     window: .allTime,
                     signalKey: "cyclePhase.\(phase.rawValue).symptom.\(type.rawValue)",
-                    // Descriptive + non-causal: a logged co-occurrence count, never a cause claim.
+                    // Descriptive + non-causal: a logged co-occurrence count only. NOTE the copy itself must
+                    // avoid the forbidden substrings (RESEARCH Pitfall 2: "cause" ⊂ "because") — phrase as a
+                    // plain co-occurrence; the honesty-gate term scan (Plan 02) scans headline + detail.
                     headline: "\(label) tended to co-occur with your \(phaseLabel) phase",
-                    detail: "\(label) was logged on \(logged) of \(totalDays) of your estimated \(phaseLabel)-phase days. This is a descriptive co-occurrence, not a cause.",
+                    detail: "\(label) was logged on \(logged) of \(totalDays) of your estimated \(phaseLabel)-phase days — a descriptive co-occurrence only.",
                     confidence: confidence,
                     points: []
                 ))
