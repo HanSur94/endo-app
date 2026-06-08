@@ -9,8 +9,12 @@
 //   • absence ≠ 0 — a nil reading is EXCLUDED from a mean's denominator, never summed as 0.
 //   • no phantom cycle — the bleeding trend is GATED on `!suppressed && bleedingDayCount >= 1`
 //     (mirrors `CycleMath.summarize`'s `if isSuppressed { return .suppressed }` short-circuit — SC3).
-//   • no false precision — below the per-trend `minLoggedDays` threshold the engine emits an explicit
-//     "not enough data" Insight instead of a misleading trend (D-08).
+//   • no false precision — below the per-trend `minLoggedDays` threshold the engine NEVER emits a
+//     misleading trend (D-08). For symptom FREQUENCY specifically it surfaces an explicit "not enough
+//     data yet" Insight; every other sub-threshold path (severity/stress/mood/sleep/bleeding means &
+//     frequencies) stays HONESTLY SILENT — silence is not a false trend. This scoping is deliberate:
+//     "not enough data yet" is emitted ONLY for symptom frequency, the one family where users actively
+//     mark a checklist and an empty result would otherwise read as "asked and answered no". (WR-03.)
 //   • descriptive, non-causal copy — no "trigger/causes/cause/will" (D-16); the FORMAL
 //     confidence-gating/withholding honesty layer is Phase 6, not here.
 import Foundation
@@ -117,8 +121,11 @@ public enum TrendsEngine {
             if daysWithAnyLog >= minLoggedDays {
                 out.append(Insight.derived(
                     kind: .trend, window: window, signalKey: "symptom.\(type.rawValue).frequency",
-                    headline: "\(label) logged on \(daysPresent) of \(daysWithAnyLog) logged days",
-                    detail: "You logged \(label.lowercased()) on \(daysPresent) of the \(daysWithAnyLog) days you tracked \(windowPhrase(window)).",
+                    // WR-02: the denominator is "days you logged ANYTHING", not "days you considered this
+                    // symptom" — say so explicitly so the ratio is never misread as a per-symptom
+                    // adherence rate (which would understate frequency on days you only logged elsewhere).
+                    headline: "\(label) logged on \(daysPresent) of \(daysWithAnyLog) days you tracked anything",
+                    detail: "You logged \(label.lowercased()) on \(daysPresent) of the \(daysWithAnyLog) days you tracked anything \(windowPhrase(window)).",
                     confidence: confidence(forLoggedDays: daysPresent),
                     points: frequencyPoints(recent, predicate: { $0.symptoms.contains { $0.type == type } })
                 ))
@@ -143,7 +150,13 @@ public enum TrendsEngine {
                     headline: "\(label) severity averaged \(format(mean)) \(windowPhrase(window))",
                     detail: "Average logged \(label.lowercased()) severity was \(format(mean))\(directionPhrase(dir, window: window)).",
                     confidence: confidence(forLoggedDays: severities.count),
-                    points: severityPoints(recent, type: type) + [InsightPoint(date: lastDay(recent), value: mean)]
+                    // WR-04: `points` is the HONEST per-day reading series only. We do NOT splice the
+                    // window mean in as a trailing point — that would collide on the latest tracked
+                    // day's x-value with the real daily reading (a duplicate x / vertical discontinuity
+                    // in the Phase 8 chart) and blur a summary statistic into the daily series. The mean
+                    // already lives in the headline/detail. (Mirrors stress/mood, which return only their
+                    // own series.)
+                    points: severityPoints(recent, type: type)
                 ))
             }
         }
