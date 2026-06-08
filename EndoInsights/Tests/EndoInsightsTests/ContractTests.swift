@@ -95,33 +95,6 @@ struct ContractTests {
         #expect(SleepQuality(raw: nil) == nil)
     }
 
-    // MARK: D-12 import-boundary lint (belt-and-suspenders on the SC1 compiler boundary)
-
-    @Test func packageSourcesImportOnlyFoundation() throws {
-        // Resolve Sources/EndoInsights relative to this test file:
-        // .../EndoInsights/Tests/EndoInsightsTests/ContractTests.swift → .../EndoInsights/
-        let packageRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()   // EndoInsightsTests/
-            .deletingLastPathComponent()   // Tests/
-            .deletingLastPathComponent()   // EndoInsights/ (package root)
-        let sources = packageRoot.appendingPathComponent("Sources/EndoInsights")
-
-        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "swift" }
-        #expect(!files.isEmpty, "Boundary lint found no package sources to scan at \(sources.path)")
-
-        let forbidden: Set<String> = ["SwiftData", "SwiftUI", "UIKit", "CoreData", "AppKit"]
-        for file in files {
-            let text = try String(contentsOf: file, encoding: .utf8)
-            for rawLine in text.split(separator: "\n") {
-                let line = rawLine.trimmingCharacters(in: .whitespaces)
-                guard line.hasPrefix("import ") else { continue }
-                let module = line
-                    .replacingOccurrences(of: "import ", with: "")
-                    .split(separator: " ").first.map(String.init) ?? ""
-                #expect(!forbidden.contains(module),
-                        "Forbidden import \(module) in \(file.lastPathComponent) — SC1 boundary violated")
-            }
-        }
-    }
+    // NOTE: the D-12 import-boundary lint moved to the dedicated `BoundaryLintTests.swift`
+    // (Plan 05-02) — a single source of truth that also asserts strict Foundation-ONLY imports.
 }
