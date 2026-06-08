@@ -11,12 +11,17 @@ import SwiftData
 @Suite("SYMP-04 edit / delete")
 struct EditDeleteTests {
 
-    /// Log a full day (symptom + pain point + bleeding + note) through the Repository.
+    /// Log a full day (symptom + pain point + bleeding + note + a Phase-3 factor) through the
+    /// Repository. The factor row (sleep + stress) exercises the SchemaV3 `FactorReading` table so the
+    /// delete-completeness test can prove DATA-04 closes the local orphan gap.
     private func logFullDay(_ repo: SwiftDataRepository, on day: Date) throws {
         try repo.upsertSymptom(type: .fatigue, severity: 5, on: day)
         try repo.setPainPoint(region: .lowerAbdomenPelvis, severity: 6, on: day)
         try repo.setBleeding(intensity: .medium, clots: false, on: day)
         try repo.setNote("rough day", on: day)
+        // Phase-3 day-scoped factor rows (FactorReading). A day-delete must remove these too.
+        try repo.setSleep(hours: 6, quality: .poor, on: day)
+        try repo.setStress(4, on: day)
     }
 
     // Re-opening a logged day and changing the symptom severity UPDATES the SymptomReading (no dup).
@@ -46,6 +51,8 @@ struct EditDeleteTests {
         // Sanity: everything exists before delete.
         #expect(try repo.symptomReadings(on: day).count == 1)
         #expect(try repo.painPoints(on: day).count == 1)
+        #expect(!(try repo.factorReadings(on: day)).isEmpty,
+                "Precondition: the day carries FactorReading rows before delete.")
 
         try repo.deleteDay(day)
 
@@ -58,6 +65,32 @@ struct EditDeleteTests {
                 "deleteDay must cascade-delete BleedingEvents.")
         #expect(try ctx.fetch(FetchDescriptor<SchemaV1.DayEntry>()).isEmpty,
                 "deleteDay must remove the DayEntry.")
+        // DATA-04 local orphan gap: every Phase-3 FactorReading for the day must be gone too, or a
+        // surviving row would still mirror to the user's private CloudKit store after a delete.
+        #expect(try ctx.fetch(FetchDescriptor<SchemaV1.FactorReading>()).isEmpty,
+                "deleteDay must remove FactorReadings for the day (DATA-04 — no orphan to mirror).")
+    }
+
+    // Guard (DATA-04 / T-04-08): a day-delete must NOT over-delete non-day-scoped definitions. A
+    // saved Medication definition created before the delete still exists afterward.
+    @Test func delete_doesNotRemoveMedicationDefinitions() async throws {
+        let container = try makeModelContainer(inMemory: true)
+        let ctx = ModelContext(container)
+        let repo = SwiftDataRepository(context: ctx)
+        let day = Date(timeIntervalSince1970: 1_700_000_000)
+
+        // A saved med definition (NOT day-scoped) and a full logged day.
+        let medID = try repo.addMedication(name: "Ibuprofen", note: nil)
+        try logFullDay(repo, on: day)
+        #expect(try repo.savedMedications().contains { $0.id == medID })
+
+        try repo.deleteDay(day)
+
+        // The med DEFINITION survives a day-delete — only day-scoped records are removed.
+        #expect(try repo.savedMedications().contains { $0.id == medID },
+                "A day-delete must NOT remove saved Medication definitions (not day-scoped).")
+        #expect(!(try ctx.fetch(FetchDescriptor<SchemaV1.Medication>())).isEmpty,
+                "Medication definitions must survive a day-delete.")
     }
 
     // After deleting a bleeding day, bleedingDays() no longer includes it — the cycle recomputes
