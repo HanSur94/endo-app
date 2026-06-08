@@ -90,4 +90,48 @@ struct CopyAuditTests {
         // The sparse line is the honest "not enough data" framing, never a fabricated value.
         #expect(CycleSummaryCopy.notEnoughData.lowercased().contains("not enough data"))
     }
+
+    // MARK: - Phase-3 factor + reminder copy (Plan 03-01): factor labels + gentle reminder copy
+
+    /// Every Phase-3 factor plainLabel + the reminder title/body, lowercased for substring auditing.
+    private var allPhase3Copy: [String] {
+        FactorKind.allCases.map(\.plainLabel)
+            + FoodTag.allCases.map(\.plainLabel)
+            + ActivityType.allCases.map(\.plainLabel)
+            + ActivityIntensity.allCases.map(\.plainLabel)
+            + SleepQuality.allCases.map(\.plainLabel)
+            + ReminderCopy.auditableStrings
+    }
+
+    // GREEN (Plan 03-01): no Phase-3 copy contains a forbidden medical-purpose/causal verb.
+    // CRITICAL: the food TAGS must never read as "triggers" — "trigger" is a forbidden verb (D-21).
+    @Test func phase3Copy_containsNoForbiddenVerb() {
+        for copy in allPhase3Copy {
+            let lower = copy.lowercased()
+            for verb in ClaimsPolicy.forbiddenVerbs {
+                #expect(!lower.contains(verb.lowercased()),
+                        "Phase-3 copy \"\(copy)\" must not contain forbidden verb \"\(verb)\".")
+            }
+        }
+    }
+
+    // GREEN (Plan 03-01): no Phase-3 copy contains a gendered token.
+    @Test func phase3Copy_containsNoGenderedToken() {
+        for copy in allPhase3Copy {
+            let lower = copy.lowercased()
+            for token in ClaimsPolicy.forbiddenGenderedTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Phase-3 copy \"\(copy)\" must not contain gendered token \"\(token)\".")
+            }
+        }
+    }
+
+    // GREEN (Plan 03-01): the audited surface is non-empty and every label is a non-empty string.
+    @Test func phase3Copy_isNonEmpty() {
+        #expect(!allPhase3Copy.isEmpty)
+        for copy in allPhase3Copy {
+            #expect(!copy.trimmingCharacters(in: .whitespaces).isEmpty,
+                    "Every Phase-3 label must be a non-empty string.")
+        }
+    }
 }
