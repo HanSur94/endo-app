@@ -32,21 +32,29 @@ enum ForbiddenTerms {
     /// claim even without a forbidden verb). All matched case-insensitively as substrings.
     static let causal: [String] = [
         // --- Mirror of ClaimsPolicy.forbiddenVerbs (causal / medical-purpose verbs) ---
-        "trigger",
-        "causes",
-        "cause",        // NOTE: "cause" ⊂ "because"; curated copy avoids the host word (Pitfall 2).
+        "trigger",      // substring also catches "triggers"/"triggered"/"triggering".
+        "cause",        // catches "causes"/"caused"/"causing"; NOTE: "cause" ⊂ "because" (Pitfall 2) — both forbidden, fine.
         "will",
-        "diagnose",
-        "detect",
-        "treat",
-        "cure",
-        "prevent",
+        "diagnose",     // also "diagnoses"/"diagnosed".
+        "detect",       // also "detects"/"detected".
+        "treat",        // also "treats"/"treated"/"treatment".
+        "cure",         // also "cures"/"cured".
+        "prevent",      // also "prevents"/"prevented".
         // --- D-08 causal connectives (a causal sentence reads as a medical claim) ---
         "because",
         "due to",
         "leads to",
+        "leading to",       // WR-03: the progressive connective the scan previously missed.
         "results in",
         "responsible for",
+        "contributes to",   // WR-03: causal connective.
+        "linked to",        // WR-03: a causal reading.
+        // --- WR-03: causal inflections the policy intends but the list previously omitted ---
+        "worsen",       // catches "worsen"/"worsens"/"worsened"/"worsening".
+        "improve",      // catches "improve"/"improves"/"improved"/"improving" (a causal benefit claim).
+        "reduce",       // catches "reduce"/"reduces"/"reduced"/"reducing" (a causal-effect verb).
+        "relieve",      // catches "relieve"/"relieves"/"relieved" (a treatment-effect claim).
+        "aggravate",    // catches "aggravate"/"aggravates"/"aggravated".
     ]
 
     /// The first forbidden term `text` contains (case-insensitive substring), or `nil` if the copy is
