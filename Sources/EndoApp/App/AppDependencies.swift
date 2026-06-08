@@ -21,9 +21,12 @@ final class AppDependencies {
     /// synced store.
     let terminologyStore: TerminologyStore
     /// The local-notification scheduling seam (CHCK-02, D-17). Concrete `UNUserNotificationCenter`
-    /// wrapper; the Settings reminders section drives it (the `.environment(\.notificationScheduler,…)`
-    /// injection at the App root is wired in Plan 04 alongside the deep-link delegate).
+    /// wrapper; the Settings reminders section drives it, and `EndoAppApp` injects it at the App root
+    /// (Plan 04) alongside the deep-link delegate.
     let notificationScheduler: any NotificationScheduler
+    /// The notification deep-link router (D-16). The `UNUserNotificationCenterDelegate` flips its flag
+    /// on a reminder tap; the consented-branch UI presents `DailyCheckInView`. Injected at the App root.
+    let checkInRouter: CheckInRouter
 
     init() {
         // Test-only, launch-arg-guarded deterministic reset (used by EndoAppUITests). When the
@@ -68,6 +71,7 @@ final class AppDependencies {
         self.consentStore = UserDefaultsConsentStore()
         self.terminologyStore = TerminologyStore()
         self.notificationScheduler = SystemNotificationScheduler()
+        self.checkInRouter = CheckInRouter()
     }
 
     /// Recovery helper (D-22 resilience): delete an unreadable default SwiftData store (and its

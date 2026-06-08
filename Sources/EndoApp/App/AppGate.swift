@@ -10,6 +10,12 @@
 // ONBD-04 before the explicit consent action ONBD-01). The `.consented` branch renders the main
 // shell (`HomeView` — day history + "Log today" editor, routing to `SettingsView` for withdraw +
 // customization). `HomeView` replaced the Phase-1 `WalkingSkeletonView` in Plan 02-02.
+//
+// DEEP-LINK CONSENT INVARIANT (D-16 / T-03-14): the reminder notification deep-link flips a
+// `CheckInRouter` flag, but the check-in sheet is presented by `HomeView` — which AppGate builds ONLY
+// in the `.consented` branch below. The router carries a non-sensitive intent flag, not health data,
+// and presentation is therefore gated by this switch: a deep-link can never surface the check-in sheet
+// before opt-in. In the `.notConsented` branch the router flag is simply not observed (no health UI).
 import SwiftUI
 
 struct AppGate: View {
@@ -21,9 +27,13 @@ struct AppGate: View {
         switch consent.state {
         case .notConsented:
             // Warm onboarding: disclaimer (ONBD-02) + privacy link (ONBD-04) before consent (ONBD-01).
+            // The deep-link CheckInRouter flag is deliberately NOT observed here — no health UI, no
+            // check-in sheet can be presented before consent (T-03-14).
             OnboardingView()
         case .consented:
-            // The ONLY branch that constructs the health-data logging UI (T-01-03 / T-02-06).
+            // The ONLY branch that constructs the health-data logging UI (T-01-03 / T-02-06). HomeView
+            // observes the injected `\.checkInRouter` here to present the check-in sheet on a reminder
+            // deep-link — so deep-link presentation is consent-gated by construction (D-16).
             HomeView()
         }
     }
