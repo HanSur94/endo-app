@@ -34,6 +34,17 @@ struct WalkingSkeletonView: View {
             }
             .padding()
             .navigationTitle("Endo-App")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    // Route to Settings (withdraw consent D-04 + terminology customization D-07).
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("Settings")
+                }
+            }
         }
     }
 

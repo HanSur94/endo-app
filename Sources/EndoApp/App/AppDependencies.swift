@@ -17,6 +17,9 @@ final class AppDependencies {
     let modelContainer: ModelContainer
     /// The consent gate's persistence seam (ONBD-01). Concrete UserDefaults-backed impl.
     let consentStore: UserDefaultsConsentStore
+    /// The terminology/identity preference store (ONBD-03, D-07). UserDefaults-backed, outside the
+    /// synced store.
+    let terminologyStore: TerminologyStore
 
     init() {
         do {
@@ -27,6 +30,7 @@ final class AppDependencies {
             fatalError("Failed to build the local ModelContainer: \(error)")
         }
         self.consentStore = UserDefaultsConsentStore()
+        self.terminologyStore = TerminologyStore()
     }
 }
 
@@ -48,5 +52,21 @@ extension EnvironmentValues {
     var consentStore: any ConsentStore {
         get { self[ConsentStoreKey.self] }
         set { self[ConsentStoreKey.self] = newValue }
+    }
+}
+
+/// Environment key carrying the app's `TerminologyStore` (ONBD-03 / D-07 injection seam).
+private struct TerminologyStoreKey: EnvironmentKey {
+    // Same main-actor-safe default pattern as the consent store.
+    static var defaultValue: TerminologyStore {
+        MainActor.assumeIsolated { TerminologyStore() }
+    }
+}
+
+extension EnvironmentValues {
+    /// The injected terminology store Settings edits and copy reads through (ONBD-03, D-07).
+    var terminologyStore: TerminologyStore {
+        get { self[TerminologyStoreKey.self] }
+        set { self[TerminologyStoreKey.self] = newValue }
     }
 }

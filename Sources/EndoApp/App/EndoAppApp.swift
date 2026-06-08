@@ -16,6 +16,7 @@ struct EndoAppApp: App {
         WindowGroup {
             AppGate()
                 .environment(\.consentStore, dependencies.consentStore)
+                .environment(\.terminologyStore, dependencies.terminologyStore)
                 .modelContainer(dependencies.modelContainer)
         }
     }
