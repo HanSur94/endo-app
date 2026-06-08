@@ -14,7 +14,7 @@ The Endo-App is a free, privacy-first iOS app that turns endometriosis self-trac
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundations — Schema, Privacy Posture & Claims Policy** - Lock the irreversible decisions: CloudKit-safe schema, GDPR consent, privacy/claims/inclusive policy, App Store de-risk (completed 2026-06-08)
-- [ ] **Phase 2: Core Symptom & Cycle/Bleeding Logging** - Endo-credible symptom + body-map logging and an irregular/suppression-tolerant bleeding & cycle model
+- [x] **Phase 2: Core Symptom & Cycle/Bleeding Logging** - Endo-credible symptom + body-map logging and an irregular/suppression-tolerant bleeding & cycle model (completed 2026-06-08)
 - [ ] **Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders** - Contextual factor logging plus a fast daily check-in and fatigue-aware reminders
 - [ ] **Phase 4: Private CloudKit Sync** - Cross-device private iCloud sync that survives offline/reinstall and truly purges on delete
 - [ ] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures
@@ -82,7 +82,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 3** *(blocked on 02-02 + 02-03)*
 
-- [ ] 02-04-PLAN.md — Accessible discrete-region body map (SYMP-02) + edit/delete with cascade (SYMP-04) + suppressed-mode toggle + home CycleSummaryView wired to CycleMath + copy audit + full E2E GREEN (CYCL-02/03/04 surfaced)
+- [x] 02-04-PLAN.md — Accessible discrete-region body map (SYMP-02) + edit/delete with cascade (SYMP-04) + suppressed-mode toggle + home CycleSummaryView wired to CycleMath + copy audit + full E2E GREEN (CYCL-02/03/04 surfaced)
 
 **UI hint**: yes
 **Validation**: 02-VALIDATION.md (Nyquist — every req mapped to a Swift Testing suite + the extended XCUITest E2E)
@@ -243,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
-| 2. Core Symptom & Cycle/Bleeding Logging | 3/4 | In Progress|  |
+| 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/TBD | Not started | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |

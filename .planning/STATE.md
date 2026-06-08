@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: completed
 stopped_at: Completed 02-01-PLAN.md (additive SchemaV2 + V1->V2 migration + Domain enums + Wave-0 scaffold; A1 closed)
-last_updated: "2026-06-08T10:02:26.586Z"
+last_updated: "2026-06-08T10:28:23.868Z"
 last_activity: 2026-06-08 -- Completed Phase 2 Plan 01 (SchemaV2 + migration; A1 closed)
 progress:
   total_phases: 12
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 8
+  completed_plans: 7
+  percent: 17
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 ## Current Position
 
 Phase: 2 (core-symptom-cycle-bleeding-logging) — EXECUTING
-Plan: 3 of 4 complete
+Plan: 4 of 4 complete
 Status: 02-01 complete — additive SchemaV2 + V1->V2 migration + Domain enums landed; Plans 02-02/03/04 next
 Last activity: 2026-06-08 -- Completed Phase 2 Plan 01 (SchemaV2 + migration; A1 closed)
 
@@ -56,6 +56,7 @@ Progress: [█░░░░░░░░░] 10%
 | Phase 2 P01 | 35 | 3 tasks | 19 files |
 | Phase 02 P02 | ~12min | 2 tasks | 13 files |
 | Phase 02 P03 | ~6min | 2 tasks | 3 files |
+| Phase 02 P04 | ~22min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Recent decisions affecting current work:
 - [01-02]: `@Model` types nested under `SchemaV1` (referenced as `SchemaV1.DayEntry` etc.); `VersionedSchema.versionIdentifier` must be `static let` and `ConsentStore` must be `@MainActor` under the Swift 6 language mode. Consent flag lives in `UserDefaults` (outside the synced store). Repository surface: `add(_:)` / `allDayEntries()`. Consent injected via `\.consentStore` EnvironmentKey from `AppDependencies`.
 - [Phase ?]: [01-03]: Terminology copy choke-point (bleedingNoun/cycleNoun) — all bleeding/cycle copy resolves through it; cycle noun stays neutral 'cycle' (D-08). ClaimsPolicy encodes forbidden verbs + gendered tokens as testable data. TerminologyStore injected via terminologyStore EnvironmentKey. Withdraw consent re-gates AppGate via the @Observable ConsentStore state flip. Phase 1 complete — all six requirement suites GREEN.
 - [Phase ?]: [02-01]: A1 closed — SwiftData entity identity is the class name; additively listing the same SchemaV1.* classes under a new SchemaV2 VersionedSchema is lightweight-migration-safe (proven by an on-disk V1->V2 round-trip). MigrationStage.lightweight only (never .custom). New CloudKit-safe models SymptomReading/PainPoint + BleedingEvent.clots. AppDependencies recovers from an unmigratable store instead of crashing.
+- [Phase ?]: [02-04]: Accessible discrete-region body map + no-phantom-cycle CycleSummaryView (suppressed/not-enough-data/cycle-day+date RANGE+plain confidence). @Query must be consumed in body to register a SwiftData dependency. Confidence words avoid 'her' substring. All 8 Phase-2 reqs GREEN; full E2E incl. suppressed-mode passes.
 
 ### Pending Todos
 
@@ -92,6 +94,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T10:02:13.921Z
+Last session: 2026-06-08T10:28:04.948Z
 Stopped at: Completed 02-01-PLAN.md (additive SchemaV2 + V1->V2 migration + Domain enums + Wave-0 scaffold; A1 closed)
 Resume file: None
