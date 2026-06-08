@@ -164,7 +164,8 @@ struct DaySnapshotMappingTests {
         try repo.setActivity(type: .cardio, minutes: 30, intensity: .high, on: day0)
 
         let snap = try #require(try repo.daySnapshots().first)
-        #expect(snap.foodTags == [EndoInsights.FoodTag.dairy, EndoInsights.FoodTag.caffeine])
+        // Tag order within a day is not a contract guarantee (rows fetch unordered) — compare as a set.
+        #expect(Set(snap.foodTags) == [EndoInsights.FoodTag.dairy, EndoInsights.FoodTag.caffeine])
         #expect(snap.activityType == EndoInsights.ActivityType.cardio)
         #expect(snap.activityMinutes == 30)
         #expect(snap.activityIntensity == EndoInsights.ActivityIntensity.high)

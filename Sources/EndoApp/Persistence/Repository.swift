@@ -11,6 +11,10 @@
 // pre-consent.
 import Foundation
 import SwiftData
+// EndoInsights is the Foundation-only insights package (SC1). The Repository — and ONLY the
+// Repository — imports BOTH SwiftData and EndoInsights so it can project `@Model` rows → the
+// package's `DaySnapshot` value contract. The package itself never imports SwiftData (D-10/D-14).
+import EndoInsights
 
 /// A Sendable, SwiftData-free value snapshot of a calendar day's bleeding (D-12 seam).
 ///
@@ -105,6 +109,15 @@ protocol Repository {
     /// One `FactorDay` per calendar day with any factor reading, ascending by day. Defensive decode;
     /// honest nil≠0 for stress/mood (D-07/D-08).
     func factorDays() throws -> [FactorDay]
+
+    // MARK: Phase 5 — the @Model → DaySnapshot mapping seam (D-10/D-14, INST-01).
+
+    /// One `EndoInsights.DaySnapshot` per calendar day that carries any logged signal, ascending by
+    /// day. This is the ONLY place SwiftData `@Model` rows become the package's value contract (SC1):
+    /// symptoms/pain/bleeding/factors → the snapshot, app-enum → package-enum (same raw value), honest
+    /// nil≠0, `hasNote` presence-only, the current suppressed flag stamped onto every snapshot. The
+    /// insights engine consumes only `[DaySnapshot]` and never touches the store. Consent-gated.
+    func daySnapshots() throws -> [DaySnapshot]
 }
 
 /// SwiftData-backed `Repository` over a `ModelContext`.
@@ -473,6 +486,182 @@ struct SwiftDataRepository: Repository {
             sleepHours: sleepHours, sleepQuality: sleepQuality,
             medicationsTaken: medicationsTaken, tookPRN: tookPRN,
             stress: stress, mood: mood)
+    }
+
+    // MARK: - Phase 5 @Model → DaySnapshot mapping seam (D-10/D-14, INST-01)
+
+    func daySnapshots() throws -> [DaySnapshot] {
+        assertConsented()   // ONBD-01 / V4 — first statement, like every sibling read.
+        let cal = Calendar.current
+
+        // Bucket every day-scoped @Model type by start-of-day (mirrors factorDays). The union of all
+        // day keys drives one DaySnapshot per day that carries ANY logged signal.
+        var symptomsByDay: [Date: [SchemaV1.SymptomReading]] = [:]
+        for r in try context.fetch(FetchDescriptor<SchemaV1.SymptomReading>()) {
+            symptomsByDay[cal.startOfDay(for: r.occurredOn), default: []].append(r)
+        }
+        var painByDay: [Date: [SchemaV1.PainPoint]] = [:]
+        for p in try context.fetch(FetchDescriptor<SchemaV1.PainPoint>()) {
+            painByDay[cal.startOfDay(for: p.occurredOn), default: []].append(p)
+        }
+        var bleedingByDay: [Date: [SchemaV1.BleedingEvent]] = [:]
+        for e in try context.fetch(FetchDescriptor<SchemaV1.BleedingEvent>()) {
+            bleedingByDay[cal.startOfDay(for: e.occurredAt), default: []].append(e)
+        }
+        var factorsByDay: [Date: [SchemaV1.FactorReading]] = [:]
+        for f in try context.fetch(FetchDescriptor<SchemaV1.FactorReading>()) {
+            factorsByDay[cal.startOfDay(for: f.occurredOn), default: []].append(f)
+        }
+        var noteDays: Set<Date> = []
+        for entry in try context.fetch(FetchDescriptor<SchemaV1.DayEntry>()) where entry.note != nil {
+            noteDays.insert(cal.startOfDay(for: entry.date))
+        }
+
+        // The suppressed flag is a single current value (latest TreatmentState, matches CycleMath);
+        // stamp it onto every snapshot so the per-day DaySnapshot shape (D-03) is preserved.
+        let suppressed = try isSuppressed()
+
+        // Union of all day keys across every signal type, sorted ascending.
+        var dayKeys = Set<Date>()
+        dayKeys.formUnion(symptomsByDay.keys)
+        dayKeys.formUnion(painByDay.keys)
+        dayKeys.formUnion(bleedingByDay.keys)
+        dayKeys.formUnion(factorsByDay.keys)
+        dayKeys.formUnion(noteDays)
+
+        return dayKeys.sorted().map { key in
+            Self.makeDaySnapshot(
+                day: key,
+                symptoms: symptomsByDay[key] ?? [],
+                pain: painByDay[key] ?? [],
+                bleeding: bleedingByDay[key] ?? [],
+                factors: factorsByDay[key] ?? [],
+                hasNote: noteDays.contains(key),
+                suppressed: suppressed)
+        }
+    }
+
+    /// Project one day's raw `@Model` rows into the Sendable `EndoInsights.DaySnapshot`. Defensive
+    /// decode throughout (never force-unwrap a decoded raw); honest nil≠0 for stress/mood; flow nil
+    /// when no flow-bearing bleeding event. App-enum → package-enum is a same-raw-value passthrough.
+    private static func makeDaySnapshot(
+        day: Date,
+        symptoms: [SchemaV1.SymptomReading],
+        pain: [SchemaV1.PainPoint],
+        bleeding: [SchemaV1.BleedingEvent],
+        factors: [SchemaV1.FactorReading],
+        hasNote: Bool,
+        suppressed: Bool
+    ) -> DaySnapshot {
+        // Symptoms → package SymptomPoint (unknown raw → .other; nil severity stays nil, ≠ 0).
+        let symptomPoints = symptoms.map {
+            SymptomPoint(type: EndoInsights.SymptomType(raw: $0.typeRaw), severity: $0.severity)
+        }
+
+        // Pain → fully-qualified EndoInsights.PainPoint (name-clash with SchemaV1.PainPoint @Model).
+        // A point whose region decodes to nil (unknown) is DROPPED, never crashed.
+        let painPoints: [EndoInsights.PainPoint] = pain.compactMap { p in
+            guard let region = EndoInsights.BodyRegion(raw: p.regionRaw) else { return nil }
+            return EndoInsights.PainPoint(region: region, severity: p.severity)
+        }
+
+        // Bleeding → the day's flow-bearing event (no event ⇒ flow nil; nil clots ⇒ false).
+        let flowEvent = bleeding.first { EndoInsights.FlowIntensity(raw: $0.flowRaw) != nil }
+        let flow = EndoInsights.FlowIntensity(raw: flowEvent?.flowRaw)
+        let clots = flowEvent?.clots ?? false
+
+        // Factor fields — reuse the shared FactorKind projection, mapped to the package enums.
+        let f = projectFactors(factors)
+
+        return DaySnapshot(
+            day: day,
+            symptoms: symptomPoints,
+            pain: painPoints,
+            flow: flow,
+            clots: clots,
+            foodTags: f.foodTags,
+            activityType: f.activityType,
+            activityMinutes: f.activityMinutes,
+            activityIntensity: f.activityIntensity,
+            sleepHours: f.sleepHours,
+            sleepQuality: f.sleepQuality,
+            medicationsTaken: f.medicationsTaken,
+            tookPRN: f.tookPRN,
+            stress: f.stress,
+            mood: f.mood,
+            hasNote: hasNote,
+            suppressed: suppressed)
+    }
+
+    /// Shared per-day factor projection mapped to the EndoInsights package enums (Option-D boundary).
+    /// Mirrors `makeFactorDay`'s FactorKind switch exactly so the two projections cannot drift, but
+    /// emits package-facing enum values. Defensive decode (unknown catalog raw → `.other`; optional
+    /// raws → nil); honest nil≠0 for stress/mood.
+    private static func projectFactors(_ readings: [SchemaV1.FactorReading]) -> (
+        foodTags: [EndoInsights.FoodTag],
+        activityType: EndoInsights.ActivityType?,
+        activityMinutes: Double?,
+        activityIntensity: EndoInsights.ActivityIntensity?,
+        sleepHours: Double?,
+        sleepQuality: EndoInsights.SleepQuality?,
+        medicationsTaken: [UUID],
+        tookPRN: Bool,
+        stress: Int?,
+        mood: Int?
+    ) {
+        var foodTags: [EndoInsights.FoodTag] = []
+        var activityType: EndoInsights.ActivityType?
+        var activityMinutes: Double?
+        var activityIntensity: EndoInsights.ActivityIntensity?
+        var sleepHours: Double?
+        var sleepQuality: EndoInsights.SleepQuality?
+        var medicationsTaken: [UUID] = []
+        var tookPRN = false
+        var stress: Int?
+        var mood: Int?
+
+        for reading in readings {
+            switch FactorKind(raw: reading.kindRaw) {
+            case .food:
+                if reading.note != nil {
+                    continue   // note-bearing `.food` row carries free text — NOT carried into the snapshot (D-01 privacy).
+                } else if let raw = reading.valueRaw {
+                    foodTags.append(EndoInsights.FoodTag(raw: raw))   // unknown raw → .other (never dropped silently).
+                }
+            case .activity:
+                activityType = EndoInsights.ActivityType(raw: reading.valueRaw)
+                activityMinutes = reading.amount
+                activityIntensity = intensity(packageFromLevel: reading.level)
+            case .sleep:
+                sleepHours = reading.amount
+                sleepQuality = EndoInsights.SleepQuality(raw: reading.valueRaw)
+            case .medication:
+                if reading.valueRaw == "prn" {
+                    tookPRN = true
+                } else if let raw = reading.valueRaw, let uuid = UUID(uuidString: raw) {
+                    medicationsTaken.append(uuid)
+                }
+            case .stress:
+                stress = reading.level   // nil stays nil (no reading ⇒ field never set).
+            case .mood:
+                mood = reading.level
+            case .other:
+                continue
+            }
+        }
+
+        return (foodTags, activityType, activityMinutes, activityIntensity,
+                sleepHours, sleepQuality, medicationsTaken, tookPRN, stress, mood)
+    }
+
+    /// Stored `level` → package `ActivityIntensity` (0 = low, 1 = medium, 2 = high; else nil).
+    private static func intensity(packageFromLevel level: Int?) -> EndoInsights.ActivityIntensity? {
+        switch level {
+        case 0:  return .low
+        case 1:  return .medium
+        case 2:  return .high
+        default: return nil
+        }
     }
 
     // MARK: - Phase 3 private helpers
