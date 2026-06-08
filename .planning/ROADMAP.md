@@ -181,7 +181,11 @@ Plans:
   3. Low-confidence or under-sampled findings are withheld rather than ranked, enforced by a shared min-sample gate.
   4. Each insight is dismissable ("this isn't right"), and the dismissal is recorded.
 
-**Plans**: TBD
+**Plans**: 3 plans (2 waves)
+
+- [ ] 06-01-PLAN.md — Insight.signalKey + CyclePhaseMapper/CyclePhase (estimated phases, no phantom; INST-02) [Wave 1]
+- [ ] 06-02-PLAN.md — HonestyGate + ForbiddenTerms + public InsightsEngine; TrendsEngine internal (INST-04) [Wave 2]
+- [ ] 06-03-PLAN.md — DismissedInsight @Model + SchemaV4 + V3→V4 migration + Repository dismissal CRUD (INST-04) [Wave 1]
 
 ### Phase 7: Correlation & Trigger Discovery
 
@@ -282,7 +286,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 4/4 | Complete   | 2026-06-08 |
 | 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
-| 5. Snapshot Contract + Descriptive Trends Engine | 0/3 | Planned | - |
+| 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 0/TBD | Not started | - |
 | 7. Correlation & Trigger Discovery | 0/TBD | Not started | - |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
