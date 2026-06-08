@@ -60,9 +60,13 @@ func makeModelContainer(
 
     let configuration: ModelConfiguration
     if let url {
-        // On-disk at an explicit URL (migration test seam). `cloudKitDatabase` is irrelevant here
-        // because the migration test runs local-only.
-        configuration = ModelConfiguration(schema: schema, url: url)
+        // On-disk at an explicit URL (migration test seam). MUST stay genuinely local: pass
+        // `cloudKitDatabase: .none` EXPLICITLY (P-2 guard). Since Phase 4 ships the CloudKit
+        // entitlement in the target, the `ModelConfiguration(schema:url:)` initializer would
+        // otherwise INFER `.automatic` CloudKit mirroring from the entitlement and silently activate
+        // sync on this local-only migration path — the exact P-2 mis-activation. The url overload is
+        // local-only by contract, so force `.none` regardless of `syncMode`.
+        configuration = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
     } else {
         configuration = ModelConfiguration(
             schema: schema,

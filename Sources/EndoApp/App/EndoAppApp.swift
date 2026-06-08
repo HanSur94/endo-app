@@ -36,6 +36,7 @@ struct EndoAppApp: App {
                 .environment(\.consentStore, dependencies.consentStore)
                 .environment(\.terminologyStore, dependencies.terminologyStore)
                 .environment(\.notificationScheduler, dependencies.notificationScheduler)
+                .environment(\.accountAvailability, dependencies.accountAvailability)
                 .environment(\.checkInRouter, dependencies.checkInRouter)
                 .modelContainer(dependencies.modelContainer)
         }

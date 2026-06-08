@@ -32,7 +32,9 @@ struct SchemaMigrationTests {
         // 1. Open a store at the V1 schema (NO migration plan) and write V1 rows, then close.
         do {
             let v1Schema = Schema(versionedSchema: SchemaV1.self)
-            let v1Config = ModelConfiguration(schema: v1Schema, url: storeURL)
+            // Force `.none`: Phase 4 ships the CloudKit entitlement, so an unspecified cloudKitDatabase
+            // would infer `.automatic` and mis-activate sync on this local-only migration store (P-2).
+            let v1Config = ModelConfiguration(schema: v1Schema, url: storeURL, cloudKitDatabase: .none)
             let v1Container = try ModelContainer(for: v1Schema, configurations: v1Config)
             let ctx = ModelContext(v1Container)
             ctx.insert(SchemaV1.DayEntry(id: dayID, note: "v1 day"))
@@ -93,7 +95,8 @@ struct SchemaMigrationTests {
         // 1. Open a store at the V2 schema (NO migration plan) and write V2 rows across every V2 model.
         do {
             let v2Schema = Schema(versionedSchema: SchemaV2.self)
-            let v2Config = ModelConfiguration(schema: v2Schema, url: storeURL)
+            // Force `.none` (see V1 note above) — local-only migration store, no CloudKit mirroring (P-2).
+            let v2Config = ModelConfiguration(schema: v2Schema, url: storeURL, cloudKitDatabase: .none)
             let v2Container = try ModelContainer(for: v2Schema, configurations: v2Config)
             let ctx = ModelContext(v2Container)
             ctx.insert(SchemaV1.DayEntry(id: dayID, note: "v2 day"))

@@ -27,6 +27,10 @@ final class AppDependencies {
     /// The notification deep-link router (D-16). The `UNUserNotificationCenterDelegate` flips its flag
     /// on a reminder tap; the consented-branch UI presents `DailyCheckInView`. Injected at the App root.
     let checkInRouter: CheckInRouter
+    /// The account-availability seam (DATA-02/03, D-03). Resolved once at launch to decide local-vs-cloud
+    /// sync BEFORE the container is built (P-2); also injected into the Environment so SettingsView (04-02)
+    /// can show the iCloud sync status. `Sendable` (NOT `@MainActor`) — read off-main at build time.
+    let accountAvailability: any AccountAvailability
 
     init() {
         // Test-only, launch-arg-guarded deterministic reset (used by EndoAppUITests). When the
@@ -39,8 +43,18 @@ final class AppDependencies {
             UserDefaults.standard.removeObject(forKey: "consent.grantedAt")
         }
 
+        // Resolve account availability FIRST, then derive `SyncMode` BEFORE building the container
+        // (RESEARCH Pattern 2 / Pitfall P-2 — the local-only path must be a genuine `.none` store).
+        // `uiTestReset` forces deterministic local-only so UI tests never touch a real iCloud account.
+        // The resolved `SyncMode`/account state lives ONLY here in code, NEVER in the synced store
+        // (D-15 / threat T-04-04).
+        let availability: any AccountAvailability =
+            uiTestReset ? StubAccountAvailability(isICloudAvailable: false) : SystemAccountAvailability()
+        self.accountAvailability = availability
+        let syncMode = SyncMode.resolve(availability)
+
         do {
-            self.modelContainer = try makeModelContainer(inMemory: uiTestReset)
+            self.modelContainer = try makeModelContainer(syncMode: syncMode, inMemory: uiTestReset)
         } catch {
             // The expected path on a healthy or migratable store is success. A failure here means the
             // on-disk store could not be opened/migrated at all (e.g. a corrupt or pre-versioning
@@ -57,11 +71,11 @@ final class AppDependencies {
             Self.discardUnreadableDefaultStore()
             do {
                 // Retry on-disk against a clean store so future data still persists across launches.
-                self.modelContainer = try makeModelContainer(inMemory: uiTestReset)
+                self.modelContainer = try makeModelContainer(syncMode: syncMode, inMemory: uiTestReset)
             } catch {
                 print("⚠️ Endo-App: on-disk recovery failed (\(type(of: error))); using in-memory store.")
                 do {
-                    self.modelContainer = try makeModelContainer(inMemory: true)
+                    self.modelContainer = try makeModelContainer(syncMode: syncMode, inMemory: true)
                 } catch {
                     // An in-memory container should never fail; if it does the schema itself is invalid.
                     fatalError("Failed to build even an in-memory ModelContainer: \(type(of: error))")
@@ -141,5 +155,20 @@ extension EnvironmentValues {
     var notificationScheduler: any NotificationScheduler {
         get { self[NotificationSchedulerKey.self] }
         set { self[NotificationSchedulerKey.self] = newValue }
+    }
+}
+
+/// Environment key carrying the app's `AccountAvailability` seam (DATA-02/03, D-03 injection seam).
+private struct AccountAvailabilityKey: EnvironmentKey {
+    // Unlike the consent/terminology/scheduler keys, `AccountAvailability` is `Sendable` (NOT
+    // `@MainActor`), so the default does NOT need `MainActor.assumeIsolated` — it constructs directly.
+    static let defaultValue: any AccountAvailability = SystemAccountAvailability()
+}
+
+extension EnvironmentValues {
+    /// The injected account-availability seam SettingsView reads for the iCloud sync status (04-02).
+    var accountAvailability: any AccountAvailability {
+        get { self[AccountAvailabilityKey.self] }
+        set { self[AccountAvailabilityKey.self] = newValue }
     }
 }
