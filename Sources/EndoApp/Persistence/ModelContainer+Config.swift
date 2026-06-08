@@ -1,27 +1,35 @@
-// Requirement: DATA-01 — local-only SwiftData container behind the SyncMode flag (D-10, D-21).
+// Requirement: DATA-01/02/03 — SwiftData container behind the account-aware SyncMode flag (D-10, D-21, D-03).
 //
 // One enum (`SyncMode`) IS the D-10 feature flag that decides whether the container is local-only
-// (default, Simulator-friendly, no entitlement, no Apple Developer account) or private-CloudKit
-// synced (Phase 4 only). The flag itself lives in code/`UserDefaults`, never in the synced store.
+// (Simulator-friendly, no signing, no account) or private-CloudKit synced. The flag lives in
+// code/`UserDefaults`, NEVER in the synced store (D-15 / threat T-04-04).
 //
-// IMPORTANT (Phase 1 posture): SyncMode.current is `.localOnly`, so the container ships with
-// `cloudKitDatabase: .none`. Do NOT add the iCloud/CloudKit or Background-Modes capability in
-// Phase 1 — `.none` needs none of it. The `.private(_:)` branch (D-21, private database only) is
-// reserved for Phase 4 and is OFF now.
+// PHASE 4 POSTURE (D-03): `SyncMode` is now ACCOUNT-AWARE. `SyncMode.resolve(_:)` consults the
+// injectable `AccountAvailability` seam (NOT Foundation directly) and returns `.cloudKit` only when an
+// iCloud account is signed in — otherwise `.localOnly`. The CALLER (composition root, AppDependencies)
+// resolves the mode and passes it into `makeModelContainer(syncMode:)` BEFORE construction
+// (RESEARCH Pattern 2 / Pitfall P-2). The default `.localOnly` keeps every existing test caller
+// compiling unchanged and the local path builds a genuinely `.none` store even with the entitlement
+// shipping in the target (P-2 guard, asserted by SyncModeTests).
 import Foundation
 import SwiftData
 
-/// The local-vs-sync feature flag (D-10). `.localOnly` is the Phase 1 default.
+/// The local-vs-sync feature flag (D-10). `.localOnly` is the safe default (no entitlement needed).
 enum SyncMode {
     case localOnly
     case cloudKit
 
-    /// Phase 1 default: local-only. Flip to `.cloudKit` only in Phase 4 (requires entitlements).
-    static var current: SyncMode { .localOnly }
+    /// Account-aware resolution (D-03): `.cloudKit` iff the injected seam reports an iCloud account is
+    /// available, else `.localOnly`. The seam (`AccountAvailability`) is mockable so resolution is
+    /// unit-tested and CI/UI tests pin `.localOnly` deterministically.
+    static func resolve(_ availability: AccountAvailability) -> SyncMode {
+        availability.isICloudAvailable ? .cloudKit : .localOnly
+    }
 }
 
-/// The CloudKit container identifier reserved for the private database (D-21). Used only when
-/// `SyncMode.current == .cloudKit` — inert in Phase 1.
+/// The CloudKit container identifier for the private database (D-02/D-21). MUST match the
+/// `com.apple.developer.icloud-container-identifiers` value in EndoApp.entitlements. Used only when
+/// the caller resolved `syncMode == .cloudKit`.
 private let cloudKitContainerIdentifier = "iCloud.com.endoapp.ios"
 
 /// Builds the app's `ModelContainer` for the CURRENT schema (`SchemaV3`) behind the `SyncMode` flag,
@@ -34,15 +42,21 @@ private let cloudKitContainerIdentifier = "iCloud.com.endoapp.ios"
 ///     migration across a reopen; the migration test uses the `url:` overload below.
 ///   - url: an explicit on-disk store URL (used by the V1→V2 migration test to reopen the SAME
 ///     file at a newer schema). When `nil`, SwiftData uses its default store location.
-func makeModelContainer(inMemory: Bool = false, url: URL? = nil) throws -> ModelContainer {
+func makeModelContainer(
+    syncMode: SyncMode = .localOnly,   // resolved by the caller (composition root) BEFORE construction (P-2)
+    inMemory: Bool = false,
+    url: URL? = nil
+) throws -> ModelContainer {
     // Bump to SchemaV3 (additive). The migration plan upgrades any existing V1/V2 store.
     let schema = Schema(versionedSchema: SchemaV3.self)
 
-    // The D-10/D-21 switch: `.private(_:)` ONLY when sync is flipped on (Phase 4); `.none`
-    // (local-first, no entitlement) is the Phase 1/2 default. DO NOT activate CloudKit here.
+    // The D-10/D-21 switch: `.private(_:)` ONLY when the CALLER resolved `.cloudKit` (an iCloud account
+    // is signed in AND a Team ID is set); `.none` (local-first, no entitlement needed) otherwise. The
+    // decision is supplied as a parameter — NOT read from a global — so the local path is genuinely
+    // `.none` even with the entitlement shipping in the target (P-2 guard).
     let cloudKitDatabase: ModelConfiguration.CloudKitDatabase =
-        (SyncMode.current == .cloudKit) ? .private(cloudKitContainerIdentifier)
-                                        : .none
+        (syncMode == .cloudKit) ? .private(cloudKitContainerIdentifier)
+                                : .none
 
     let configuration: ModelConfiguration
     if let url {
