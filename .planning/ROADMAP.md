@@ -45,7 +45,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans, 3 waves (strictly sequential)Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Wave 1: env setup (full Xcode + XcodeGen, MANUAL/blocking) + iOS 18 .xcodeproj scaffold + Privacy Manifest + 5 RED requirement tests (Nyquist Wave 0)
+- [x] 01-01-PLAN.md — Wave 1: env setup (full Xcode + XcodeGen, MANUAL/blocking) + iOS 18 .xcodeproj scaffold + Privacy Manifest + 5 RED requirement tests (Nyquist Wave 0)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
