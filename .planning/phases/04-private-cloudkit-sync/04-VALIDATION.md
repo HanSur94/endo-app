@@ -1,9 +1,9 @@
 ---
 phase: 4
 slug: private-cloudkit-sync
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: planned
+nyquist_compliant: true
+wave_0_complete: false  # A1 smoke is 04-01 Task 1; flips true on execution
 created: 2026-06-08
 ---
 
@@ -51,7 +51,13 @@ created: 2026-06-08
 
 | Task ID | Wave | Requirement | Test Type | Automated Command | Status |
 |---------|------|-------------|-----------|-------------------|--------|
-| *(populated during planning)* | 0 | DATA-02 | smoke/unit | full suite green w/ entitlement | ⬜ pending |
+| 04-01 T1 (A1 smoke) | 1 | DATA-02 | smoke/structural | `xcodegen generate && xcodebuild test … (full suite)` + entitlement grep gates | ⬜ pending |
+| 04-01 T2 (seam + SyncMode) | 1 | DATA-02/03 | unit (TDD) | `… -only-testing:EndoAppTests/SyncModeTests` (resolve + P-2 guard + CI-localOnly) | ⬜ pending |
+| 04-01 T3 (composition root) | 1 | DATA-02 | unit+UI (regression) | full suite green local-only | ⬜ pending |
+| 04-02 T1 (Settings line + privacy) | 2 | DATA-02 | unit (copy/privacy) | `… -only-testing:EndoAppTests/PrivacyPolicyTests,CopyAuditTests` + grep | ⬜ pending |
+| 04-02 T2 (deleteDay completeness) | 2 | DATA-04 | unit (TDD) | `… -only-testing:EndoAppTests/EditDeleteTests` (FactorReading orphan) | ⬜ pending |
+| 04-03 T1 (HUMAN-UAT doc) | 3 | DATA-02/03/04 | structural | `test -f 04-HUMAN-UAT.md` + content grep | ⬜ pending |
+| 04-03 T2 (human-verify checkpoint) | 3 | DATA-02/03/04 | manual-only | device UAT (≥2 devices) — NOT CI-automatable | ⬜ device-gated |
 
 ---
 

@@ -130,7 +130,20 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A fresh install on a clean device restores the user's full history from private iCloud.
   4. Deleting data removes it from the CloudKit private DB as well as locally — confirmed by a clean reinstall showing nothing.
 
-**Plans**: TBD
+**Plans**: 3 plans, 3 waves
+Plans:
+
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Ship the CloudKit entitlement + Background Modes (runtime-gated, no signing for CI; A1 de-risk first) + AccountAvailability seam + account-aware SyncMode resolved before container construction (DATA-02 config/account-detection level)
+
+**Wave 2** *(blocked on 04-01)*
+
+- [ ] 04-02-PLAN.md — Settings "iCloud sync: On/Off" line + private-iCloud privacy note + close the DATA-04 local orphan gap (deleteDay now removes FactorReading rows) with extended EditDeleteTests (DATA-02/DATA-04)
+
+**Wave 3** *(blocked on 04-01 + 04-02)*
+
+- [ ] 04-03-PLAN.md — HUMAN-UAT plan: device-only protocol for the 4 DATA criteria (multi-device sync / offline reconcile / reinstall restore / delete-purge) + manual CloudKit schema-deploy + DEVELOPMENT_TEAM steps; blocking human-verify checkpoint (DATA-02/03/04, human_needed)
 
 ### Phase 5: Snapshot Contract + Descriptive Trends Engine
 
