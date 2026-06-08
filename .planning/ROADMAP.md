@@ -139,7 +139,7 @@ Plans:
 
 **Wave 2** *(blocked on 04-01)*
 
-- [ ] 04-02-PLAN.md — Settings "iCloud sync: On/Off" line + private-iCloud privacy note + close the DATA-04 local orphan gap (deleteDay now removes FactorReading rows) with extended EditDeleteTests (DATA-02/DATA-04)
+- [x] 04-02-PLAN.md — Settings "iCloud sync: On/Off" line + private-iCloud privacy note + close the DATA-04 local orphan gap (deleteDay now removes FactorReading rows) with extended EditDeleteTests (DATA-02/DATA-04) ✅ Non-blocking sync line live (settings.sync.status); DATA-04 orphan bug fixed TDD RED→GREEN; Medication definitions survive a day-delete; full suite GREEN (84/84)
 
 **Wave 3** *(blocked on 04-01 + 04-02)*
 
