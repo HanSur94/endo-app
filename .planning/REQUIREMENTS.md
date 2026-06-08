@@ -124,7 +124,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DATA-03 | Phase 4 — Private CloudKit Sync | Code-complete + HUMAN-UAT pending (04-01 runtime gate + account seam; offline/reinstall/last-writer-wins ride NSPersistentCloudKitContainer defaults). Device-only offline-reconcile + reinstall-restore proof captured in 04-HUMAN-UAT (04-03) Part B Scenarios 2–3 — human-gated. |
 | DATA-04 | Phase 4 — Private CloudKit Sync | Code-complete + HUMAN-UAT pending (04-02 closes the automatable LOCAL half: deleteDay removes every day-scoped record incl. FactorReading — no orphan survives to mirror; locked by EditDeleteTests + a med-survives guard, TDD RED→GREEN). Device-only cloud-purge proof (delete→reinstall shows nothing) captured in 04-HUMAN-UAT (04-03) Part B Scenario 4 — human-gated. |
 | INST-01 | Phase 5 — Snapshot Contract + Descriptive Trends Engine | Engine + live data path complete (05-01 contract + 05-02 TrendsEngine + 05-03 Repository.daySnapshots() store→DaySnapshot mapping, Option-D parity-guarded); user-visible charts render in Phase 8 |
-| INST-02 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Pending |
+| INST-02 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Engine complete (06-01 CyclePhaseMapper: estimated phases from recorded bleeding, honesty-gated — suppressed/irregular(spread>9)/<2-cycle → no phantom phase, confidence ≤ .medium; descriptive non-causal copy; INST-02 acceptance fixtures GREEN). Honesty-layer wiring (HonestyGate/InsightsEngine) is 06-02; user-visible rendering is Phase 8 |
 | INST-04 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Pending |
 | INST-03 | Phase 7 — Correlation & Trigger Discovery | Pending |
 | DATA-05 | Phase 9 — HealthKit Import | Pending |

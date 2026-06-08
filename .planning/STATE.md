@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md (Phase 5 Wave 1 — EndoInsights package wired + DaySnapshot/Insight contract)
-last_updated: "2026-06-08T21:13:11.276Z"
-last_activity: 2026-06-08 -- Completed 05-03 (Repository.daySnapshots() @Model→DaySnapshot mapping seam; Phase 5 complete)
+stopped_at: Completed 06-01-PLAN.md (Phase 6 Wave 1 — Insight.signalKey + CyclePhaseMapper/CyclePhase)
+last_updated: "2026-06-08T23:18:00.000Z"
+last_activity: 2026-06-08 -- Completed 06-01 (CyclePhaseMapper + signalKey)
 progress:
   total_phases: 12
   completed_phases: 5
-  total_plans: 17
+  total_plans: 20
   completed_plans: 17
   percent: 42
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 5 — Snapshot Contract + Descriptive Trends Engine
+**Current focus:** Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer
 
 ## Current Position
 
-Phase: 5 (Snapshot Contract + Descriptive Trends Engine) — COMPLETE
-Plan: 3 of 3 (all complete)
-Status: Ready to execute
-Last activity: 2026-06-08 -- Completed 05-03 (Repository.daySnapshots() @Model→DaySnapshot mapping seam; Phase 5 complete)
+Phase: 6 (Cycle-Phase Mapping + Insight-Honesty Layer) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 6 (06-01 complete; 06-03 next in Wave 1)
+Last activity: 2026-06-08 -- Completed 06-01 (CyclePhaseMapper + signalKey)
 
 Progress: [████░░░░░░] 42%
 
@@ -67,6 +67,7 @@ Progress: [████░░░░░░] 42%
 | Phase 05 P01 | ~22min | 2 tasks | 7 files |
 | Phase 05 P02 | ~18min | 2 tasks | 6 files |
 | Phase 05 P03 | ~14min | 2 tasks | 2 files |
+| Phase 06 P01 | ~10min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,7 @@ Recent decisions affecting current work:
 - [04-03]: Phase-4 plans all executed. 04-HUMAN-UAT.md authored — the device-only protocol for the four DATA criteria CI cannot reach: 5 scenarios (DATA-02 sync-no-login / DATA-03a offline-reconcile-LWW / DATA-03b reinstall-restore / DATA-04 delete-purge / sign-out grace), each with PASS/FAIL boxes; one-time prerequisites (set DEVELOPMENT_TEAM in project.yml, deploy CloudKit schema Development→Production, P-3); a paste-ready 5.1.3(ii) review note (P-4); and the P-1 sign-out data-loss caveat documented honestly + an acknowledgement box (accepted for v1, custom CKSyncEngine deferred). NO fabricated automated sync tests (D-16) — the negative grep gate (XCUIApplication/@Test) is satisfied. DATA-02/03/04 stay 'code-complete + HUMAN-UAT pending' in REQUIREMENTS traceability (not fully checked) — the automatable scope is GREEN; the device run + P-1 acknowledgement are surfaced to the user at the phase verification gate. Blocking human-verify checkpoint auto-approved under AUTO_MODE. Docs-only plan → no build/test ritual, no regression to the 84/84 suite.
 - [04-02]: Sync state surfaced + DATA-04 local half closed. SettingsView reads \\.accountAvailability (injected by 04-01) for a subtle, NON-blocking "iCloud sync: On/Off" line (settings.sync.status) — no spinner/toggle/conflict UI (D-12), and never surfaces the token/account id (T-04-07); the footer states the private-iCloud posture (D-13). PrivacyPolicyText was VERIFY-ONLY (left unchanged): the private-iCloud note + every PrivacyPolicyTests phrase already present; the optional P-1 sign-out sentence was NOT added (avoids needless regression risk against the phrase asserts). KEY DATA-04 FIX (TDD RED→GREEN): deleteDay previously cascaded symptom/pain/bleeding/dayEntry but ORPHANED the Phase-3 FactorReading rows — a real bug, since an orphan would still mirror to the private CloudKit DB after a delete (GDPR Art.17 / T-04-06). RED test logged a FactorReading + asserted zero remain after deleteDay (failed); fix adds `for reading in try factorReadings(on: day) { context.delete(reading) }` (hard delete, D-09/D-10). CRITICAL GUARD (T-04-08): a day-delete must NOT over-delete non-day-scoped definitions — a guard test proves a saved Medication definition survives (TreatmentState likewise untouched). Full suite GREEN (84/84). The device-only cloud-purge proof (reinstall shows nothing) stays routed to 04-03 HUMAN-UAT.
 - [05-01]: EndoInsights keystone landed. A real Foundation-only local SPM package (zero deps = the SC1 compiler boundary) is wired via project.yml (top-level `packages:`, app `dependencies: - package: EndoInsights`, scheme `- package: EndoInsights/EndoInsightsTests`) and its Swift Testing target PROVABLY runs inside the single `xcodebuild test -scheme EndoApp` command — the SPM scheme test-target path works on XcodeGen 2.45.4 / Xcode 26.5, so the framework-target fallback was NOT needed (Open Question 1 resolved). The contract: DaySnapshot (+SymptomPoint/PainPoint), generic Insight (+InsightKind reserving Ph6-12 cases / TrendWindow / InsightConfidence lifted from CycleSummary.Confidence / InsightPoint) — all public, Sendable, Equatable, Foundation-only, with nil=unlogged honesty (absence != 0) and hasNote presence-only (no health prose in the snapshot). KEY: Insight.id is DERIVED deterministically (kind+window+signalKey → a pure-Foundation FNV-1a → RFC-4122 v5 UUID) via the engine-facing `Insight.derived(...)`; no UUID()-defaulting init is reachable, so [Insight] stays exactly Equatable for Plan-02 fixtures (Pitfall 4). Enum sourcing = Option D (D-18): package-local enum copies with raw values matching the app's VERBATIM (data-only, no plainLabel) — 17 app files untouched; Plan 03 maps app-enum → package-enum at the daySnapshots() boundary (raw values match for a passthrough; a Plan-03 parity test guards drift). A D-12 boundary-lint @Test (#filePath source scan asserting Foundation-only imports) ships in EndoInsightsTests as belt-and-suspenders. Full suite GREEN: app Swift Testing 87/87 + 8 UI + EndoInsights 9/9. One pre-existing UI-test flake (CheckInFlowUITests.testMedicationTaken — toggle tap/read race) failed once under full-suite load then passed in isolation AND on the next full run; logged to deferred-items.md, out of scope (this plan touches no app logic).
+- [06-01]: CyclePhaseMapper + Insight.signalKey landed (INST-02/SC1). `signalKey` is now a stored `public let` on Insight, threaded through `derived(...)` into the existing memberwise init — purely ADDITIVE: DeterministicUUID.make / id derivation untouched, so the same inputs still yield the same id and the Phase-5 Equatable/id fixtures (TrendsEngineTests, 11) stay byte-identical green. It is the value-INDEPENDENT dismissal key (`cyclePhase.<phase>.symptom.<type>`) every downstream honesty/dismissal layer (Plans 02/03) matches on. CyclePhaseMapper is a Foundation-only `enum` mirroring CycleMath VERBATIM (periodRuns/consecutiveGaps/medianInt/spread, D-17) into the package idiom (injected today+calendar, value-in/value-out, no Date.now/print). HONESTY-BY-OMISSION is the deliverable (the #1 endo pitfall): gate order is suppressed -> [] (mirrors `if isSuppressed`), then runs->starts->gaps, then `guard gaps.count >= 2` -> [] (<2 cycles), then `guard let confidence = phaseConfidence(...)` -> [] for irregular. phaseConfidence CAPS at .medium, NEVER .high (a phase window is an estimate even at best, D-02): (c>=3 && spread<=3)->.medium, (spread<=9)->.low, else nil (spread>9 -> irregular -> no phases, D-03). Phase windows are built relative to last start S, median M, band=max(2,spread/2): ovulation centered 14 days BEFORE next predicted start S+M (luteal = the stable ~14-day anchor, A7), all DST-safe calendar.date(byAdding:.day)+startOfDay — never epoch. In-range days are phase-labelled, then one descriptive `.cyclePhase` insight per (phase,symptom) co-occurrence is emitted via Insight.derived. KEY DEVIATION (Rule 1): the mapper's OWN disclaimer copy "…, not a cause." tripped the non-causal term scan — "cause" is a forbidden substring (Pitfall 2: "cause" ⊂ "because"); rephrased to "… — a descriptive co-occurrence only." Fixtures: regularCycleFixture (4 runs, gaps 28/28/28, spread 0 -> .medium, symptom logs on future luteal/follicular windows), irregularCycleFixture (spread 25>9), underSampledCycleFixture (single run). 28 package tests green (was 22 + 6 CyclePhaseMapperTests); BoundaryLintTests confirm Foundation-only holds.
 - [05-02]: Pure descriptive TrendsEngine landed (INST-01/SC2). `TrendsEngine.trends(from:[DaySnapshot], asOf:Date, calendar:)` mirrors CycleMath exactly — enum namespace, injected today+calendar, no Date.now, Equatable [Insight] outputs. Emits per-symptom severity-mean (nil severities EXCLUDED from the denominator) + frequency, stress/mood means, poor-sleep + bleeding-day frequency over 7/30/90/all-time windows anchored on ABSOLUTE calendar dates ([today-(N-1)…today] inclusive, DST-safe calendar.date(byAdding:.day) math — never epoch). HONESTY locked by fixtures: the suppressedNoBleedingFixture (4mo of suppressed+flow==nil) yields NO bleeding/cycle/period Insight + no .cyclePhase (gate `!anySuppressed && bleedingDayCount>=1`, the SC3 short-circuit mirroring `if isSuppressed`); absence!=0 (unlogged stress→mean 4.0 not 2.0, distinct from logged-0→0.0); sub-threshold (<minLoggedDays=3 tracked days)→explicit "not enough data yet" Insight (.none confidence), never a misleading trend. Direction = coarse up/down/steady comparing recent vs immediately-prior equal-length window ([today-(2N-1)…today-N]) with directionBand=0.5; allTime omits direction. KEY DEVIATION (Rule 1): frequency trends gate on days-with-any-log>=3 (enough TRACKED days), NOT days-present — else a legitimate "2 of 4" frequency can never emit. Copy is descriptive/non-causal (no trigger/causes/cause/will — asserted across all insights); mean is encoded as the TRAILING InsightPoint.value so fixtures assert it exactly. The D-12 boundary lint moved to a dedicated BoundaryLintTests (Form A #filePath, strict Foundation-ONLY) — duplicate removed from ContractTests. Full suite GREEN: 87 app unit + 22 package tests. The med-toggle UI flake recurred under full-suite load, passed in isolation — deferred, out of scope (this plan touches no app/UI code).
 - [03-01]: Phase-3 data spine landed — unified FactorReading @Model (kindRaw + valueRaw/amount/level/note columns) discriminates all six factor kinds; Sendable FactorDay snapshot is the insights seam with nil!=0 honesty (missing stress/mood row -> nil; logged level-0 -> 0). Additive SchemaV3 + lightweight v2toV3 migration (A1 closed for Phase-3 models). Medication is a soft-archive definition; per-day "taken" is a .medication FactorReading keyed by med-id. KEY DEVIATION: quiet-hours uses a QuietHours{start,end} value type, NOT ClosedRange<DateComponents> — a midnight-crossing window (start>end) traps ClosedRange's invariant. Reminder copy must avoid the 'her' substring ('here's' fails the gendered-token audit). NotificationScheduler fatigue logic is pure free functions (isInQuietHours/shouldFireToday); UN calls are the thin shell. Local notifications need NO entitlement (project.yml unchanged).
 
@@ -116,6 +118,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T21:46:00Z
-Stopped at: Completed 05-01-PLAN.md (Phase 5 Wave 1 — EndoInsights package wired + DaySnapshot/Insight contract)
+Last session: 2026-06-08T23:18:00Z
+Stopped at: Completed 06-01-PLAN.md (Phase 6 Wave 1 — Insight.signalKey + CyclePhaseMapper/CyclePhase)
 Resume file: None
