@@ -1,0 +1,52 @@
+// Requirement: D-22 — composition root wiring the ModelContainer + services into the Environment.
+//
+// `AppDependencies` is the single place that constructs the SwiftData `ModelContainer` (via
+// `makeModelContainer()`, behind the SyncMode flag) and the `ConsentStore`, and exposes them for
+// injection into the SwiftUI Environment. Later phases add more services here (sync, insights,
+// HealthKit import) without touching the views.
+//
+// The consent store is exposed through a custom `EnvironmentKey` (`\.consentStore`) so `AppGate`
+// can read it; the model container is injected via SwiftUI's built-in `.modelContainer(_:)`.
+import SwiftUI
+import SwiftData
+
+/// The app's composition root (D-22). Built once at launch by `EndoAppApp`.
+@MainActor
+final class AppDependencies {
+    /// The SwiftData container (local-only `.none` in Phase 1, behind the SyncMode flag).
+    let modelContainer: ModelContainer
+    /// The consent gate's persistence seam (ONBD-01). Concrete UserDefaults-backed impl.
+    let consentStore: UserDefaultsConsentStore
+
+    init() {
+        do {
+            self.modelContainer = try makeModelContainer()
+        } catch {
+            // A failed local store at launch is unrecoverable for the walking skeleton; surface it
+            // loudly rather than limp along with no persistence.
+            fatalError("Failed to build the local ModelContainer: \(error)")
+        }
+        self.consentStore = UserDefaultsConsentStore()
+    }
+}
+
+// MARK: - Environment injection
+
+/// Environment key carrying the app's `ConsentStore` (D-22 injection seam).
+private struct ConsentStoreKey: EnvironmentKey {
+    // Default is a fresh UserDefaults-backed store so previews/tests have a sane value. The store is
+    // `@MainActor`-isolated; SwiftUI only ever reads environment values on the main actor, so
+    // constructing the default under `assumeIsolated` is safe and satisfies the nonisolated
+    // `EnvironmentKey.defaultValue` requirement under Swift 6.
+    static var defaultValue: any ConsentStore {
+        MainActor.assumeIsolated { UserDefaultsConsentStore() }
+    }
+}
+
+extension EnvironmentValues {
+    /// The injected consent store the gate routes on (ONBD-01).
+    var consentStore: any ConsentStore {
+        get { self[ConsentStoreKey.self] }
+        set { self[ConsentStoreKey.self] = newValue }
+    }
+}
