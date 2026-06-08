@@ -18,12 +18,20 @@ options:
 settings:
   SWIFT_VERSION: "6.0"
   IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+# Phase 5 (D-09): the Foundation-only local SPM package. Its Package.swift declares ZERO
+# dependencies — the compiler/linker is the SC1 boundary (no SwiftData/SwiftUI can sneak in).
+packages:
+  EndoInsights:
+    path: EndoInsights
 targets:
   EndoApp:
     type: application
     platform: iOS
     sources:
       - Sources/EndoApp
+    dependencies:
+      # App depends on the package library product (product defaults to the package name).
+      - package: EndoInsights
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.endoapp.ios   # D-09 placeholder, flagged to finalize
       INFOPLIST_FILE: Sources/EndoApp/Resources/Info.plist
@@ -35,6 +43,9 @@ targets:
       testTargets:
         - EndoAppTests
         - EndoAppUITests
+        # THE KEY LINE (Phase 5 SC3) — run the package's Swift Testing tests in the app scheme.
+        # Syntax: package: <local-package-name>/<test-target-name> (XcodeGen >= 2.27.0; installed 2.45.4).
+        - package: EndoInsights/EndoInsightsTests
   EndoAppTests:
     type: bundle.unit-test
     platform: iOS
