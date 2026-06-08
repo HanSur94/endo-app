@@ -40,6 +40,7 @@ struct OnboardingView: View {
 
                     // ONBD-02 / D-05 — the disclaimer is visible before the consent action.
                     DisclaimerBanner()
+                        .accessibilityIdentifier("onboarding.disclaimer")
 
                     // ONBD-04 — privacy reachable before consent.
                     Button {
@@ -48,6 +49,7 @@ struct OnboardingView: View {
                         Label("Read how your data stays private", systemImage: "lock.shield")
                             .font(.subheadline)
                     }
+                    .accessibilityIdentifier("onboarding.privacyLink")
 
                     // Final step: the explicit consent action (ONBD-01, D-02).
                     ConsentView()

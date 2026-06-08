@@ -50,6 +50,7 @@ struct SettingsView: View {
                     } label: {
                         Text("Withdraw consent")
                     }
+                    .accessibilityIdentifier("settings.withdrawButton")
                 } footer: {
                     Text(
                         "Withdrawing your consent returns the app to the welcome screen and stops "

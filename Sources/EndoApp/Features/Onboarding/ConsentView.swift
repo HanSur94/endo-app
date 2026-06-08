@@ -30,6 +30,7 @@ struct ConsentView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .accessibilityIdentifier("consent.grantButton")
         }
         .padding()
     }

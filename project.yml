@@ -29,6 +29,7 @@ targets:
     scheme:
       testTargets:
         - EndoAppTests
+        - EndoAppUITests
   EndoAppTests:
     type: bundle.unit-test
     platform: iOS
@@ -36,5 +37,14 @@ targets:
       - Tests/EndoAppTests
     settings:
       GENERATE_INFOPLIST_FILE: YES   # unit-test bundle has no hand-written Info.plist; let Xcode synthesize one
+    dependencies:
+      - target: EndoApp
+  EndoAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Tests/EndoAppUITests
+    settings:
+      GENERATE_INFOPLIST_FILE: YES   # UI-test bundle has no hand-written Info.plist; let Xcode synthesize one
     dependencies:
       - target: EndoApp

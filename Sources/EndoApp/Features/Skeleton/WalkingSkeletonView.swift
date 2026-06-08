@@ -18,6 +18,7 @@ struct WalkingSkeletonView: View {
             VStack(spacing: 16) {
                 Text("\(entries.count) day(s) logged")
                     .font(.headline)
+                    .accessibilityIdentifier("skeleton.countLabel")
 
                 if let latest = entries.first, let note = latest.note {
                     Text("Latest: \(note)")
@@ -27,6 +28,7 @@ struct WalkingSkeletonView: View {
 
                 Button("Log a day", action: logADay)
                     .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("skeleton.logButton")
 
                 List(entries) { entry in
                     Text(entry.date, style: .date)
@@ -43,6 +45,7 @@ struct WalkingSkeletonView: View {
                         Image(systemName: "gearshape")
                     }
                     .accessibilityLabel("Settings")
+                    .accessibilityIdentifier("skeleton.settingsButton")
                 }
             }
         }

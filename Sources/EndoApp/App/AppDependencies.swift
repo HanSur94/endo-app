@@ -22,8 +22,18 @@ final class AppDependencies {
     let terminologyStore: TerminologyStore
 
     init() {
+        // Test-only, launch-arg-guarded deterministic reset (used by EndoAppUITests). When the
+        // `-uitest-reset` argument is present we (a) clear the persisted consent flag so every UI
+        // run starts at the consent gate, and (b) build the SwiftData store in-memory so no entries
+        // leak between runs. This branch is unreachable in normal app launches, so it cannot change
+        // production behavior.
+        let uiTestReset = ProcessInfo.processInfo.arguments.contains("-uitest-reset")
+        if uiTestReset {
+            UserDefaults.standard.removeObject(forKey: "consent.grantedAt")
+        }
+
         do {
-            self.modelContainer = try makeModelContainer()
+            self.modelContainer = try makeModelContainer(inMemory: uiTestReset)
         } catch {
             // A failed local store at launch is unrecoverable for the walking skeleton; surface it
             // loudly rather than limp along with no persistence.
