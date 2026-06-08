@@ -38,24 +38,44 @@ final class AppDependencies {
             // The expected path on a healthy or migratable store is success. A failure here means the
             // on-disk store could not be opened/migrated at all (e.g. a corrupt or pre-versioning
             // store left by an interrupted run, or an irrecoverable migration error — SwiftData
-            // error 134504 "unknown model version"). Rather than hard-crash every launch (which would
-            // permanently brick the app for that user), fall back to a fresh in-memory store so the
-            // app stays usable. Local-only this phase, so no synced data is at stake; the user's
-            // local rows are not silently rewritten — the unreadable file is simply not used.
+            // error 134504 "unknown model version"). We must NEVER hard-crash here: an
+            // `assertionFailure` traps in DEBUG builds and would brick the app for that user — the
+            // very crash this fallback is meant to prevent. Instead, recover: first discard the
+            // unreadable on-disk store and recreate a FRESH on-disk store (so logging still
+            // persists), and only as a last resort fall back to in-memory.
             //
-            // NOTE: do NOT log `error` verbatim if it could carry health values; SwiftDataError here
-            // describes the store/migration, not record contents, so the type name is safe to surface.
-            assertionFailure("Local ModelContainer failed to open (\(type(of: error))); "
-                             + "falling back to in-memory. \(error)")
+            // NOTE: only the error TYPE is logged (never `error` verbatim) — SwiftDataError describes
+            // the store/migration, not record contents, so no health values are surfaced.
+            print("⚠️ Endo-App: local ModelContainer failed to open (\(type(of: error))); recovering.")
+            Self.discardUnreadableDefaultStore()
             do {
-                self.modelContainer = try makeModelContainer(inMemory: true)
+                // Retry on-disk against a clean store so future data still persists across launches.
+                self.modelContainer = try makeModelContainer(inMemory: uiTestReset)
             } catch {
-                // An in-memory container should never fail; if it does the schema itself is invalid.
-                fatalError("Failed to build even an in-memory ModelContainer: \(error)")
+                print("⚠️ Endo-App: on-disk recovery failed (\(type(of: error))); using in-memory store.")
+                do {
+                    self.modelContainer = try makeModelContainer(inMemory: true)
+                } catch {
+                    // An in-memory container should never fail; if it does the schema itself is invalid.
+                    fatalError("Failed to build even an in-memory ModelContainer: \(type(of: error))")
+                }
             }
         }
         self.consentStore = UserDefaultsConsentStore()
         self.terminologyStore = TerminologyStore()
+    }
+
+    /// Recovery helper (D-22 resilience): delete an unreadable default SwiftData store (and its
+    /// WAL/SHM sidecars) so a fresh on-disk store can be created after an unrecoverable open/migration
+    /// failure. Local-only this phase, so no synced data is at risk and the file being removed is
+    /// already unopenable. Best-effort — failures are ignored.
+    private static func discardUnreadableDefaultStore() {
+        let fm = FileManager.default
+        guard let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
+                                           appropriateFor: nil, create: false) else { return }
+        for name in ["default.store", "default.store-shm", "default.store-wal"] {
+            try? fm.removeItem(at: appSupport.appending(path: name))
+        }
     }
 }
 
