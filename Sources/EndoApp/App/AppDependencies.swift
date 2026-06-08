@@ -67,13 +67,32 @@ final class AppDependencies {
             //
             // NOTE: only the error TYPE is logged (never `error` verbatim) — SwiftDataError describes
             // the store/migration, not record contents, so no health values are surfaced.
-            print("⚠️ Endo-App: local ModelContainer failed to open (\(type(of: error))); recovering.")
-            Self.discardUnreadableDefaultStore()
-            do {
-                // Retry on-disk against a clean store so future data still persists across launches.
-                self.modelContainer = try makeModelContainer(syncMode: syncMode, inMemory: uiTestReset)
-            } catch {
-                print("⚠️ Endo-App: on-disk recovery failed (\(type(of: error))); using in-memory store.")
+            print("⚠️ Endo-App: \(syncMode) ModelContainer failed to open (\(type(of: error))); recovering.")
+            // Destructive store deletion is SAFE only on the local-only path: there is no synced copy,
+            // so a fresh on-disk store loses nothing the user could recover elsewhere. On the `.cloudKit`
+            // path the failing store may be MID-SYNC, so we must NOT silently wipe it (data not yet
+            // pushed to iCloud would be lost). `discardUnreadableStore` returns whether it actually
+            // removed the store; we only retry on-disk when a clean store was established, otherwise we
+            // skip straight to (and SURFACE) the in-memory fallback so we never loop on the same corrupt
+            // store nor pretend the cloud store recovered.
+            let cleared = Self.discardUnreadableStore(syncMode: syncMode, inMemory: uiTestReset)
+            var recovered: ModelContainer?
+            if cleared {
+                do {
+                    // Retry on-disk against the now-clean store so future data still persists across launches.
+                    recovered = try makeModelContainer(syncMode: syncMode, inMemory: uiTestReset)
+                } catch {
+                    print("⚠️ Endo-App: on-disk recovery failed (\(type(of: error))); using in-memory store.")
+                }
+            } else {
+                // `.cloudKit` failure with no safe wipe — surface it loudly. The in-memory fallback keeps
+                // the app usable this launch WITHOUT touching the possibly-mid-sync on-disk store; on the
+                // next launch a healed iCloud/store state can open normally.
+                print("⚠️ Endo-App: \(syncMode) store not safely recoverable on disk (left intact); using in-memory store this launch.")
+            }
+            if let recovered {
+                self.modelContainer = recovered
+            } else {
                 do {
                     self.modelContainer = try makeModelContainer(syncMode: syncMode, inMemory: true)
                 } catch {
@@ -88,17 +107,44 @@ final class AppDependencies {
         self.checkInRouter = CheckInRouter()
     }
 
-    /// Recovery helper (D-22 resilience): delete an unreadable default SwiftData store (and its
-    /// WAL/SHM sidecars) so a fresh on-disk store can be created after an unrecoverable open/migration
-    /// failure. Local-only this phase, so no synced data is at risk and the file being removed is
-    /// already unopenable. Best-effort — failures are ignored.
-    private static func discardUnreadableDefaultStore() {
+    /// Recovery helper (D-22 resilience): delete an unreadable SwiftData store (and its WAL/SHM
+    /// sidecars) so a fresh on-disk store can be created after an unrecoverable open/migration failure.
+    ///
+    /// PHASE 4 SAFETY (WR-02): CloudKit private-database sync is now live, so this can run on a
+    /// `.cloudKit`-mode failure where the on-disk store may be MID-SYNC. Wiping such a store could
+    /// drop data not yet pushed to iCloud, so the destructive removal is gated to `.localOnly` ONLY —
+    /// the path with no synced copy, where a fresh store loses nothing recoverable elsewhere. On the
+    /// `.cloudKit` path we leave the store intact and return `false` so the caller surfaces the failure
+    /// and uses an in-memory store this launch instead of silently looping on the corrupt store.
+    ///
+    /// The store filename is DISCOVERED from a `ModelConfiguration` (matching whatever URL SwiftData
+    /// actually uses) rather than hardcoding `default.store`, which would silently miss a relocated or
+    /// CloudKit-mirrored store. Best-effort — file-removal failures are ignored.
+    ///
+    /// - Returns: `true` when a store was (or could be) cleared so an on-disk retry is worthwhile;
+    ///   `false` when removal was deliberately skipped (`.cloudKit`) and the caller must fall back.
+    static func discardUnreadableStore(syncMode: SyncMode, inMemory: Bool) -> Bool {
+        // Never delete anything for an in-memory (UI-test) store — there is no on-disk file to clear.
+        guard !inMemory else { return false }
+        // Only `.localOnly` may be safely wiped; a `.cloudKit` store may be mid-sync (data not yet
+        // uploaded), so leave it intact and signal the caller to fall back to in-memory.
+        guard syncMode == .localOnly else { return false }
+
         let fm = FileManager.default
-        guard let appSupport = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
-                                           appropriateFor: nil, create: false) else { return }
-        for name in ["default.store", "default.store-shm", "default.store-wal"] {
-            try? fm.removeItem(at: appSupport.appending(path: name))
+        // Discover the actual on-disk store URL SwiftData would use for this schema/config, instead of
+        // assuming `default.store`. The local-only configuration mirrors `makeModelContainer`'s `.none`
+        // path so the resolved URL matches the store that just failed to open.
+        let schema = Schema(versionedSchema: SchemaV3.self)
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false,
+                                               cloudKitDatabase: .none)
+        let storeURL = configuration.url
+        // Remove the store plus its SQLite WAL/SHM sidecars (same basename, suffixed).
+        for suffix in ["", "-shm", "-wal"] {
+            let sidecar = storeURL.deletingLastPathComponent()
+                .appending(path: storeURL.lastPathComponent + suffix)
+            try? fm.removeItem(at: sidecar)
         }
+        return true
     }
 }
 
