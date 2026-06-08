@@ -185,7 +185,7 @@ Plans:
 **Wave 1**
 
 - [x] 06-01-PLAN.md — Insight.signalKey + CyclePhaseMapper/CyclePhase (estimated phases, no phantom; INST-02) [Wave 1] — DONE 2026-06-08 (signalKey surfaced additively; CyclePhaseMapper Foundation-only with suppressed/<2-cycle/irregular gates -> []; confidence caps at .medium; 28 package tests green)
-- [ ] 06-03-PLAN.md — DismissedInsight @Model + SchemaV4 + V3→V4 migration + Repository dismissal CRUD (INST-04) [Wave 1]
+- [x] 06-03-PLAN.md — DismissedInsight @Model + SchemaV4 + V3→V4 migration + Repository dismissal CRUD (INST-04) [Wave 1] — DONE 2026-06-08 (CloudKit-safe DismissedInsight signalKey+timestamp only; additive SchemaV4 + lightweight v3toV4; consent-gated append-only dismissInsight + dedupe-on-read dismissedSignalKeys; V3→V4 survival + round-trip tests green, full suite 115+28 green)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -291,7 +291,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 4/4 | Complete   | 2026-06-08 |
 | 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
 | 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
-| 6. Cycle-Phase Mapping + Insight-Honesty Layer | 1/3 | In progress | - |
+| 6. Cycle-Phase Mapping + Insight-Honesty Layer | 2/3 | In progress | - |
 | 7. Correlation & Trigger Discovery | 0/TBD | Not started | - |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
 | 9. HealthKit Import | 0/TBD | Not started | - |
