@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundations — Schema, Privacy Posture & Claims Policy** - Lock the irreversible decisions: CloudKit-safe schema, GDPR consent, privacy/claims/inclusive policy, App Store de-risk (completed 2026-06-08)
 - [x] **Phase 2: Core Symptom & Cycle/Bleeding Logging** - Endo-credible symptom + body-map logging and an irregular/suppression-tolerant bleeding & cycle model (completed 2026-06-08)
 - [x] **Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders** - Contextual factor logging plus a fast daily check-in and fatigue-aware reminders (completed 2026-06-08)
-- [ ] **Phase 4: Private CloudKit Sync** - Cross-device private iCloud sync that survives offline/reinstall and truly purges on delete
+- [x] **Phase 4: Private CloudKit Sync** - Cross-device private iCloud sync that survives offline/reinstall and truly purges on delete (completed 2026-06-08)
 - [ ] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures
 - [ ] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
 - [ ] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors
@@ -157,7 +157,16 @@ Plans:
   2. The engine produces descriptive trends of symptoms and factors over time, anchored on absolute calendar dates (not assumed cycle phase).
   3. The engine's trend logic is covered by Swift Testing against synthetic fixtures, including a "suppressed, no bleeding for months" fixture, with no simulator/iCloud dependency.
 
-**Plans**: TBD
+**Plans**: 3 plans, 2 waves
+
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — De-risk first: package-test-in-scheme SMOKE (create Foundation-only EndoInsights local SPM package + wire project.yml packages/dependency/scheme test target; prove the @Test runs + suite green; framework-target fallback) + the value contract (DaySnapshot + SymptomPoint/PainPoint + Insight + Kind/Window/Confidence/Point + package-local snapshot enums, Option D). Deterministic Insight.id. (SC1)
+
+**Wave 2** *(blocked on 05-01; the two plans are file-disjoint and run in parallel)*
+
+- [ ] 05-02-PLAN.md — Pure TrendsEngine.trends(from:asOf:) (TDD): 7/30/90/all-time windows on absolute calendar dates, per-symptom/per-factor descriptive stats + direction, min-data threshold, suppressed/no-bleeding SC3 gate, absence≠0 honesty, deterministic Equatable outputs + synthetic fixtures + D-12 boundary lint (INST-01, SC2, SC3)
+- [ ] 05-03-PLAN.md — App-side Repository.daySnapshots() store→[DaySnapshot] mapping (TDD): consent-gated, mirrors factorDays/bleedingDays, app-enum→package-enum boundary (Option D) with a parity guard + honesty (nil≠0, flow nil w/o bleeding, suppressed propagates) — in-memory ModelContainer mapping tests (keeps SwiftData out of the package, SC1)
 
 ### Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer
 
@@ -272,8 +281,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
 | 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 4/4 | Complete   | 2026-06-08 |
-| 4. Private CloudKit Sync | 3/3 | Plans complete — device DATA-02/03/04 human-gated (04-HUMAN-UAT) | - |
-| 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |
+| 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
+| 5. Snapshot Contract + Descriptive Trends Engine | 0/3 | Planned | - |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 0/TBD | Not started | - |
 | 7. Correlation & Trigger Discovery | 0/TBD | Not started | - |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
