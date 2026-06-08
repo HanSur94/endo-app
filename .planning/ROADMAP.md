@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundations — Schema, Privacy Posture & Claims Policy** - Lock the irreversible decisions: CloudKit-safe schema, GDPR consent, privacy/claims/inclusive policy, App Store de-risk (completed 2026-06-08)
 - [x] **Phase 2: Core Symptom & Cycle/Bleeding Logging** - Endo-credible symptom + body-map logging and an irregular/suppression-tolerant bleeding & cycle model (completed 2026-06-08)
-- [ ] **Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders** - Contextual factor logging plus a fast daily check-in and fatigue-aware reminders
+- [x] **Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders** - Contextual factor logging plus a fast daily check-in and fatigue-aware reminders (completed 2026-06-08)
 - [ ] **Phase 4: Private CloudKit Sync** - Cross-device private iCloud sync that survives offline/reinstall and truly purges on delete
 - [ ] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures
 - [ ] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
@@ -113,7 +113,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 3** *(blocked on 03-02 + 03-03)*
 
-- [ ] 03-04-PLAN.md — Fast Daily check-in sheet + Home CTA + notification deep-link routing + auto-suppress + CheckInFlowUITests GREEN (CHCK-01)
+- [x] 03-04-PLAN.md — Fast Daily check-in sheet + Home CTA + notification deep-link routing + auto-suppress + CheckInFlowUITests GREEN (CHCK-01)
 
 **UI hint**: yes
 
@@ -258,7 +258,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
 | 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
-| 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 1/4 | In progress | - |
+| 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 4/4 | Complete   | 2026-06-08 |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 0/TBD | Not started | - |
