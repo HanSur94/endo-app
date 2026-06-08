@@ -206,13 +206,46 @@ struct DaySnapshotMappingTests {
     @Test func unknownRaws_decodeDefensively_noCrash() throws {
         let (repo, ctx) = try makeRepo()
         let anchor = Calendar.current.startOfDay(for: day0)
-        ctx.insert(SchemaV1.SymptomReading(occurredOn: anchor, typeRaw: "not-a-real-symptom", severity: 2))
+        // A factor with an unknown value sinks to .other (a present-but-uncategorized factor is real);
+        // an unknown SYMPTOM type is DROPPED (see unknownSymptomType_isDropped_notFabricatedAsOther).
+        // Log a known symptom alongside so a snapshot exists for the day.
+        try repo.upsertSymptom(type: .fatigue, severity: 3, on: anchor)
         ctx.insert(SchemaV1.FactorReading(occurredOn: anchor, kindRaw: FactorKind.food.rawValue, valueRaw: "not-a-real-tag"))
         try ctx.save()
 
         let snap = try #require(try repo.daySnapshots().first)
-        #expect(snap.symptoms.first?.type == EndoInsights.SymptomType.other, "Unknown symptom decodes to .other.")
         #expect(snap.foodTags == [EndoInsights.FoodTag.other], "Unknown food tag decodes to .other.")
+    }
+
+    // WR-01: a symptom row whose typeRaw is unknown/undecodable is DROPPED, NOT fabricated as a real
+    // `.other` symptom (mirrors the pain-point unknown-region drop). Never invent a symptom signal.
+    @Test func unknownSymptomType_isDropped_notFabricatedAsOther() throws {
+        let (repo, ctx) = try makeRepo()
+        let anchor = Calendar.current.startOfDay(for: day0)
+        // One undecodable-type row + one valid symptom on the same day.
+        ctx.insert(SchemaV1.SymptomReading(occurredOn: anchor, typeRaw: "not-a-real-symptom", severity: 2))
+        ctx.insert(SchemaV1.SymptomReading(occurredOn: anchor, typeRaw: EndoApp.SymptomType.fatigue.rawValue, severity: 4))
+        try ctx.save()
+
+        let snap = try #require(try repo.daySnapshots().first)
+        #expect(snap.symptoms.count == 1, "The undecodable-type symptom row is dropped; the valid one survives.")
+        #expect(snap.symptoms.first?.type == EndoInsights.SymptomType.fatigue)
+        #expect(!snap.symptoms.contains { $0.type == .other },
+                "An unknown typeRaw must NEVER be coerced to a fabricated .other symptom (WR-01).")
+    }
+
+    // WR-01: a symptom row with a nil typeRaw (e.g. a future note-only/partial CloudKit row) is DROPPED,
+    // never materialized as a real `.other` symptom point.
+    @Test func nilSymptomType_isDropped_notFabricatedAsOther() throws {
+        let (repo, ctx) = try makeRepo()
+        let anchor = Calendar.current.startOfDay(for: day0)
+        ctx.insert(SchemaV1.SymptomReading(occurredOn: anchor, typeRaw: nil, severity: 2))
+        // Keep the day alive with an unrelated signal.
+        try repo.setStress(3, on: anchor)
+        try ctx.save()
+
+        let snap = try #require(try repo.daySnapshots().first)
+        #expect(snap.symptoms.isEmpty, "A nil-typeRaw symptom row is dropped, not fabricated as .other (WR-01).")
     }
 
     // MARK: - Option-D enum parity (no drift)

@@ -553,9 +553,13 @@ struct SwiftDataRepository: Repository {
         hasNote: Bool,
         suppressed: Bool
     ) -> DaySnapshot {
-        // Symptoms → package SymptomPoint (unknown raw → .other; nil severity stays nil, ≠ 0).
-        let symptomPoints = symptoms.map {
-            SymptomPoint(type: EndoInsights.SymptomType(raw: $0.typeRaw), severity: $0.severity)
+        // Symptoms → package SymptomPoint. A row whose typeRaw is nil/undecodable is DROPPED (never
+        // coerced to a real .other), mirroring the pain-point defensive decode below — so a corrupt or
+        // future note-only symptom row can NEVER fabricate an "Other symptom" signal (honesty: WR-01).
+        // nil severity stays nil (≠ 0).
+        let symptomPoints: [SymptomPoint] = symptoms.compactMap { r in
+            guard let raw = r.typeRaw, let type = EndoInsights.SymptomType(rawValue: raw) else { return nil }
+            return SymptomPoint(type: type, severity: r.severity)
         }
 
         // Pain → fully-qualified EndoInsights.PainPoint (name-clash with SchemaV1.PainPoint @Model).
