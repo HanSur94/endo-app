@@ -70,8 +70,22 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A user on continuous hormonal treatment can switch on a "suppressed / no cycle" mode and the app stays fully useful, showing no phantom cycle phase.
   5. When a cycle exists, cycle-day appears as a derived/optional value with a confidence indicator and never assumes a 28-day cycle; predictions degrade gracefully for irregular data.
 
-**Plans**: TBD
+**Plans**: 4 plans, 3 waves
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Nyquist Wave 0 (failing E2E + RED unit suites) + additive SchemaV2 (SymptomReading/PainPoint/BleedingEvent+clots) + lightweight V1→V2 migration w/ data-survival test + pure Domain enums (SYMP-01, CYCL-01 at persistence level)
+
+**Wave 2** *(blocked on 02-01; the two plans are file-disjoint and run in parallel)*
+
+- [ ] 02-02-PLAN.md — Day-log editor vertical slice: real HomeView (replaces WalkingSkeletonView) + DayLogEditorView (symptom multi-select + severity + bleeding + note) + extended Repository (SYMP-01/03, CYCL-01 GREEN end-to-end)
+- [ ] 02-03-PLAN.md — Pure value-type CycleMath + CycleSummary (derived median, range+confidence, suppressed-emits-nothing, sparse-not-enough; never 28) with regular/irregular/suppressed/sparse fixtures (CYCL-02/03/04 at logic level)
+
+**Wave 3** *(blocked on 02-02 + 02-03)*
+
+- [ ] 02-04-PLAN.md — Accessible discrete-region body map (SYMP-02) + edit/delete with cascade (SYMP-04) + suppressed-mode toggle + home CycleSummaryView wired to CycleMath + copy audit + full E2E GREEN (CYCL-02/03/04 surfaced)
+
 **UI hint**: yes
+**Validation**: 02-VALIDATION.md (Nyquist — every req mapped to a Swift Testing suite + the extended XCUITest E2E)
 
 ### Phase 3: Lifestyle Logging + Fast Daily Check-in & Reminders
 
@@ -229,7 +243,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
-| 2. Core Symptom & Cycle/Bleeding Logging | 0/TBD | Not started | - |
+| 2. Core Symptom & Cycle/Bleeding Logging | 0/4 | Planned | - |
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/TBD | Not started | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |
