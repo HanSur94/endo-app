@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Truthful Privacy Manifest (T-01-01 mitigation, RESEARCH §Security Domain).
+  - NSPrivacyTracking: false           (the app does no tracking)
+  - NSPrivacyTrackingDomains: empty    (no tracking domains)
+  - NSPrivacyCollectedDataTypes: empty (the app collects nothing off-device)
+  - NSPrivacyAccessedAPITypes: one entry — UserDefaults with required-reason CA92.1
+    (the app reads/writes only its own consent + terminology flags).
+  Revisit in Phase 4 when CloudKit sync flips on (declare the CloudKit reason; reconfirm
+  empty collected-types is still truthful — private CloudKit is the user's own iCloud, not collection).
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPITypeUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

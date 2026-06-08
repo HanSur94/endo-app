@@ -1,0 +1,14 @@
+# XcodeGen regenerates the .xcodeproj from project.yml — never commit it (ios-scaffold.md / D-12).
+*.xcodeproj
+
+# macOS / Xcode build artifacts
+.DS_Store
+xcuserdata/
+DerivedData/
+build/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+.swiftpm/
