@@ -1,9 +1,9 @@
 // Requirement: ONBD-03 — inclusive, non-assumptive language with optional terminology customization.
-// State: RED (Wave 0). Turned GREEN by Plan 02 when Terminology + TerminologyPreference exist.
+// State: GREEN (Plan 03). `Terminology` + `TerminologyPreference` now exist.
 //
-// These tests intentionally FAIL now: the Terminology lookup and TerminologyPreference value type
-// do not exist yet. Each real assertion is kept compiling behind a `#expect(Bool(false), ...)` RED
-// placeholder; Plan 02 implements the neutral-default lookup (D-06/07/08) all copy resolves through.
+// These tests prove: neutral defaults ("bleeding"/"cycle"), bleeding-term customization, and — the
+// enforceable copy-audit choke-point — that NO default resolved string contains a gendered token
+// from `ClaimsPolicy.forbiddenGenderedTokens`.
 import Testing
 import Foundation
 @testable import EndoApp
@@ -13,23 +13,32 @@ struct TerminologyTests {
 
     // (a) Default Terminology returns neutral "bleeding"/"cycle".
     @Test func defaults_areNeutral() async throws {
-        // RED until Plan 02:
-        //   let t = Terminology(preference: .init())
-        //   #expect(t.bleedingNoun == "bleeding")
-        //   #expect(t.cycleNoun == "cycle")
-        #expect(Bool(false), "RED — implement neutral terminology defaults in Plan 02")
+        let t = Terminology(preference: .init())
+        #expect(t.bleedingNoun == "bleeding")
+        #expect(t.cycleNoun == "cycle")
     }
 
     // (b) Setting bleedingTerm = .period changes the resolved copy.
     @Test func customizingBleedingTerm_changesResolvedCopy() async throws {
-        // RED until Plan 02: var pref = TerminologyPreference(); pref.bleedingTerm = .period
-        //   let t = Terminology(preference: pref); #expect(t.bleedingNoun == "period")
-        #expect(Bool(false), "RED — implement bleeding-term customization in Plan 02")
+        var pref = TerminologyPreference()
+        pref.bleedingTerm = .period
+        let t = Terminology(preference: pref)
+        #expect(t.bleedingNoun == "period")
+        // The cycle noun stays neutral regardless of the bleeding term.
+        #expect(t.cycleNoun == "cycle")
     }
 
     // (c) No default string equals a gendered token ("she"/"women"/"lady") — copy-audit choke-point.
     @Test func defaults_containNoGenderedTokens() async throws {
-        // RED until Plan 02: assert the resolved default strings contain none of "she"/"women"/"lady".
-        #expect(Bool(false), "RED — implement gendered-token audit in Plan 02")
+        let t = Terminology(preference: .init())
+        // Audit every default string this lookup can produce against the forbidden set.
+        for string in t.auditableDefaultStrings {
+            for token in ClaimsPolicy.forbiddenGenderedTokens {
+                #expect(
+                    !string.localizedCaseInsensitiveContains(token),
+                    "Default terminology string \"\(string)\" must not contain gendered token \"\(token)\""
+                )
+            }
+        }
     }
 }
