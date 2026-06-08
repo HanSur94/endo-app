@@ -41,7 +41,9 @@ protocol NotificationScheduler {
     func authorizationStatus() async -> UNAuthorizationStatus
     /// Replace all pending daily reminders with one repeating request per non-quiet time (D-19a).
     func reschedule(times: [DateComponents], quietHours: QuietHours?) async
-    /// Cancel today's pending reminder once the day is logged (auto-suppress, D-19b).
+    /// Suppress TODAY's reminder once the day is logged (auto-suppress, D-19b). Records a date marker
+    /// the delegate consults at delivery — the REPEATING registration is left intact so it fires again
+    /// tomorrow (CR-01: never remove the repeating request, which would delete it permanently).
     func cancelToday() async
     /// Cancel every pending reminder (e.g. the master toggle turned off).
     func cancelAll() async
@@ -107,12 +109,53 @@ private func minutesOfDay(_ components: DateComponents) -> Int {
     (components.hour ?? 0) * 60 + (components.minute ?? 0)
 }
 
+// MARK: - Today-suppression marker (D-19b — suppress today WITHOUT killing the repeating registration)
+//
+// CR-01: removing a pending `UNCalendarNotificationTrigger(repeats: true)` deletes it FOREVER — there
+// is no per-occurrence cancellation in `UNUserNotificationCenter`. To "suppress today only" we instead
+// record today's date in a tiny UserDefaults marker and consult it at DELIVERY time (`willPresent`),
+// dropping today's banner via `shouldFireToday(...)`. The repeating trigger stays registered, so it
+// fires again tomorrow on its own. The marker is a non-sensitive local date stamp (NOT a health
+// record) and lives in UserDefaults alongside `ReminderSettings`, never in the synced store.
+
+/// A UserDefaults-backed marker of the last calendar day the user completed a check-in. Read at
+/// notification delivery to suppress today's reminder; never written to the synced/health store.
+struct ReminderSuppressionStore: Sendable {
+    private let defaults: UserDefaults
+    private let key = "reminders.lastLoggedDay"   // device-pref namespace (mirrors ReminderSettings)
+
+    init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+
+    /// The last day a check-in was recorded, or `nil` if never (or never suppressed yet).
+    var lastLoggedDay: Date? {
+        get {
+            let raw = defaults.double(forKey: key)
+            return raw == 0 ? nil : Date(timeIntervalSince1970: raw)
+        }
+        nonmutating set {
+            if let newValue {
+                defaults.set(newValue.timeIntervalSince1970, forKey: key)
+            } else {
+                defaults.removeObject(forKey: key)
+            }
+        }
+    }
+
+    /// Whether a reminder delivered `now` should be presented (false ⇒ suppress today's banner).
+    func shouldPresent(now: Date = .now) -> Bool {
+        shouldFireToday(lastLoggedDay: lastLoggedDay, now: now)
+    }
+}
+
 // MARK: - System implementation (the thin, untested shell)
 
 /// Concrete `NotificationScheduler` over `UNUserNotificationCenter.current()`. The pure decisions
 /// above keep this layer thin: it only translates decisions into UN requests.
 struct SystemNotificationScheduler: NotificationScheduler {
     private var center: UNUserNotificationCenter { .current() }
+    /// The today-suppression marker (CR-01). `cancelToday()` stamps it; the delegate reads it at
+    /// delivery to drop today's banner without deleting the repeating registration.
+    private let suppressionStore = ReminderSuppressionStore()
 
     func requestAuthorization() async -> Bool {
         (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
@@ -142,12 +185,16 @@ struct SystemNotificationScheduler: NotificationScheduler {
     }
 
     func cancelToday() async {
-        // The repeating requests are keyed by stable ids; "today" is handled by cancelling the
-        // pending deliveries — for a single-fire-per-day repeating trigger this prevents today's
-        // nag once the day is logged (D-19b). A full reschedule re-arms tomorrow.
-        let pending = await center.pendingNotificationRequests()
-        let ids = pending.map(\.identifier).filter { $0.hasPrefix(reminderIdentifierPrefix) }
-        center.removePendingNotificationRequests(withIdentifiers: ids)
+        // CR-01: do NOT removePendingNotificationRequests here — those are REPEATING
+        // `UNCalendarNotificationTrigger`s, and removing one deletes it forever (no per-occurrence
+        // cancel exists). Instead record today's date so the delegate's `willPresent` drops today's
+        // banner via `shouldFireToday(...)` while the repeating registration stays intact and fires
+        // again tomorrow on its own (D-19b). Also clear any reminder ALREADY delivered today so a
+        // banner sitting in Notification Center is dismissed once the day is logged.
+        suppressionStore.lastLoggedDay = Date()
+        let delivered = await center.deliveredNotifications()
+        let ids = delivered.map(\.request.identifier).filter { $0.hasPrefix(reminderIdentifierPrefix) }
+        center.removeDeliveredNotifications(withIdentifiers: ids)
     }
 
     func cancelAll() async {

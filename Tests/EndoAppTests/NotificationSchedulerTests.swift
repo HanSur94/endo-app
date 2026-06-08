@@ -55,6 +55,44 @@ struct NotificationSchedulerTests {
         #expect(shouldFireToday(lastLoggedDay: nil, now: now))
     }
 
+    // CR-01: the today-suppression mechanism must SUPPRESS today WITHOUT deleting the repeating
+    // registration. We can't drive the real UNUserNotificationCenter in a unit test, so we assert the
+    // delivery-time decision the delegate makes: once `cancelToday()` stamps today's marker, a reminder
+    // delivered today is suppressed, but the repeating registration is untouched (the scheduler never
+    // calls `removePendingNotificationRequests`), so TOMORROW still presents.
+    @Test func suppressionStore_suppressesToday_butFiresTomorrow() {
+        let defaults = UserDefaults(suiteName: "test.reminders.\(UUID().uuidString)")!
+        let store = ReminderSuppressionStore(defaults: defaults)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+
+        // Before any check-in: a reminder presents normally.
+        #expect(store.shouldPresent(now: now), "With no logged day, today's reminder must present.")
+
+        // After logging today (what cancelToday() records): today's banner is suppressed…
+        store.lastLoggedDay = now
+        #expect(!store.shouldPresent(now: now), "A day already logged must suppress today's reminder (D-19b).")
+
+        // …but tomorrow's occurrence still presents — the repeating registration was never removed.
+        let tomorrow = now.addingTimeInterval(86_400)
+        #expect(store.shouldPresent(now: tomorrow),
+                "Tomorrow's reminder must still fire — cancelToday() must NOT delete the repeating registration (CR-01).")
+    }
+
+    // CR-01: the suppression marker round-trips through UserDefaults (it's a local date stamp, not a
+    // health record) and clears back to nil.
+    @Test func suppressionStore_marker_roundTripsAndClears() {
+        let defaults = UserDefaults(suiteName: "test.reminders.\(UUID().uuidString)")!
+        let store = ReminderSuppressionStore(defaults: defaults)
+        #expect(store.lastLoggedDay == nil)
+
+        let day = Date(timeIntervalSince1970: 1_700_000_000)
+        store.lastLoggedDay = day
+        #expect(store.lastLoggedDay.map { Int($0.timeIntervalSince1970) } == Int(day.timeIntervalSince1970))
+
+        store.lastLoggedDay = nil
+        #expect(store.lastLoggedDay == nil)
+    }
+
     // MockNotificationScheduler records reschedule/cancel calls (no system calls).
     @MainActor
     @Test func mock_recordsCalls() async {

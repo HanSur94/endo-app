@@ -47,9 +47,14 @@ struct EndoAppApp: App {
 /// the check-in sheet. The delegate carries NO health data — only the intent flag (T-03-17).
 final class CheckInNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     private let router: CheckInRouter
+    /// The today-suppression marker (CR-01). Read at delivery so a day already logged drops today's
+    /// banner via `shouldFireToday(...)` — WITHOUT deleting the repeating registration (which would
+    /// silently kill reminders forever). Tomorrow's occurrence still fires.
+    private let suppressionStore: ReminderSuppressionStore
 
-    init(router: CheckInRouter) {
+    init(router: CheckInRouter, suppressionStore: ReminderSuppressionStore = ReminderSuppressionStore()) {
         self.router = router
+        self.suppressionStore = suppressionStore
         super.init()
     }
 
@@ -75,11 +80,20 @@ final class CheckInNotificationDelegate: NSObject, UNUserNotificationCenterDeleg
 
     /// Present reminders as a banner even while the app is foregrounded (so a foreground reminder is
     /// still visible). No health content is shown — only the gentle ReminderCopy title/body.
+    ///
+    /// D-19b auto-suppress (CR-01): a reminder for a day ALREADY logged is dropped here
+    /// (`completionHandler([])`) instead of removing the repeating registration. The repeating
+    /// trigger therefore survives and fires again tomorrow — only TODAY's banner is suppressed.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        let isReminder = (notification.request.content.userInfo["deepLink"] as? String) == "checkin"
+        if isReminder, !suppressionStore.shouldPresent() {
+            completionHandler([])   // today already logged — suppress this occurrence only
+            return
+        }
         completionHandler([.banner, .sound])
     }
 }
