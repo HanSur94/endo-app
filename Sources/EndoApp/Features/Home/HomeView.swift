@@ -152,12 +152,24 @@ struct HomeView: View {
     }
 
     /// A brief, neutral summary of the day's logged data (copy via `Terminology`).
+    ///
+    /// WR-07: a fetch error is SURFACED, not swallowed to `[]` — silently mapping a store error to an
+    /// empty result would misreport a day that actually has logged symptoms/bleeding as "Note only",
+    /// misrepresenting the user's own health data. On failure we say so explicitly instead.
     private func summaryLine(for date: Date) -> String {
         let cal = Calendar.current
-        let readings = (try? modelContext.fetch(FetchDescriptor<SchemaV1.SymptomReading>())) ?? []
+        let readings: [SchemaV1.SymptomReading]
+        let events: [SchemaV1.BleedingEvent]
+        do {
+            readings = try modelContext.fetch(FetchDescriptor<SchemaV1.SymptomReading>())
+            events = try modelContext.fetch(FetchDescriptor<SchemaV1.BleedingEvent>())
+        } catch {
+            // Don't fabricate "Note only" from a failed read — make the failure visible so a transient
+            // store error never masquerades as "no data logged".
+            return "Couldn't load this day"
+        }
         let symptomCount = readings.filter { cal.isDate($0.occurredOn, inSameDayAs: date) }.count
 
-        let events = (try? modelContext.fetch(FetchDescriptor<SchemaV1.BleedingEvent>())) ?? []
         let bleeding = events.first { cal.isDate($0.occurredAt, inSameDayAs: date) }
             .flatMap { FlowIntensity(raw: $0.flowRaw) }
 
