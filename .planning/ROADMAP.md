@@ -104,11 +104,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Data foundation + Nyquist Wave 0: Domain enums + FactorReading/Medication @Models + additive SchemaV3 + lightweight V2→V3 migration + Sendable FactorDay snapshot + Repository factor/med CRUD + NotificationScheduler protocol/mock/pure-logic + all RED test scaffolds
+- [x] 03-01-PLAN.md — Data foundation + Nyquist Wave 0: Domain enums + FactorReading/Medication @Models + additive SchemaV3 + lightweight V2→V3 migration + Sendable FactorDay snapshot + Repository factor/med CRUD + NotificationScheduler protocol/mock/pure-logic + all RED test scaffolds
 
 **Wave 2** *(blocked on 03-01; the two plans are file-disjoint and run in parallel)*
 
-- [ ] 03-02-PLAN.md — Factor logging UI slice: DayLogEditorView factor sections (food/activity/sleep/meds/stress/mood) + LoggingFlowUITests (LIFE-01/02/03 GREEN end-to-end)
+- [x] 03-02-PLAN.md — Factor logging UI slice: DayLogEditorView factor sections (food/activity/sleep/meds/stress/mood) + LoggingFlowUITests (LIFE-01/02/03 GREEN end-to-end)
 - [ ] 03-03-PLAN.md — Reminders subsystem + manage-meds: ReminderSettings (UserDefaults, opt-in default-off) + SettingsView reminders & manage-meds sections + NotificationScheduler injection + human-verify checkpoint (CHCK-02, LIFE-03 meds)
 
 **Wave 3** *(blocked on 03-02 + 03-03)*

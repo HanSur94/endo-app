@@ -30,9 +30,9 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Lifestyle Logging
 
-- [ ] **LIFE-01**: User can log food/nutrition for a day
-- [ ] **LIFE-02**: User can log physical activity / sport
-- [ ] **LIFE-03**: User can log contextual factors that feed insights (sleep, medication, stress, mood)
+- [x] **LIFE-01**: User can log food/nutrition for a day
+- [x] **LIFE-02**: User can log physical activity / sport
+- [x] **LIFE-03**: User can log contextual factors that feed insights (sleep, medication, stress, mood)
 
 ### Daily Check-in
 
@@ -115,9 +115,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CYCL-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | CYCL-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | CYCL-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
-| LIFE-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 data foundation; UI in 03-02/04) |
-| LIFE-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 data foundation; UI in 03-02/04) |
-| LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 data foundation; UI in 03-02/04) |
+| LIFE-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 data + 03-02 UI; E2E green) |
+| LIFE-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 data + 03-02 UI; E2E green) |
+| LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Complete (03-01 data + 03-02 UI; meds-taken E2E in 03-04) |
 | CHCK-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
 | CHCK-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 scheduler seam + fatigue logic; UI in 03-03) |
 | DATA-02 | Phase 4 — Private CloudKit Sync | Pending |
