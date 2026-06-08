@@ -182,10 +182,14 @@ Plans:
   4. Each insight is dismissable ("this isn't right"), and the dismissal is recorded.
 
 **Plans**: 3 plans (2 waves)
+**Wave 1**
 
 - [ ] 06-01-PLAN.md — Insight.signalKey + CyclePhaseMapper/CyclePhase (estimated phases, no phantom; INST-02) [Wave 1]
-- [ ] 06-02-PLAN.md — HonestyGate + ForbiddenTerms + public InsightsEngine; TrendsEngine internal (INST-04) [Wave 2]
 - [ ] 06-03-PLAN.md — DismissedInsight @Model + SchemaV4 + V3→V4 migration + Repository dismissal CRUD (INST-04) [Wave 1]
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 06-02-PLAN.md — HonestyGate + ForbiddenTerms + public InsightsEngine; TrendsEngine internal (INST-04) [Wave 2]
 
 ### Phase 7: Correlation & Trigger Discovery
 

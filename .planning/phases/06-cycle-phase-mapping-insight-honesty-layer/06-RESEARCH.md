@@ -474,7 +474,10 @@ public enum InsightsEngine {
 
 **Note:** A1–A7 are all within "Claude's Discretion" per CONTEXT.md §Claude's Discretion (window boundaries, confidence formula, thresholds, forbidden-term list, engine structure, model shape). They are recommendations for the planner to lock, not unverified facts presented as truth.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All resolved during planning: Q1 → add `Insight.signalKey` (06-01 Task 1); Q2 → `.allTime` window for cycle-phase; Q3 → live dismiss UI wiring deferred to Phase 8 (this phase ships engine param + Repository CRUD + tests).
+
 
 1. **`Insight.signalKey` is not currently a stored property — must this phase add it?** (HIGH importance, load-bearing)
    - What we know: `signalKey` flows into `Insight.derived(...)` → `DeterministicUUID.make(...)` and is then **discarded**; `Insight` exposes `id`, `kind`, `headline`, `detail`, `window`, `confidence`, `points` — but no `signalKey`. `[VERIFIED: EndoInsights/Sources/EndoInsights/Insight.swift]`
