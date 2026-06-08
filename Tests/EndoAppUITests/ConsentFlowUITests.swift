@@ -72,6 +72,11 @@ final class ConsentFlowUITests: XCTestCase {
         // 4. Withdraw consent -> back at the consent gate, no logging UI.
         XCTContext.runActivity(named: "04 - after withdraw") { _ in
             settingsButton.tap()
+            // The withdraw action sits at the bottom of Settings, below the reminders + manage-meds
+            // sections (Plan 03-03). Scroll it into view before asserting (mirrors the suite's
+            // scroll-into-view pattern), so the assertion is layout-robust on smaller screens.
+            var withdrawScrolls = 0
+            while !withdrawButton.exists && withdrawScrolls < 8 { app.swipeUp(); withdrawScrolls += 1 }
             XCTAssertTrue(withdrawButton.waitForExistence(timeout: 10),
                           "Withdraw button must exist in Settings")
             withdrawButton.tap()
