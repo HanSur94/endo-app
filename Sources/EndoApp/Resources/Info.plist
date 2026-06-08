@@ -3,8 +3,9 @@
   iOS app Info.plist.
   CFBundleDisplayName "Endo-App" is the D-09 placeholder display name (finalize at branding/enrollment).
   No HealthKit / usage-description strings are present — none are needed yet (HealthKit is Phase 9).
-  CloudKit sync is now ACTIVE (runtime-gated) in Phase 4: UIBackgroundModes (remote-notification, D-04)
-  ships below to let CloudKit drive silent push-sync. Inert without a DEVELOPMENT_TEAM + signed-in iCloud.
+  CloudKit sync is now ACTIVE (runtime-gated) in Phase 4: UIBackgroundModes (remote-notification, D-01/D-21
+  — the CloudKit-sync decisions, NOT the D-04 withdraw-consent flow) ships below to let CloudKit drive
+  silent push-sync. Inert without a DEVELOPMENT_TEAM + signed-in iCloud.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
