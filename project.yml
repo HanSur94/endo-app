@@ -6,8 +6,10 @@
 #   - Placeholder bundle id "com.endoapp.ios"
 #   Both are provisional and MUST be revisited when a real app name + Developer team are chosen.
 #
-# NOTE: do NOT add the iCloud/CloudKit or Background-Modes capability in Phase 1 —
-# SyncMode.localOnly (.none) needs none of it; capabilities are added in Phase 4 when sync flips on (D-10/D-21).
+# NOTE: CloudKit is ACTIVATED (runtime-gated) in Phase 4 (D-01/D-10/D-21). The iCloud(CloudKit)
+# entitlement + Background-Modes (remote-notification) now ship via CODE_SIGN_ENTITLEMENTS below,
+# but stay INERT until a real DEVELOPMENT_TEAM is set AND an iCloud account is signed in at runtime
+# (SyncMode.resolve). Simulator builds are unsigned, so CI stays green with no team (A1).
 name: EndoApp
 options:
   bundleIdPrefix: com.endoapp
@@ -26,6 +28,9 @@ targets:
       PRODUCT_BUNDLE_IDENTIFIER: com.endoapp.ios   # D-09 placeholder, flagged to finalize
       INFOPLIST_FILE: Sources/EndoApp/Resources/Info.plist
       GENERATE_INFOPLIST_FILE: NO
+      CODE_SIGN_ENTITLEMENTS: Sources/EndoApp/Resources/EndoApp.entitlements
+      CODE_SIGN_STYLE: Automatic
+      # DEVELOPMENT_TEAM: ABCDE12345   # <-- USER: uncomment + set to activate real device sync (D-02)
     scheme:
       testTargets:
         - EndoAppTests
