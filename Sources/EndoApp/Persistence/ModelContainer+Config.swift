@@ -32,9 +32,9 @@ enum SyncMode {
 /// the caller resolved `syncMode == .cloudKit`.
 private let cloudKitContainerIdentifier = "iCloud.com.endoapp.ios"
 
-/// Builds the app's `ModelContainer` for the CURRENT schema (`SchemaV3`) behind the `SyncMode` flag,
-/// wiring the additive `EndoMigrationPlan` (V1→V2→V3, D-11/D-10) so an existing V1/V2 store migrates
-/// forward.
+/// Builds the app's `ModelContainer` for the CURRENT schema (`SchemaV4`) behind the `SyncMode` flag,
+/// wiring the additive `EndoMigrationPlan` (V1→V2→V3→V4, D-11/D-10) so an existing V1/V2/V3 store
+/// migrates forward.
 ///
 /// - Parameters:
 ///   - inMemory: when `true`, the store is in-memory only (the test seam used by the round-trip
@@ -47,8 +47,8 @@ func makeModelContainer(
     inMemory: Bool = false,
     url: URL? = nil
 ) throws -> ModelContainer {
-    // Bump to SchemaV3 (additive). The migration plan upgrades any existing V1/V2 store.
-    let schema = Schema(versionedSchema: SchemaV3.self)
+    // Bump to SchemaV4 (additive). The migration plan upgrades any existing V1/V2/V3 store.
+    let schema = Schema(versionedSchema: SchemaV4.self)
 
     // The D-10/D-21 switch: `.private(_:)` ONLY when the CALLER resolved `.cloudKit` (an iCloud account
     // is signed in AND a Team ID is set); `.none` (local-first, no entitlement needed) otherwise. The
