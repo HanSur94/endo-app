@@ -71,6 +71,11 @@ public struct Insight: Sendable, Equatable, Identifiable {
     public let window: TrendWindow
     public let confidence: InsightConfidence
     public let points: [InsightPoint]
+    /// The stable, value-INDEPENDENT signal this insight is about (e.g. `"symptom.pelvicPain.severity"`
+    /// or `"cyclePhase.luteal.symptom.pelvicPain"`). The dismissal key every downstream honesty/dismissal
+    /// layer (Plan 02/03) matches on, and the same string `id` is derived from — so it survives
+    /// recomputation across sessions (D-09). Additive (RESEARCH OQ1): the value stays `Equatable`/`Sendable`.
+    public let signalKey: String
 
     /// Memberwise init. Callers MUST go through `derived(...)` so `id` stays deterministic. This init is
     /// `internal` (IN-01): only `derived(...)` (same module) may supply an explicit `id`, so an external
@@ -83,7 +88,8 @@ public struct Insight: Sendable, Equatable, Identifiable {
         detail: String,
         window: TrendWindow,
         confidence: InsightConfidence,
-        points: [InsightPoint]
+        points: [InsightPoint],
+        signalKey: String
     ) {
         self.id = id
         self.kind = kind
@@ -92,6 +98,7 @@ public struct Insight: Sendable, Equatable, Identifiable {
         self.window = window
         self.confidence = confidence
         self.points = points
+        self.signalKey = signalKey
     }
 
     /// THE engine-facing factory. Derives `id` deterministically from `kind` + `window` + `signalKey`
@@ -116,7 +123,8 @@ public struct Insight: Sendable, Equatable, Identifiable {
             detail: detail,
             window: window,
             confidence: confidence,
-            points: points
+            points: points,
+            signalKey: signalKey
         )
     }
 }
