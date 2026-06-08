@@ -10,9 +10,9 @@ Requirements for the initial release. Each maps to a roadmap phase.
 ### Onboarding & Privacy
 
 - [x] **ONBD-01**: User gives explicit, withdrawable consent before any health data is processed (GDPR Art. 9)
-- [ ] **ONBD-02**: App surfaces clear "not medical advice / not a medical device" framing in onboarding and alongside insights
-- [ ] **ONBD-03**: App uses inclusive, non-assumptive language and lets the user customize identity/terminology
-- [ ] **ONBD-04**: User can read an in-app privacy policy explaining on-device + private iCloud storage and no third-party sharing
+- [x] **ONBD-02**: App surfaces clear "not medical advice / not a medical device" framing in onboarding and alongside insights
+- [x] **ONBD-03**: App uses inclusive, non-assumptive language and lets the user customize identity/terminology
+- [x] **ONBD-04**: User can read an in-app privacy policy explaining on-device + private iCloud storage and no third-party sharing
 
 ### Symptom Tracking
 
@@ -103,9 +103,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | ONBD-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete (01-02) |
-| ONBD-02 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
-| ONBD-03 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
-| ONBD-04 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Pending |
+| ONBD-02 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete |
+| ONBD-03 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete |
+| ONBD-04 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete |
 | DATA-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete (01-02) |
 | SYMP-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | SYMP-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
@@ -137,6 +137,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 **Note:** Phase 8 (Insights Integration — Coordinator, Cached Insights & Dashboard) is a pure integration phase that wires the Phase 5–7 engine (INST-01..04) into the live app; it introduces no new requirement IDs of its own.
 
 **Coverage:**
+
 - v1 requirements: 31 total (ONBD ×4, SYMP ×4, CYCL ×4, LIFE ×3, CHCK ×2, INST ×6, RPRT ×3, DATA ×5)
 - Mapped to phases: 31 (100%) ✓
 - Unmapped: 0 ✓
