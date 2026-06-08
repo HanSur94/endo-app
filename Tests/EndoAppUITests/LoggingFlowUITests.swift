@@ -12,6 +12,12 @@
 //   daylog.symptom.<type>, daylog.severitySlider, daylog.note, daylog.saveButton,
 //   daylog.bleeding.<intensity>, daylog.deleteButton, bodymap.region.<region>,
 //   settings.suppressedToggle.
+//
+// Plan 03-02 adds the lifestyle-factor a11y ids the factor E2E drives:
+//   daylog.factor.food.<tag>, daylog.factor.food.freeText, daylog.factor.activity.type.<type>,
+//   daylog.factor.activity.duration, daylog.factor.activity.intensity, daylog.factor.sleep.hours,
+//   daylog.factor.sleep.quality, daylog.factor.medication.<medID>, daylog.factor.medication.prn,
+//   daylog.factor.stress.log, daylog.factor.stress, daylog.factor.mood.<value>.
 import XCTest
 
 @MainActor
@@ -203,6 +209,116 @@ final class LoggingFlowUITests: XCTestCase {
                        "Suppressed mode must NOT show a cycle-day.")
         XCTAssertFalse(app.descendants(matching: .any)["home.cycleSummary.nextWindow"].exists,
                        "Suppressed mode must NOT show a next-period window.")
+    }
+
+    // GREEN (Plan 03-02): the lifestyle-factor logging slice (LIFE-01/02/03 E2E). Log today's food
+    // tag + activity type/intensity + stress (via the nil≠0 reveal) + day-mood, Save, re-open the
+    // same day, and assert the food tag + the logged stress persist. Asserts the honesty contract:
+    // an untouched stress section reads "Not logged" (no severity slider) BEFORE the reveal.
+    // Medication-taken is NOT asserted here (a fresh -uitest-reset has no saved meds; that E2E lands
+    // in the Plan 04 check-in suite where saved-med management exists).
+    func testFactorLogging_selectsAndPersists() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest-reset"]
+        app.launch()
+
+        let grantButton = app.buttons["consent.grantButton"]
+        XCTAssertTrue(grantButton.waitForExistence(timeout: 10),
+                      "Consent grant button must exist on fresh launch")
+        grantButton.tap()
+
+        let logToday = app.buttons["home.logTodayButton"]
+        XCTAssertTrue(logToday.waitForExistence(timeout: 10),
+                      "home.logTodayButton must appear after consent.")
+        logToday.tap()
+
+        // Food (LIFE-01): select a tag — its row flips to the checkmark/selected state.
+        let dairy = app.buttons["daylog.factor.food.dairy"]
+        var scrolls = 0
+        while !dairy.exists && scrolls < 10 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(dairy.waitForExistence(timeout: 5),
+                      "The food factor section must expose a tappable tag row.")
+        dairy.tap()
+        XCTAssertTrue(dairy.isSelected, "A tapped food tag must read as selected.")
+
+        // Activity (LIFE-02): choose a type, then a segmented intensity.
+        let walking = app.buttons["daylog.factor.activity.type.walking"]
+        scrolls = 0
+        while !walking.exists && scrolls < 10 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(walking.waitForExistence(timeout: 5),
+                      "The activity factor section must expose a tappable type row.")
+        walking.tap()
+        // The segmented intensity control (text-labelled, never color-only). SwiftUI exposes a
+        // `.segmented` Picker's options as buttons; tap the "Medium" segment directly.
+        let mediumIntensity = app.buttons["Medium"]
+        scrolls = 0
+        while !mediumIntensity.exists && scrolls < 6 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(mediumIntensity.waitForExistence(timeout: 5),
+                      "Choosing an activity type reveals a text-labelled intensity control.")
+        mediumIntensity.tap()
+
+        // Stress (LIFE-03, D-07): the honesty contract — BEFORE the reveal the section reads
+        // "Not logged" via the 'Log stress' row and exposes NO revealed SeverityControl.
+        let stressLog = app.buttons["daylog.factor.stress.log"]
+        scrolls = 0
+        while !stressLog.exists && scrolls < 10 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(stressLog.waitForExistence(timeout: 5),
+                      "An untouched stress section must show the 'Log stress' reveal row.")
+        // Honesty contract surfaced in UI: the untouched section reads "Not logged".
+        XCTAssertTrue(app.staticTexts["Not logged"].exists,
+                      "An untouched stress section must read 'Not logged' (nil≠0) before reveal.")
+        // The revealed control's 'Clear stress' affordance only exists once the user opts in.
+        XCTAssertFalse(app.buttons["daylog.factor.stress.clear"].exists,
+                       "Before opting in, the stress section must NOT show the revealed control (nil≠0).")
+        if !stressLog.isHittable { app.swipeUp() }
+        stressLog.tap()
+        // The reveal swaps the 'Log stress' row for the SeverityControl + 'Clear stress' button.
+        let stressRevealed = app.buttons["daylog.factor.stress.clear"]
+        scrolls = 0
+        while !stressRevealed.exists && scrolls < 6 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(stressRevealed.waitForExistence(timeout: 5),
+                      "Tapping 'Log stress' reveals the reused 0–10 SeverityControl (Clear stress shown).")
+        XCTAssertFalse(stressLog.exists,
+                       "After opting in, the 'Log stress' reveal row must be replaced by the control.")
+
+        // Mood (LIFE-03, D-08): tap an overall day-mood value.
+        let mood = app.buttons["daylog.factor.mood.4"]
+        scrolls = 0
+        while !mood.exists && scrolls < 10 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(mood.waitForExistence(timeout: 5),
+                      "The mood factor section must expose tappable 1–5 day-mood values.")
+        mood.tap()
+        saveScreenshot(app, named: "factor-01-editor")
+
+        // Save → the day appears in history.
+        let saveButton = app.buttons["daylog.saveButton"]
+        scrolls = 0
+        while !saveButton.exists && scrolls < 6 { app.swipeUp(); scrolls += 1 }
+        saveButton.tap()
+        let firstRow = app.descendants(matching: .any)["home.dayRow.0"]
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 10),
+                      "After Save the logged day must appear as home.dayRow.0.")
+
+        // Re-open the same day → factors must have persisted.
+        firstRow.tap()
+        let dairyAgain = app.buttons["daylog.factor.food.dairy"]
+        scrolls = 0
+        while !dairyAgain.exists && scrolls < 10 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(dairyAgain.waitForExistence(timeout: 10),
+                      "Re-opening the day must show the food factor section.")
+        XCTAssertTrue(dairyAgain.isSelected,
+                      "The previously selected food tag must persist across a re-open.")
+
+        // Stress persisted: the section re-opens with the revealed control (Clear stress shown) and
+        // NO 'Log stress' row — proving a logged stress value loaded back (distinct from "not logged").
+        let stressRevealedAgain = app.buttons["daylog.factor.stress.clear"]
+        scrolls = 0
+        while !stressRevealedAgain.exists && scrolls < 10 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(stressRevealedAgain.waitForExistence(timeout: 10),
+                      "A previously logged stress value must re-open with its SeverityControl shown.")
+        XCTAssertFalse(app.buttons["daylog.factor.stress.log"].exists,
+                       "A logged stress section must NOT fall back to the 'Log stress' reveal row.")
+        saveScreenshot(app, named: "factor-02-reopen")
     }
 
     // MARK: - Screenshot helper (verbatim from ConsentFlowUITests)
