@@ -18,7 +18,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 - [x] **SYMP-01**: User can log endo-specific symptoms (pain, fatigue, GI/"endo belly", urinary, mood, brain fog, etc.) with severity
 - [ ] **SYMP-02**: User can record pain location on a body map with severity
-- [ ] **SYMP-03**: User can add free-text notes to a day's entry
+- [x] **SYMP-03**: User can add free-text notes to a day's entry
 - [ ] **SYMP-04**: User can edit or delete any past entry
 
 ### Cycle & Bleeding
@@ -109,7 +109,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DATA-01 | Phase 1 — Foundations: Schema, Privacy Posture & Claims Policy | Complete (01-02) |
 | SYMP-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | SYMP-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
-| SYMP-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
+| SYMP-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | SYMP-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
 | CYCL-01 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | CYCL-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Pending |
