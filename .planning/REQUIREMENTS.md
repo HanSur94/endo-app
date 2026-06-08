@@ -115,11 +115,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | CYCL-02 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | CYCL-03 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
 | CYCL-04 | Phase 2 — Core Symptom & Cycle/Bleeding Logging | Complete |
-| LIFE-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
-| LIFE-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
-| LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
+| LIFE-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 data foundation; UI in 03-02/04) |
+| LIFE-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 data foundation; UI in 03-02/04) |
+| LIFE-03 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 data foundation; UI in 03-02/04) |
 | CHCK-01 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
-| CHCK-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | Pending |
+| CHCK-02 | Phase 3 — Lifestyle Logging + Fast Daily Check-in & Reminders | In progress (03-01 scheduler seam + fatigue logic; UI in 03-03) |
 | DATA-02 | Phase 4 — Private CloudKit Sync | Pending |
 | DATA-03 | Phase 4 — Private CloudKit Sync | Pending |
 | DATA-04 | Phase 4 — Private CloudKit Sync | Pending |

@@ -258,7 +258,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
 | 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
-| 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/4 | Planned | - |
+| 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 1/4 | In progress | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 0/TBD | Not started | - |
