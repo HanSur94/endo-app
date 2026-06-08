@@ -507,11 +507,13 @@ struct SwiftDataRepository: Repository {
         try context.save()
     }
 
-    /// Bound a free-text string at the seam (T-03-01 DoS guard); empty -> nil.
+    /// Bound a free-text string at the seam (T-03-01 DoS guard); whitespace-only -> nil. Trims
+    /// surrounding whitespace/newlines so a blank-space paste collapses to nil, matching `setNote`
+    /// and `commitNewMed` (CR-02 — keeps the honesty contract: a blank note never fabricates a row).
     private static func boundedNote(_ text: String?) -> String? {
         guard let text else { return nil }
-        let clipped = String(text.prefix(maxNoteLength))
-        return clipped.isEmpty ? nil : clipped
+        let trimmed = String(text.prefix(maxNoteLength)).trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     /// Mood clamp 1...5 (D-08). Distinct from `clampSeverity` (0...10).

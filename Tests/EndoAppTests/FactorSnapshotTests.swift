@@ -50,6 +50,28 @@ struct FactorSnapshotTests {
         #expect(try repo.factorDays().isEmpty, "nil mood clears the reading.")
     }
 
+    // CR-02: a whitespace-only food note must NOT fabricate a note row — it collapses to nil, matching
+    // setNote/commitNewMed. (Honesty: a blank-space paste never creates a logged food note.)
+    @Test func whitespaceOnlyFoodNote_roundTripsToNil() throws {
+        let (repo, _) = try makeRepo()
+        let day = Date(timeIntervalSince1970: 1_700_000_000)
+        try repo.setFood(tags: [.dairy], freeText: "   \n  ", on: day)
+
+        let fd = try #require(try repo.factorDays().first)
+        #expect(fd.foodNote == nil, "A whitespace-only food note must collapse to nil (CR-02).")
+        #expect(fd.foodTags == [.dairy], "Tags are unaffected by a blank note.")
+    }
+
+    // CR-02: a real food note still round-trips, trimmed of surrounding whitespace.
+    @Test func foodNote_trimsAndRoundTrips() throws {
+        let (repo, _) = try makeRepo()
+        let day = Date(timeIntervalSince1970: 1_700_000_000)
+        try repo.setFood(tags: [], freeText: "  late dinner  ", on: day)
+
+        let fd = try #require(try repo.factorDays().first)
+        #expect(fd.foodNote == "late dinner", "A food note round-trips trimmed (CR-02).")
+    }
+
     // T-03-02: defensive decode of an unknown stored valueRaw does not crash the snapshot.
     @Test func unknownValueRaw_decodesDefensively_noCrash() throws {
         let (repo, ctx) = try makeRepo()
