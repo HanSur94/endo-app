@@ -14,6 +14,21 @@
 // cleanly through `UserDefaults` without any `DateComponents`/`Date` encoding ambiguity.
 import Foundation
 
+/// A single reminder time carrying a STABLE per-row identity (WR-01). `ForEach`/`.onDelete` over
+/// reminder rows must key on `id`, never the array index — index identity lets a deleted row's view
+/// state (and an in-flight `DatePicker` edit) leak onto the wrong slot. The `id` is session-stable
+/// (regenerated on load from UserDefaults, which is fine — identity only needs to be stable while the
+/// view is alive).
+struct ReminderTime: Identifiable, Equatable, Sendable {
+    let id: UUID
+    var components: DateComponents
+
+    init(id: UUID = UUID(), components: DateComponents) {
+        self.id = id
+        self.components = components
+    }
+}
+
 /// The user's reminder configuration (CHCK-02). Persisted in `UserDefaults` (outside the synced
 /// store, A2). Observable so the Settings reminders section updates as the user edits it. Default OFF
 /// (D-18); a sensible single evening time is *suggested* (not pre-applied) on first enable.
@@ -34,6 +49,15 @@ final class ReminderSettings {
     /// (D-18). 20:00 local. Suggested, never silently pre-applied while reminders are off.
     static let defaultEveningTime = DateComponents(hour: 20, minute: 0)
 
+    /// A fresh `ReminderTime` row at the default evening time (with a new stable id).
+    static var defaultEveningReminder: ReminderTime { ReminderTime(components: defaultEveningTime) }
+
+    /// The sensible default quiet-hours window applied when the user first turns quiet hours ON
+    /// (WR-02): 22:00–07:00 (the overnight, midnight-crossing case). Never collapses to start==end.
+    static let defaultQuietHours = QuietHours(
+        start: DateComponents(hour: 22, minute: 0),
+        end: DateComponents(hour: 7, minute: 0))
+
     @ObservationIgnored private let defaults: UserDefaults
 
     /// Whether reminders are enabled. Defaults to `false` (D-18 opt-in). Writing persists.
@@ -41,10 +65,14 @@ final class ReminderSettings {
         didSet { defaults.set(enabled, forKey: Key.enabled) }
     }
 
-    /// The daily reminder times (hour/minute). Writing persists the minutes-of-day representation.
-    var times: [DateComponents] {
-        didSet { defaults.set(times.map(Self.minutesOfDay), forKey: Key.times) }
+    /// The daily reminder times, each with a stable per-row identity (WR-01). Writing persists the
+    /// minutes-of-day representation (ids are session-local and not persisted).
+    var times: [ReminderTime] {
+        didSet { defaults.set(times.map { Self.minutesOfDay($0.components) }, forKey: Key.times) }
     }
+
+    /// The reminder times as bare `DateComponents` (what the scheduler consumes).
+    var timeComponents: [DateComponents] { times.map(\.components) }
 
     /// The optional quiet-hours window (no reminder fires inside it). `nil` = no quiet hours. Writing
     /// persists both bounds (or clears them when set to `nil`).
@@ -65,7 +93,7 @@ final class ReminderSettings {
         // Default OFF — `bool(forKey:)` returns false for an absent key, which is exactly D-18.
         self.enabled = defaults.bool(forKey: Key.enabled)
         if let raw = defaults.array(forKey: Key.times) as? [Int] {
-            self.times = raw.map(Self.dateComponents(fromMinutes:))
+            self.times = raw.map { ReminderTime(components: Self.dateComponents(fromMinutes: $0)) }
         } else {
             self.times = []
         }

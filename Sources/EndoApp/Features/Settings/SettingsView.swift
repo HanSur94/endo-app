@@ -167,13 +167,13 @@ struct SettingsView: View {
 
             // Only when enabled AND permitted do we expose the time/quiet-hours editors.
             if reminders.enabled && authStatus != .denied {
-                ForEach(Array(reminders.times.enumerated()), id: \.offset) { index, _ in
+                ForEach(reminders.times) { time in
                     DatePicker(
                         "Reminder time",
-                        selection: reminderTimeBinding(index),
+                        selection: reminderTimeBinding(time.id),
                         displayedComponents: .hourAndMinute
                     )
-                    .accessibilityIdentifier("settings.reminders.timeRow.\(index)")
+                    .accessibilityIdentifier("settings.reminders.timeRow.\(time.id.uuidString)")
                 }
                 .onDelete { offsets in
                     reminders.times.remove(atOffsets: offsets)
@@ -187,19 +187,29 @@ struct SettingsView: View {
                 }
                 .accessibilityIdentifier("settings.reminders.addTime")
 
-                DatePicker(
-                    "Quiet hours start",
-                    selection: quietHoursStartBinding,
-                    displayedComponents: .hourAndMinute
-                )
-                .accessibilityIdentifier("settings.reminders.quietHoursStart")
+                // Quiet hours are opt-in and CLEARABLE (WR-02): the toggle sets a sensible default
+                // window (22:00–07:00) when ON and back to `nil` when OFF — never a fabricated
+                // zero-width/inverted window. The start/end editors appear only when configured.
+                Toggle(isOn: quietHoursEnabledBinding) {
+                    Text("Quiet hours")
+                }
+                .accessibilityIdentifier("settings.reminders.quietHoursToggle")
 
-                DatePicker(
-                    "Quiet hours end",
-                    selection: quietHoursEndBinding,
-                    displayedComponents: .hourAndMinute
-                )
-                .accessibilityIdentifier("settings.reminders.quietHoursEnd")
+                if reminders.quietHours != nil {
+                    DatePicker(
+                        "Quiet hours start",
+                        selection: quietHoursStartBinding,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .accessibilityIdentifier("settings.reminders.quietHoursStart")
+
+                    DatePicker(
+                        "Quiet hours end",
+                        selection: quietHoursEndBinding,
+                        displayedComponents: .hourAndMinute
+                    )
+                    .accessibilityIdentifier("settings.reminders.quietHoursEnd")
+                }
             }
 
             // Denied-state (D-20): non-nagging line + a path to Settings.app. The app stays usable.
@@ -219,11 +229,21 @@ struct SettingsView: View {
         } header: {
             Text("Reminders")
         } footer: {
-            Text(
-                "Reminders are off. If you'd like a gentle nudge to check in, you can turn them on "
-                + "below — they always respect your quiet hours."
-            )
-            .fixedSize(horizontal: false, vertical: true)
+            // WR-03: the footer must reflect the ACTUAL enabled state — never tell an enabled user
+            // "Reminders are off."
+            Text(remindersFooterText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The reminders-section footer copy, reflecting the current enabled state (WR-03).
+    private var remindersFooterText: String {
+        if reminders.enabled && authStatus != .denied {
+            return "Reminders are on. We'll send a gentle nudge to check in — always respecting your "
+                + "quiet hours."
+        } else {
+            return "Reminders are off. If you'd like a gentle nudge to check in, you can turn them on "
+                + "above — they always respect your quiet hours."
         }
     }
 
@@ -364,10 +384,10 @@ struct SettingsView: View {
             if granted {
                 reminders.enabled = true
                 if reminders.times.isEmpty {
-                    reminders.times = [ReminderSettings.defaultEveningTime]
+                    reminders.times = [ReminderSettings.defaultEveningReminder]
                 }
                 await notificationScheduler.reschedule(
-                    times: reminders.times, quietHours: reminders.quietHours)
+                    times: reminders.timeComponents, quietHours: reminders.quietHours)
             } else {
                 // Denied — keep the config OFF and let the denied-state UI guide the user to Settings.app.
                 reminders.enabled = false
@@ -380,43 +400,56 @@ struct SettingsView: View {
         guard reminders.enabled else { return }
         Task {
             await notificationScheduler.reschedule(
-                times: reminders.times, quietHours: reminders.quietHours)
+                times: reminders.timeComponents, quietHours: reminders.quietHours)
         }
     }
 
-    /// Append a new reminder time (defaults to the evening suggestion) and re-arm.
+    /// Append a new reminder time (defaults to the evening suggestion, with a fresh stable id) and re-arm.
     private func addReminderTime() {
-        reminders.times.append(ReminderSettings.defaultEveningTime)
+        reminders.times.append(ReminderSettings.defaultEveningReminder)
         rearmReminders()
     }
 
-    /// A binding editing the reminder time at `index` as a `Date`, persisting hour/minute back and
-    /// re-arming on change.
-    private func reminderTimeBinding(_ index: Int) -> Binding<Date> {
+    /// A binding editing the reminder time identified by `id` as a `Date`, resolving the row by its
+    /// STABLE identity (WR-01 — never by index, which a concurrent delete could shift), persisting
+    /// hour/minute back and re-arming on change.
+    private func reminderTimeBinding(_ id: UUID) -> Binding<Date> {
         Binding(
             get: {
-                guard reminders.times.indices.contains(index) else { return Date() }
-                return Calendar.current.date(
-                    from: reminders.times[index]) ?? Date()
+                guard let time = reminders.times.first(where: { $0.id == id }) else { return Date() }
+                return Calendar.current.date(from: time.components) ?? Date()
             },
             set: { newDate in
-                guard reminders.times.indices.contains(index) else { return }
-                reminders.times[index] = Calendar.current.dateComponents(
+                guard let index = reminders.times.firstIndex(where: { $0.id == id }) else { return }
+                reminders.times[index].components = Calendar.current.dateComponents(
                     [.hour, .minute], from: newDate)
                 rearmReminders()
             }
         )
     }
 
-    /// Quiet-hours start binding. Editing it creates/updates the window (paired with the current end,
-    /// or the start itself if no end yet) and re-arms.
+    /// Quiet-hours enable toggle (WR-02). ON installs the sensible default window (22:00–07:00);
+    /// OFF clears `quietHours` back to `nil` so the user can turn quiet hours off again — neither path
+    /// ever leaves a fabricated zero-width/inverted window.
+    private var quietHoursEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { reminders.quietHours != nil },
+            set: { isOn in
+                reminders.quietHours = isOn ? ReminderSettings.defaultQuietHours : nil
+                rearmReminders()
+            }
+        )
+    }
+
+    /// Quiet-hours start binding. Only mutates the start bound of an EXISTING window (the toggle owns
+    /// creation/clearing, WR-02) — no longer fabricates an end from the start.
     private var quietHoursStartBinding: Binding<Date> {
         Binding(
             get: { Self.date(from: reminders.quietHours?.start) },
             set: { newDate in
+                guard let existing = reminders.quietHours else { return }
                 let start = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                let end = reminders.quietHours?.end ?? start
-                reminders.quietHours = QuietHours(start: start, end: end)
+                reminders.quietHours = QuietHours(start: start, end: existing.end)
                 rearmReminders()
             }
         )
@@ -427,9 +460,9 @@ struct SettingsView: View {
         Binding(
             get: { Self.date(from: reminders.quietHours?.end) },
             set: { newDate in
+                guard let existing = reminders.quietHours else { return }
                 let end = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                let start = reminders.quietHours?.start ?? end
-                reminders.quietHours = QuietHours(start: start, end: end)
+                reminders.quietHours = QuietHours(start: existing.start, end: end)
                 rearmReminders()
             }
         )
