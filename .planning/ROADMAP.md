@@ -100,7 +100,21 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can complete a fast daily check-in that records the day in just a few taps (e.g. with sensible defaults / "same as yesterday").
   4. User can set one or more configurable reminder notifications to log, with controls that avoid notification fatigue (opt-in, minimal, quiet hours respected).
 
-**Plans**: TBD
+**Plans**: 4 plans, 3 waves
+
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Data foundation + Nyquist Wave 0: Domain enums + FactorReading/Medication @Models + additive SchemaV3 + lightweight V2→V3 migration + Sendable FactorDay snapshot + Repository factor/med CRUD + NotificationScheduler protocol/mock/pure-logic + all RED test scaffolds
+
+**Wave 2** *(blocked on 03-01; the two plans are file-disjoint and run in parallel)*
+
+- [ ] 03-02-PLAN.md — Factor logging UI slice: DayLogEditorView factor sections (food/activity/sleep/meds/stress/mood) + LoggingFlowUITests (LIFE-01/02/03 GREEN end-to-end)
+- [ ] 03-03-PLAN.md — Reminders subsystem + manage-meds: ReminderSettings (UserDefaults, opt-in default-off) + SettingsView reminders & manage-meds sections + NotificationScheduler injection + human-verify checkpoint (CHCK-02, LIFE-03 meds)
+
+**Wave 3** *(blocked on 03-02 + 03-03)*
+
+- [ ] 03-04-PLAN.md — Fast Daily check-in sheet + Home CTA + notification deep-link routing + auto-suppress + CheckInFlowUITests GREEN (CHCK-01)
+
 **UI hint**: yes
 
 ### Phase 4: Private CloudKit Sync
@@ -244,7 +258,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundations — Schema, Privacy Posture & Claims Policy | 3/3 | Complete   | 2026-06-08 |
 | 2. Core Symptom & Cycle/Bleeding Logging | 4/4 | Complete   | 2026-06-08 |
-| 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/TBD | Not started | - |
+| 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 0/4 | Planned | - |
 | 4. Private CloudKit Sync | 0/TBD | Not started | - |
 | 5. Snapshot Contract + Descriptive Trends Engine | 0/TBD | Not started | - |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 0/TBD | Not started | - |

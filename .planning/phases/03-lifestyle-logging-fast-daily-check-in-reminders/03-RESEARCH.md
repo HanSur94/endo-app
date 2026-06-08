@@ -509,22 +509,27 @@ private var stressSection: some View {
 | A4 | Auto-suppress-today is implemented by re-arming all daily repeating requests against an "is today logged?" check rather than per-occurrence cancellation | Pattern 5 | MEDIUM — `UNCalendarNotificationTrigger(repeats:true)` has no native "skip just today." The pure `shouldFireToday(...)` + re-arm approach is the standard workaround; verify the chosen mechanism in planning. |
 | A5 | Mood 1–5 valence stored in `level`; distinct from Phase 2 `.lowMood` symptom | Pattern 1 / req map | LOW on storage; the D-08 *product* distinction is flagged by CONTEXT itself as the one most likely to need UAT review. Storage is unaffected by the UX call. |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All three were locked during planning (Phase 3 plans 03-01..03-04 implement these choices):
 
 1. **PRN pain-relief representation**
    - What we know: D-06 wants a PRN marker alongside saved-med "taken" toggles.
    - What's unclear: whether PRN is a reserved `.medication` reading (`valueRaw == "prn"`) or a separate column/flag.
    - Recommendation: reserved-token `.medication` reading — no schema change, fits the unified model. Lock in planning.
+   - **— RESOLVED:** PRN is a reserved `.medication` `FactorReading` with `valueRaw == "prn"` (no schema change). Locked in 03-01.
 
 2. **Quiet-hours window crossing midnight**
    - What we know: D-19a wants a start/end window where no reminder fires.
    - What's unclear: whether the window can span midnight (e.g. 22:00–07:00).
    - Recommendation: support midnight-crossing in the pure `isInQuietHours` function and unit-test both cases (same-day window and wrap-around). Cheap to get right, easy to get wrong.
+   - **— RESOLVED:** Midnight-crossing supported in the pure `isInQuietHours(...)` function; unit-tested for both same-day and wrap-around windows. Locked in 03-01.
 
 3. **Mood 1–5 scale direction & labels (D-08)**
    - What we know: 1–5 valence, text-labelled (UI-SPEC), distinct from `.lowMood` symptom.
    - What's unclear: exact labels and whether 1 = worst or best.
    - Recommendation: defer to UI-SPEC iteration / simulator review (Claude's discretion); store the raw 1–5 in `level`. The CONTEXT itself flags this for UAT.
+   - **— RESOLVED:** Mood stored as raw 1–5 in `level`; exact labels/direction deferred to UI-SPEC + simulator review (Claude's discretion per D-08, flagged for UAT). Storage locked in 03-01.
 
 ## Environment Availability
 
