@@ -268,7 +268,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 09-01-PLAN.md — Wave-0 seam + persistence spine: HealthDataReading protocol + Sendable value contracts (no HKSample escapes), pure HK->app mapping tables (D-14/15/16), CloudKit-safe ImportedSample @Model + additive SchemaV6 + lightweight V5->V6 migration + survival test, EndoInsights HealthKit-boundary lint (DATA-05, D-01)
+- [x] 09-01-PLAN.md — Wave-0 seam + persistence spine: HealthDataReading protocol + Sendable value contracts (no HKSample escapes), pure HK->app mapping tables (D-14/15/16), CloudKit-safe ImportedSample @Model + additive SchemaV6 + lightweight V5->V6 migration + survival test, EndoInsights HealthKit-boundary lint (DATA-05, D-01)
 
 **Wave 2** *(blocked on 09-01)*
 
@@ -338,7 +338,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
-| 9. HealthKit Import | 0/3 | Planned | - |
+| 9. HealthKit Import | 1/3 | In Progress|  |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |
