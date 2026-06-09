@@ -109,10 +109,17 @@ enum CorrelationStats {
         0.5 * (1 + erf(x / 2.0.squareRoot()))
     }
 
-    // MARK: - Mann–Whitney U normal-approx p (with tie correction). Reuses the Cliff's-delta pair scan.
+    // MARK: - Mann–Whitney U normal-approx p (tie-corrected σ_U, NO continuity correction). Reuses the Cliff's-delta pair scan.
 
     /// U = #{w>o} + 0.5·#{w==o}; z = (U − μ_U)/σ_U with tie-corrected σ_U; p = 2·(1 − Φ(|z|)).
     /// Degenerate σ_U (e.g. all-tied pooled values) → defined sentinel p = 1.0.
+    ///
+    /// NO CONTINUITY CORRECTION (WR-03): the numerator is `U − μ_U` with no `±0.5` term. This matches
+    /// `scipy.stats.mannwhitneyu(method='asymptotic', use_continuity=False)` EXACTLY (validated to machine
+    /// epsilon). The no-continuity form gives a slightly SMALLER p (slightly more permissive) than the
+    /// continuity-corrected form — documented here explicitly so a maintainer does not "fix" a non-bug or
+    /// assume a more conservative p than is actually produced. The downstream three-AND gate (effect floor
+    /// AND n ≥ minSample AND BH-FDR) is the real suppression backstop, not a 0.5 continuity nudge here.
     static func mannWhitneyP(present W: [Double], absent O: [Double]) -> Double {
         let m = W.count, n = O.count
         guard m > 0, n > 0 else { return 1.0 }
