@@ -203,10 +203,17 @@ Plans:
   2. No correlation is shown below the minimum sample/observation threshold, and findings carry effect size plus a plain-language confidence.
   3. Spurious low-confidence correlations are suppressed rather than displayed, and every shown correlation uses non-causal "possible association" framing inherited from the honesty layer.
 
-**Plans**: 3 plans, 3 waves (risk-first: prove the math, build the producer, lock the gate)
-Plans:
+**Plans**: 3 plans, 3 waves (risk-first: prove the math, build the producer, lock the gate)Plans:
+**Wave 1**
+
 - [ ] 07-01-PLAN.md — Wave 1 (TDD): CorrelationStats pure math (Cliff's δ, mean-diff, risk diff/ratio, Fisher exact, Mann–Whitney p, BH-FDR, confidence band) proven against hand-computed known values
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 07-02-PLAN.md — Wave 2 (TDD): Factor binarization + CorrelationEngine producer (bounded pairs, BH-FDR once, three-AND gate, .correlation Insights, top-N=5) + strong/under-sampled/spurious/flood/suppressed fixtures
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 07-03-PLAN.md — Wave 3: lock minSample(.correlation)=10 + compose CorrelationEngine into InsightsEngine through the HonestyGate + mandatory honesty acceptance tests (zero-forbidden-terms scan, withholding, no Phase-5/6 regression)
 
 ### Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard

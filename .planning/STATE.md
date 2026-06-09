@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 06-03-PLAN.md (Phase 6 — DismissedInsight @Model + SchemaV4 + dismissal CRUD)
-last_updated: "2026-06-08T21:37:00.000Z"
-last_activity: 2026-06-08 -- Completed 06-03 (dismissal persistence: DismissedInsight/SchemaV4/CRUD)
+last_updated: "2026-06-09T06:30:54.491Z"
+last_activity: 2026-06-08 -- Completed 06-02 (HonestyGate + InsightsEngine; INST-04)
 progress:
   total_phases: 12
   completed_phases: 5
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 Phase: 6 (Cycle-Phase Mapping + Insight-Honesty Layer) — EXECUTING
 Plan: 3 of 3 (all complete)
-Status: Phase 6 complete (06-01 + 06-02 + 06-03 done) — honesty layer locked
+Status: Ready to execute
 Last activity: 2026-06-08 -- Completed 06-02 (HonestyGate + InsightsEngine; INST-04)
 
 Progress: [██████░░░░] 60%
