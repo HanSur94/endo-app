@@ -41,6 +41,15 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<!-- Phase 9 (DATA-05, D-06): READ-ONLY HealthKit usage string. Apple REQUIRES the share-usage key
+	     below or the app crashes on first HealthKit access. Read-only posture: ONLY the share-usage key
+	     is present — the corresponding WRITE/UPDATE usage key is intentionally OMITTED (write-back is
+	     PLAT-01, deferred; its presence would imply write access, and the grep gate asserts it is absent).
+	     The literal below is the source-of-truth copy mirrored from
+	     HealthConnectCopy.healthShareUsageDescription and is ClaimsPolicy-audited by
+	     HealthConnectCopyAuditTests (no forbidden verb, no gendered token). -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>Endo-App can read your cycle, sleep, workout, and meal-day records from Apple Health so you do not have to log them twice. It stays on your device and in your private iCloud, and it is entirely optional.</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

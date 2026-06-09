@@ -10,5 +10,15 @@
   <string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
   <key>aps-environment</key>
   <string>development</string>
+  <!-- Phase 9 (DATA-05, D-05/D-14..16): READ-ONLY HealthKit. `com.apple.developer.healthkit` enables
+       the capability; the `.access` array is EMPTY (standard HealthKit — clinical-records would go here,
+       and we deliberately do NOT request them). There is intentionally NO write/share entitlement
+       (write-back is PLAT-01, deferred) — read-only is expressed by requesting `toShare: []` at runtime
+       and by shipping only NSHealthShareUsageDescription (never NSHealthUpdateUsageDescription) in
+       Info.plist. INERT on the Simulator and until a real DEVELOPMENT_TEAM is set (Phase-4 posture). -->
+  <key>com.apple.developer.healthkit</key>
+  <true/>
+  <key>com.apple.developer.healthkit.access</key>
+  <array/>
 </dict>
 </plist>

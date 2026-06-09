@@ -39,6 +39,7 @@ struct EndoAppApp: App {
                 .environment(\.accountAvailability, dependencies.accountAvailability)
                 .environment(\.checkInRouter, dependencies.checkInRouter)
                 .environment(\.insightsCoordinator, dependencies.insightsCoordinator)
+                .environment(\.healthImportService, dependencies.healthImportService)
                 .modelContainer(dependencies.modelContainer)
         }
     }

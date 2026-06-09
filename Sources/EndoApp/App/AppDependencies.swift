@@ -36,6 +36,13 @@ final class AppDependencies {
     /// sync BEFORE the container is built (P-2); also injected into the Environment so SettingsView (04-02)
     /// can show the iCloud sync status. `Sendable` (NOT `@MainActor`) — read off-main at build time.
     let accountAvailability: any AccountAvailability
+    /// The HealthKit import orchestrator (DATA-05, D-09/D-12). Composes the selected `HealthDataReading`
+    /// (the real `SystemHealthDataReading` on a normal launch, or `FixtureHealthDataReading` under a
+    /// `-uitest-health-*` arg) + the per-domain `HealthAnchorStore` + a persist closure wrapping the
+    /// Repository imported CRUD + a recompute closure firing the Phase-8 `InsightsCoordinator.dataChanged()`
+    /// (D-12). Consent UI is gated behind AppGate; the service is consent-guarded too (T-09-08). Injected
+    /// via `\.healthImportService` so the connect/rationale/refresh UI (09-03) can drive it.
+    let healthImportService: HealthImportService
 
     init() {
         // Test-only, launch-arg-guarded deterministic reset (used by EndoAppUITests). When the
@@ -53,6 +60,14 @@ final class AppDependencies {
         // with `-uitest-reset` (T-08-06): the seed only ever touches the in-memory store, so it can NEVER
         // write to the user's real local/CloudKit store. Unreachable in normal launches.
         let seedInsights = ProcessInfo.processInfo.arguments.contains("-uitest-seed-insights")
+
+        // Test-only, launch-arg-guarded HealthKit fixture selection (used by HealthConnectUITests, 09-03).
+        // Mirrors `-uitest-reset`/`-uitest-seed-insights`: a `-uitest-health-*` arg swaps the REAL
+        // `SystemHealthDataReading` for the deterministic `FixtureHealthDataReading` so the whole import →
+        // merge → recompute flow is E2E-provable on the Simulator with NO real device, NO HealthKit grant,
+        // and NO `HKHealthStore` (T-09-06). PAIRED with `-uitest-reset` (the in-memory store) below so the
+        // fixture reader can never touch a real store. Unreachable on a normal launch.
+        let healthArguments = ProcessInfo.processInfo.arguments
 
         // Resolve account availability FIRST, then derive `SyncMode` BEFORE building the container
         // (RESEARCH Pattern 2 / Pitfall P-2 — the local-only path must be a genuine `.none` store).
@@ -143,6 +158,75 @@ final class AppDependencies {
             // immediately-following recompute reads the new dismissal from the same context and excludes
             // the card. A separate view-owned context would not be visible to the coordinator's reads.
             persistDismissal: { signalKey in try insightsRepo.dismissInsight(signalKey: signalKey) })
+
+        // MARK: - HealthKit import service (DATA-05, D-09/D-12)
+
+        // The HealthKit boundary: REAL reader on a normal launch; the deterministic fixture under a
+        // `-uitest-health-*` arg, PAIRED with the in-memory `-uitest-reset` store (T-09-06) so the fixture
+        // can never touch a real store. The `-denied`/`-empty` args both map to `.empty` (a denied read and
+        // a granted-but-empty read are indistinguishable for reads — Pitfall 1 / SC3).
+        let healthReader: HealthDataReading
+        if uiTestReset && healthArguments.contains("-uitest-health-seed") {
+            healthReader = FixtureHealthDataReading(Self.healthSeedFixture())
+        } else if uiTestReset && (healthArguments.contains("-uitest-health-denied")
+                                  || healthArguments.contains("-uitest-health-empty")) {
+            healthReader = FixtureHealthDataReading(.empty)
+        } else {
+            healthReader = SystemHealthDataReading()
+        }
+
+        // The persist closure wraps the Repository imported CRUD. The service's `persist` is `@Sendable`,
+        // but `SwiftDataRepository` holds a non-`Sendable` `ModelContext`; we box it `@unchecked Sendable`
+        // and hop every persist onto the main actor (where the context is valid). The import service
+        // single-threads its pulls, so there is no concurrent access — only the main-actor hop is needed.
+        // A DEDICATED context (not the insights one) keeps the import write isolated from the cache writes.
+        let healthRepoBox = RepoBox(SwiftDataRepository(context: ModelContext(self.modelContainer)))
+        let coordinator = self.insightsCoordinator
+
+        self.healthImportService = HealthImportService(
+            reader: healthReader,
+            anchorStore: HealthAnchorStore(),
+            persist: { values, deletedUUIDs in
+                // Hop to the main actor (the ModelContext's domain) and run the consent-gated upsert+delete
+                // as one unit. `MainActor.assumeIsolated` is safe: the service awaits this closure and the
+                // import path is driven from the main actor in production (the connect/refresh UI).
+                try MainActor.assumeIsolated {
+                    try healthRepoBox.repo.replaceOrInsertImported(values: values, deletedUUIDs: deletedUUIDs)
+                }
+            },
+            recompute: {
+                // D-12: fire the EXISTING Phase-8 recompute seam on the main actor (the coordinator is
+                // `@MainActor`-isolated). One recompute per successful import; the fingerprint coalesces.
+                MainActor.assumeIsolated {
+                    coordinator.dataChanged()
+                }
+            })
+    }
+
+    /// A box that lets a non-`Sendable` `SwiftDataRepository` cross into the import service's `@Sendable`
+    /// persist closure. Safe because every access hops to the main actor first (the ModelContext's domain)
+    /// and the import service single-threads its pulls — there is no concurrent access. Mirrors the
+    /// 09-02 test seam shape.
+    private final class RepoBox: @unchecked Sendable {
+        let repo: SwiftDataRepository
+        init(_ repo: SwiftDataRepository) { self.repo = repo }
+    }
+
+    /// The deterministic `-uitest-health-seed` fixture (T-09-06): a handful of imported values across the
+    /// four domains, dated within the backfill window, so the E2E can prove an imported value renders the
+    /// "from Apple Health" badge and a Refresh pulls + recomputes. PAIRED with the in-memory store; it
+    /// never touches a real `HKHealthStore`. `.none` delta ⇒ a re-pull replays the same seed (dedupe).
+    private static func healthSeedFixture() -> FixtureHealthDataReading.Fixture {
+        let day = Calendar.current.startOfDay(for: Date())
+        let values: [ImportedSampleValue] = [
+            ImportedSampleValue(hkUUID: UUID(), day: day, domain: .sleep,
+                                payload: .sleep(hours: 7.5, quality: .good)),
+            ImportedSampleValue(hkUUID: UUID(), day: day, domain: .workouts,
+                                payload: .workout(type: .cardio, minutes: 35)),
+            ImportedSampleValue(hkUUID: UUID(), day: day, domain: .nutrition,
+                                payload: .nutrition(ateThatDay: true)),
+        ]
+        return .seed(values: values, deleted: [], delta: .none)
     }
 
     /// Test-only fixture seam (T-08-06): insert a deterministic, threshold-crossing symptom history so the
@@ -268,5 +352,26 @@ extension EnvironmentValues {
     var accountAvailability: any AccountAvailability {
         get { self[AccountAvailabilityKey.self] }
         set { self[AccountAvailabilityKey.self] = newValue }
+    }
+}
+
+/// Environment key carrying the app's `HealthImportService` (DATA-05 injection seam, 09-03). Mirrors the
+/// `insightsCoordinator` key shape: the connect/rationale/refresh UI reads it to drive authorization +
+/// import. The DEFAULT is a benign, consent-disabled service over the `.empty` fixture so previews/tests
+/// that do not inject the real service NEVER touch a real `HKHealthStore` (T-09-06) and NEVER persist.
+private struct HealthImportServiceKey: EnvironmentKey {
+    static let defaultValue = HealthImportService(
+        reader: FixtureHealthDataReading(.empty),
+        anchorStore: HealthAnchorStore(kv: InMemoryAnchorStore()),
+        persist: { _, _ in },
+        recompute: {},
+        consentGuard: { false })
+}
+
+extension EnvironmentValues {
+    /// The injected HealthKit import service the connect/rationale/refresh UI drives (DATA-05, 09-03).
+    var healthImportService: HealthImportService {
+        get { self[HealthImportServiceKey.self] }
+        set { self[HealthImportServiceKey.self] = newValue }
     }
 }
