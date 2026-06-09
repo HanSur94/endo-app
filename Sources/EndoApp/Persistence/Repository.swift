@@ -141,6 +141,20 @@ protocol Repository {
     /// never linger. The blob encodes ONLY the gated `Insight`, never a `DaySnapshot` (T-08-01).
     /// MUST NOT be called before consent (ONBD-01).
     func replaceCachedInsights(_ insights: [Insight], computedAt: Date, fingerprint: String) throws
+
+    // MARK: Phase 9 — imported-sample CRUD (DATA-05, D-01/D-02). Consent-gated; dedupe-by-uuid upsert.
+
+    /// All `ImportedSample` rows recorded on `day` (day-bucketed, mirrors `factorReadings(on:)`).
+    /// Consent-gated. MUST NOT be called before consent (ONBD-01).
+    func importedSamples(on day: Date) throws -> [SchemaV1.ImportedSample]
+    /// Upsert one imported value, deduped by `hkSampleUUID` (Pitfall 5): an existing row with the same
+    /// UUID is updated in place; otherwise a new row is inserted. NEVER mutates manual-logging rows (D-01).
+    func upsertImportedSample(_ value: ImportedSampleValue) throws
+    /// Remove every `ImportedSample` whose `hkSampleUUID` is in `uuids` (honor HealthKit deletions).
+    func deleteImportedSamples(uuids: [String]) throws
+    /// The single entry the import service's persist closure calls: upsert each value (dedupe-by-uuid)
+    /// and delete the rows HealthKit reported deleted, in one consent-gated unit (D-09 / Pitfall 5).
+    func replaceOrInsertImported(values: [ImportedSampleValue], deletedUUIDs: [UUID]) throws
 }
 
 /// SwiftData-backed `Repository` over a `ModelContext`.
@@ -610,6 +624,90 @@ struct SwiftDataRepository: Repository {
                 fingerprint: fingerprint))
         }
         try context.save()
+    }
+
+    // MARK: - Phase 9 imported-sample CRUD (DATA-05, D-01/D-02)
+
+    func importedSamples(on day: Date) throws -> [SchemaV1.ImportedSample] {
+        assertConsented()   // ONBD-01 / V4 — first statement, like every sibling read.
+        let cal = Calendar.current
+        return try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
+            .filter { cal.isDate($0.day, inSameDayAs: day) }
+    }
+
+    func upsertImportedSample(_ value: ImportedSampleValue) throws {
+        assertConsented()   // ONBD-01 / V4 — first statement, like every sibling write.
+        let uuidString = value.hkUUID.uuidString
+        // Dedupe-by-uuid (Pitfall 5): an existing row with the same hkSampleUUID is updated in place,
+        // mirroring `setMedicationMarker`'s exists-guard, so a re-pull / cross-device mirror of the same
+        // sample collapses harmlessly instead of inserting a duplicate.
+        let existing = try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
+            .filter { $0.hkSampleUUID == uuidString }
+        let row = existing.first ?? {
+            let created = SchemaV1.ImportedSample(hkSampleUUID: uuidString)
+            context.insert(created)
+            return created
+        }()
+        // Collapse any accidental duplicate rows for this UUID onto the single survivor.
+        for extra in existing.dropFirst() { context.delete(extra) }
+        Self.apply(value, to: row)
+        try context.save()
+    }
+
+    func deleteImportedSamples(uuids: [String]) throws {
+        assertConsented()
+        guard !uuids.isEmpty else { return }
+        let keys = Set(uuids)
+        for row in try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
+        where row.hkSampleUUID.map(keys.contains) == true {
+            context.delete(row)
+        }
+        try context.save()
+    }
+
+    func replaceOrInsertImported(values: [ImportedSampleValue], deletedUUIDs: [UUID]) throws {
+        assertConsented()
+        // Apply deletions first so a same-pull delete-then-reinsert of the same UUID nets correctly.
+        for uuid in deletedUUIDs {
+            let key = uuid.uuidString
+            for row in try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
+            where row.hkSampleUUID == key {
+                context.delete(row)
+            }
+        }
+        for value in values {
+            try upsertImportedSample(value)   // dedupe-by-uuid upsert (saves per value).
+        }
+        try context.save()
+    }
+
+    /// Map an `ImportedSampleValue` (its day, domain, and one-of-four payload) onto the flat
+    /// `ImportedSample` columns. Only the columns relevant to the row's domain are populated; the rest
+    /// stay nil (CloudKit-safe all-optional shape, mirrors the @Model contract). Reuses the existing
+    /// app-enum raw values so the merge in `daySnapshots()` decodes them with the same defensive helpers.
+    private static func apply(_ value: ImportedSampleValue, to row: SchemaV1.ImportedSample) {
+        row.day = Calendar.current.startOfDay(for: value.day)
+        row.domainRaw = value.domain.rawValue
+        // Reset every value column so an in-place update never carries a stale field from a prior domain.
+        row.flowRaw = nil
+        row.sleepHours = nil
+        row.sleepQualityRaw = nil
+        row.activityTypeRaw = nil
+        row.activityMinutes = nil
+        row.ateThatDay = nil
+        switch value.payload {
+        case let .cycle(flowRaw):
+            row.flowRaw = flowRaw
+        case let .sleep(hours, quality):
+            row.sleepHours = hours
+            row.sleepQualityRaw = quality.rawValue
+        case let .workout(type, minutes):
+            row.activityTypeRaw = type.rawValue
+            row.activityMinutes = minutes
+        case let .nutrition(ateThatDay):
+            row.ateThatDay = ateThatDay
+        }
+        row.importedAt = .now
     }
 
     /// Project one day's raw `@Model` rows into the Sendable `EndoInsights.DaySnapshot`. Defensive
