@@ -330,7 +330,7 @@ Plans:
 
 **Wave 2** *(blocked on 11-01)*
 
-- [ ] 11-02-PLAN.md — RecommendationsEngine producer (re-frames typed survivors into top-N <=3 .recommendation Insights, direction-aware non-prescriptive copy, suppressed/sparse -> zero) + RecommendationsCopy (audited) + ForbiddenTerms imperative extension
+- [x] 11-02-PLAN.md — RecommendationsEngine producer (re-frames typed survivors into top-N <=3 .recommendation Insights, direction-aware non-prescriptive copy, suppressed/sparse -> zero) + RecommendationsCopy (audited) + ForbiddenTerms imperative extension
 
 **Wave 3** *(blocked on 11-02)*
 
