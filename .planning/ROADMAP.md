@@ -243,7 +243,7 @@ Plans:
 
 **Wave 3** *(blocked on 08-01)*
 
-- [ ] 08-03-PLAN.md — ChartSeriesGrouping pure gap helper + InsightTrendChart (Swift Charts, absolute-date axis, honest gaps via series-grouped runs, a11y) + kind-agnostic InsightCardView + auditable InsightsCopy + CopyAuditTests
+- [x] 08-03-PLAN.md — ChartSeriesGrouping pure gap helper + InsightTrendChart (Swift Charts, absolute-date axis, honest gaps via series-grouped runs, a11y) + kind-agnostic InsightCardView + auditable InsightsCopy + CopyAuditTests ✓
 
 **Wave 4** *(blocked on 08-02 + 08-03)*
 
