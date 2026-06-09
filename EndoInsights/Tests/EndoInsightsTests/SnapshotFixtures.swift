@@ -113,6 +113,53 @@ enum Fixtures {
         return days
     }
 
+    // MARK: Phase-12 flare fixtures (INST-06 — the honesty/absence contract for FlareEngine).
+
+    /// A RISING-WITH-EVIDENCE flare fixture: ≥21 consecutive logged days of a dominant symptom
+    /// (`pelvicPain`) whose RECENT days carry a HIGHER severity than the prior days — a clear rising
+    /// severity spine over a substantial personal history (clears the `minSample(.flare) == 21` floor).
+    /// Extends the `risingPelvicPainFixture` shape to ≥21 RECENT days so it is past the 21 floor.
+    ///
+    /// 30 consecutive days, offsets 0…-29: the recent 10 days (0…-9) at severity 7 (the rising spine),
+    /// the prior 20 days (-10…-29) at severity 3 (the calmer baseline). A `FlareEngine` composing a recent
+    /// rising-severity trend over ≥21 days of evidence SHOULD surface exactly ONE bounded (≤ .medium) flare
+    /// warning. Deterministic; absence elsewhere is honest.
+    static func risingFlareFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for i in 0...9 {    // recent rising spine — high severity (≥ 21-day floor is cleared by the full span)
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 7)]))
+        }
+        for i in 10...29 {  // prior calmer baseline — low severity (so the recent rise is real, not flat)
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 3)]))
+        }
+        return days
+    }
+
+    /// A FLAT / NO-RISE flare fixture: ≥21 consecutive logged days of a dominant symptom at a STEADY
+    /// severity with NO recent rise. Substantial history (clears the 21-day floor) but no rising spine, so a
+    /// `FlareEngine` MUST yield ZERO flare warning (absence is the honest answer — never fabricate a warning
+    /// from a flat history). 30 days, offsets 0…-29, ALL at severity 4.
+    static func flatNoRiseFixture() -> [DaySnapshot] {
+        (0...29).map { snapshot(offset: -$0, symptoms: [SymptomPoint(type: .pelvicPain, severity: 4)]) }
+    }
+
+    /// An UNDER-EVIDENCE rising flare fixture: a recent rise IS present, but FEWER than 21 logged days of
+    /// history — below the `minSample(.flare) == 21` floor. A `FlareEngine` MUST therefore yield EITHER an
+    /// empty result OR a single honest `isInsufficiencyNotice` card (the A3 cusp case) — NEVER a non-notice
+    /// flare warning (insufficient evidence is not a warning). 14 days, offsets 0…-13: the recent 5 days
+    /// (0…-4) at severity 7, the prior 9 days (-5…-13) at severity 3 — the SAME rising shape as
+    /// `risingFlareFixture` but truncated below the evidence floor.
+    static func risingButUnderEvidenceFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for i in 0...4 {    // recent rising spine — high severity
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 7)]))
+        }
+        for i in 5...13 {   // prior calmer baseline — low severity (total 14 days < 21 floor)
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 3)]))
+        }
+        return days
+    }
+
     // MARK: A sub-threshold fixture (< minLoggedDays) for the not-enough-data case.
 
     /// Exactly TWO logged days of a symptom — below the `minLoggedDays` (3) threshold in every window.

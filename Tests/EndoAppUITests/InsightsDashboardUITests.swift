@@ -229,6 +229,40 @@ final class InsightsDashboardUITests: XCTestCase {
         saveScreenshot(app, named: "insights-06-recommendations")
     }
 
+    // MARK: - 6. The flare early-warning section renders FIRST (Plan 12 — RED until Plan 03)
+
+    // RED until Plan 12-03 adds the calm `insights.section.flare` section to InsightsView AND places it
+    // FIRST among the insight sections (D-07 — most time-sensitive / discoverable, but calmly styled). The
+    // `-uitest-seed-flare` seed inserts a ≥21-day rising-severity history (Plan 12-01); once the FlareEngine
+    // producer (Plan 02) + the calm dashboard section (Plan 03) ship, that gated rising pattern surfaces a
+    // single non-alarmist flare warning in the new section, rendered ABOVE the Trends section. This is the
+    // MVP end-to-end happy-path test for INST-06.
+    func testFlare_rendersFirst() throws {
+        let app = launchAndOpenInsights(["-uitest-reset", "-uitest-seed-flare"])
+
+        // Wait for the dashboard to render any card first (the seeded flare/trend pipeline).
+        XCTAssertTrue(firstInsightCard(in: app).waitForExistence(timeout: 15),
+                      "The seeded dashboard must render at least one card before asserting the flare section.")
+
+        // The flare section is the FIRST section, so it is at/near the top of the dashboard. SwiftUI's
+        // `List` lazily realizes rows, so the (top-of-list) flare section should be realized immediately;
+        // the Trends section follows below. Resolve both, scrolling up first to be safe.
+        let flareSection = app.descendants(matching: .any)["insights.section.flare"]
+        let trendsSection = app.descendants(matching: .any)["insights.section.trends"]
+
+        XCTAssertTrue(flareSection.waitForExistence(timeout: 15),
+                      "A seeded rising-severity history must render the calm Flare early-warning section "
+                      + "(insights.section.flare) — the INST-06 MVP happy path.")
+        XCTAssertTrue(trendsSection.waitForExistence(timeout: 10),
+                      "The Trends section must also render (the seed crosses the trend threshold too).")
+
+        // ORDER (D-07): the flare section renders BEFORE (above) the Trends section. Compare the vertical
+        // origins of the two realized section elements — the flare section's top must be above Trends'.
+        XCTAssertLessThan(flareSection.frame.minY, trendsSection.frame.minY,
+                          "The Flare early-warning section must render FIRST — above the Trends section (D-07).")
+        saveScreenshot(app, named: "insights-07-flare-first")
+    }
+
     // MARK: - Screenshot helper (verbatim from LoggingFlowUITests)
 
     private func saveScreenshot(_ app: XCUIApplication, named name: String) {

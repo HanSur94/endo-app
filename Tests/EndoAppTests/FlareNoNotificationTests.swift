@@ -41,8 +41,7 @@ struct FlareNoNotificationTests {
         // ships FlareEngine.swift + FlareCopy.swift, and GREEN once it does — so SC2 cannot pass silently
         // by scanning nothing.
         #expect(!files.isEmpty,
-                "No-notification scan found no flare sources to scan — expected at least one of "
-                + "\(candidatePaths) (RED until Plan 02 ships the flare module files).")
+                "No-notification scan found no flare sources to scan — expected at least one of \(candidatePaths) (RED until Plan 02 ships the flare module files).")
 
         // The forbidden notification / push tokens (RESEARCH Pattern 5, exact LOCKED set). Any one in
         // non-comment code fails the build (the structural SC2 guarantee that survives future edits).
@@ -70,9 +69,7 @@ struct FlareNoNotificationTests {
                 guard !line.hasPrefix("//") else { continue }
                 for token in forbidden {
                     #expect(!line.contains(token),
-                            "Forbidden notification/push token \(token) in \(file.lastPathComponent) — the "
-                            + "flare module must be IN-APP only and never reach the OS notification system "
-                            + "(SC2 / D-06 no speculative flare push).")
+                            "Forbidden notification/push token \(token) in \(file.lastPathComponent) — the flare module must be IN-APP only and never reach the OS notification system (SC2 / D-06 no speculative flare push).")
                 }
             }
         }

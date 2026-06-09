@@ -80,6 +80,15 @@ final class AppDependencies {
         // touches the in-memory store, so it can NEVER write to the user's real local/CloudKit store.
         let seedReco = ProcessInfo.processInfo.arguments.contains("-uitest-seed-recommendations")
 
+        // Test-only, launch-arg-guarded FLARE seed (used by the dashboard flare E2E, Plan 12-01/12-03).
+        // When present we insert a deterministic ≥21-day symptom history whose RECENT days carry a HIGHER
+        // severity than the prior days — a clear recent rising-severity spine over substantial personal
+        // history (clears `HonestyGate.minSample(.flare) == 21`) so the FlareEngine (Plan 02) gates → ONE
+        // `.flare` warning and (once Plan 03 wires the calm section) the flare section renders FIRST. PAIRED
+        // with `-uitest-reset` (mirrors `-uitest-seed-insights`): the seed only ever touches the in-memory
+        // store, so it can NEVER write to the user's real local/CloudKit store. Unreachable in normal launches.
+        let seedFlare = ProcessInfo.processInfo.arguments.contains("-uitest-seed-flare")
+
         // Test-only, launch-arg-guarded HealthKit fixture selection (used by HealthConnectUITests, 09-03).
         // Mirrors `-uitest-reset`/`-uitest-seed-insights`: a `-uitest-health-*` arg swaps the REAL
         // `SystemHealthDataReading` for the deterministic `FixtureHealthDataReading` so the whole import →
@@ -173,6 +182,13 @@ final class AppDependencies {
         // real store.
         if seedReco && uiTestReset {
             Self.seedRecommendationCorrelation(into: insightsRepo)
+        }
+
+        // Plan 12-01 safety: the flare seed is inserted ONLY when BOTH `-uitest-seed-flare` AND the
+        // in-memory `-uitest-reset` store are active, so the rising-severity fixture can never leak to a
+        // real store.
+        if seedFlare && uiTestReset {
+            Self.seedFlareWarning(into: insightsRepo)
         }
 
         self.insightsCoordinator = InsightsCoordinator(
@@ -314,6 +330,25 @@ final class AppDependencies {
                 try? repo.setFood(tags: [.caffeine], freeText: nil, on: day)
                 try? repo.upsertSymptom(type: .pelvicPain, severity: 2, on: day)
             }
+        }
+    }
+
+    /// Test-only fixture seam (Plan 12-01): insert a deterministic ≥21-day symptom history with a RECENT
+    /// rising-severity spine so the FlareEngine (Plan 02) gates ONE `.flare` warning — and (once Plan 03
+    /// wires the calm section) the flare section renders FIRST — for the dashboard flare E2E. Logs 30
+    /// consecutive days of one symptom (`pelvicPain`): the prior 20 days (offsets 30…11) at a calmer
+    /// severity 3, the recent 10 days (offsets 10…1) at a higher severity 7 — a clear recent rise over a
+    /// substantial history (n=30 ≥ minSample(.flare)==21). PAIRED with the in-memory `-uitest-reset` store;
+    /// it can never touch a real store. Best-effort; a seed failure must not crash a UI-test launch.
+    private static func seedFlareWarning(into repo: SwiftDataRepository) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // 30 consecutive days ending yesterday. Prior 20 days (30…11) calmer (severity 3); recent 10 days
+        // (10…1) higher (severity 7) so a recent rising spine exists over ≥21 days of evidence.
+        for offset in stride(from: 30, through: 1, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            let severity = offset <= 10 ? 7 : 3
+            try? repo.upsertSymptom(type: .pelvicPain, severity: severity, on: day)
         }
     }
 
