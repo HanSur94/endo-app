@@ -26,7 +26,11 @@ struct BoundaryLintTests {
             .filter { $0.pathExtension == "swift" }
         #expect(!files.isEmpty, "Boundary lint found no package sources to scan at \(sources.path)")
 
-        let forbidden: Set<String> = ["SwiftData", "SwiftUI", "UIKit", "CoreData", "AppKit"]
+        // Phase 9 (T-09-05): HealthKit is added explicitly as belt-and-suspenders — the app-side
+        // HealthKit boundary (Sources/EndoApp/Health/) must NEVER leak into the Foundation-only package.
+        // (The package's zero-dep Package.swift already makes the import un-linkable; this is defence in
+        // depth, and the `module == "Foundation"` assert below would also catch it.)
+        let forbidden: Set<String> = ["SwiftData", "SwiftUI", "UIKit", "CoreData", "AppKit", "HealthKit"]
         for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
             for rawLine in text.split(separator: "\n") {

@@ -320,4 +320,106 @@ struct SchemaMigrationTests {
         let cached = try ctx.fetch(FetchDescriptor<SchemaV1.CachedInsight>())
         #expect(cached.isEmpty, "CachedInsight must be queryable (empty) after V4→V5 migration.")
     }
+
+    // Phase 9 (Plan 09-01): the V5→V6 additive migration is data-preserving — a V5 store survives the
+    // lightweight reopen at V6 with ZERO data loss (T-09-03), and the new ImportedSample entity is
+    // queryable (empty). Closes the A1 discipline for the Phase-9 model. Clones the V4→V5 case +1 version
+    // (INCLUDING a CachedInsight row, per the plan's behavior spec).
+    @Test func v5Store_survivesLightweightMigrationToV6_withNoDataLoss() async throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("endo-migration-v6-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let storeURL = dir.appendingPathComponent("store.sqlite")
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Known V5 fixture values to assert survive the migration to V6 (covers the V5-new model too).
+        let dayID = UUID()
+        let bleedID = UUID()
+        let bleedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let symptomID = UUID()
+        let painID = UUID()
+        let factorID = UUID()
+        let factorAt = Date(timeIntervalSince1970: 1_695_000_000)
+        let medID = UUID()
+        let dismissedID = UUID()
+        let cachedID = UUID()
+        let cachedAt = Date(timeIntervalSince1970: 1_698_000_000)
+        let suppressedStart = Date(timeIntervalSince1970: 1_690_000_000)
+
+        // 1. Open a store at the V5 schema (NO migration plan) and write V5 rows across every V5 model
+        //    (INCLUDING a CachedInsight row, per the plan's behavior spec).
+        do {
+            let v5Schema = Schema(versionedSchema: SchemaV5.self)
+            // Force `.none` (see V1 note above) — local-only migration store, no CloudKit mirroring (P-2).
+            let v5Config = ModelConfiguration(schema: v5Schema, url: storeURL, cloudKitDatabase: .none)
+            let v5Container = try ModelContainer(for: v5Schema, configurations: v5Config)
+            let ctx = ModelContext(v5Container)
+            ctx.insert(SchemaV1.DayEntry(id: dayID, note: "v5 day"))
+            ctx.insert(SchemaV1.BleedingEvent(id: bleedID, occurredAt: bleedAt, flowRaw: "medium", clots: true))
+            ctx.insert(SchemaV1.TreatmentState(startedAt: suppressedStart, modeRaw: "suppressed"))
+            ctx.insert(SchemaV1.SymptomReading(id: symptomID, typeRaw: "fatigue", severity: 8))
+            ctx.insert(SchemaV1.PainPoint(id: painID, regionRaw: "lowerAbdomenPelvis", severity: 5))
+            ctx.insert(SchemaV1.FactorReading(id: factorID, occurredOn: factorAt, kindRaw: "stress", level: 4))
+            ctx.insert(SchemaV1.Medication(id: medID, name: "Ibuprofen"))
+            ctx.insert(SchemaV1.DismissedInsight(id: dismissedID, signalKey: "cyclePhase.luteal.symptom.pelvicPain"))
+            ctx.insert(SchemaV1.CachedInsight(id: cachedID, signalKey: "symptom.pelvicPain.severity",
+                                              kindRaw: "trend", computedAt: cachedAt))
+            try ctx.save()
+            // v5Container goes out of scope here, releasing the store file.
+        }
+
+        // 2. Reopen the SAME store file at SchemaV6 via the lightweight migration plan (V5→V6).
+        let v6Container = try makeModelContainer(url: storeURL)
+        let ctx = ModelContext(v6Container)
+
+        // 3. Assert ALL V5 rows survived, readable through the V6 schema.
+        let days = try ctx.fetch(FetchDescriptor<SchemaV1.DayEntry>())
+        #expect(days.count == 1)
+        #expect(days.first?.id == dayID)
+        #expect(days.first?.note == "v5 day")
+
+        let bleeds = try ctx.fetch(FetchDescriptor<SchemaV1.BleedingEvent>())
+        #expect(bleeds.count == 1)
+        #expect(bleeds.first?.id == bleedID)
+        #expect(bleeds.first?.occurredAt == bleedAt)
+        #expect(bleeds.first?.flowRaw == "medium")
+        #expect(bleeds.first?.clots == true)
+
+        let states = try ctx.fetch(FetchDescriptor<SchemaV1.TreatmentState>())
+        #expect(states.count == 1)
+        #expect(states.first?.modeRaw == "suppressed")
+
+        let symptoms = try ctx.fetch(FetchDescriptor<SchemaV1.SymptomReading>())
+        #expect(symptoms.count == 1)
+        #expect(symptoms.first?.id == symptomID)
+        #expect(symptoms.first?.severity == 8)
+
+        let pains = try ctx.fetch(FetchDescriptor<SchemaV1.PainPoint>())
+        #expect(pains.count == 1)
+        #expect(pains.first?.id == painID)
+
+        let factors = try ctx.fetch(FetchDescriptor<SchemaV1.FactorReading>())
+        #expect(factors.count == 1)
+        #expect(factors.first?.id == factorID)
+        #expect(factors.first?.kindRaw == "stress")
+        #expect(factors.first?.level == 4)
+
+        let meds = try ctx.fetch(FetchDescriptor<SchemaV1.Medication>())
+        #expect(meds.count == 1)
+        #expect(meds.first?.id == medID)
+
+        let dismissed = try ctx.fetch(FetchDescriptor<SchemaV1.DismissedInsight>())
+        #expect(dismissed.count == 1)
+        #expect(dismissed.first?.id == dismissedID)
+        #expect(dismissed.first?.signalKey == "cyclePhase.luteal.symptom.pelvicPain")
+
+        let cached = try ctx.fetch(FetchDescriptor<SchemaV1.CachedInsight>())
+        #expect(cached.count == 1, "The V5 CachedInsight row must survive the V5→V6 migration.")
+        #expect(cached.first?.id == cachedID)
+        #expect(cached.first?.signalKey == "symptom.pelvicPain.severity")
+
+        // 4. The new V6-only model is queryable post-migration (empty, but the entity exists).
+        let imported = try ctx.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
+        #expect(imported.isEmpty, "ImportedSample must be queryable (empty) after V5→V6 migration.")
+    }
 }

@@ -1,11 +1,12 @@
-// Requirement: D-11/D-10/D-14 — a SwiftData SchemaMigrationPlan with LIGHTWEIGHT V1→V2, V2→V3, V3→V4,
-// V4→V5 stages.
+// Requirement: D-11/D-10/D-14/D-01 — a SwiftData SchemaMigrationPlan with LIGHTWEIGHT V1→V2, V2→V3,
+// V3→V4, V4→V5, V5→V6 stages.
 //
 // The Phase-2 schema delta is purely additive (BleedingEvent gains an optional `clots`; two new
 // models are introduced); the Phase-3 V2→V3 delta is also purely additive (two new models,
 // FactorReading + Medication); the Phase-6 V3→V4 delta is purely additive (one new model,
 // DismissedInsight — INST-04); the Phase-8 V4→V5 delta is purely additive (one new model,
-// CachedInsight — D-02/D-14), so `MigrationStage.lightweight` is correct AND sufficient for all.
+// CachedInsight — D-02/D-14); the Phase-9 V5→V6 delta is purely additive (one new model,
+// ImportedSample — DATA-05/D-01), so `MigrationStage.lightweight` is correct AND sufficient for all.
 //
 // Pitfall 3 / T-02-02 — why NOT `.custom`: a custom stage's `willMigrate`/`didMigrate` closures do
 // NOT fire once CloudKit is enabled (Phase 4). Any data-transform logic placed there would silently
@@ -14,14 +15,14 @@
 import Foundation
 import SwiftData
 
-/// The app's schema migration plan: V1 → V2 → V3 → V4 → V5, all lightweight (additive only). No custom hooks.
+/// The app's schema migration plan: V1 → V2 → V3 → V4 → V5 → V6, all lightweight (additive only). No custom hooks.
 enum EndoMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [SchemaV1.self, SchemaV2.self, SchemaV3.self, SchemaV4.self, SchemaV5.self]
+        [SchemaV1.self, SchemaV2.self, SchemaV3.self, SchemaV4.self, SchemaV5.self, SchemaV6.self]
     }
 
     static var stages: [MigrationStage] {
-        [v1toV2, v2toV3, v3toV4, v4toV5]
+        [v1toV2, v2toV3, v3toV4, v4toV5, v5toV6]
     }
 
     /// Purely additive → lightweight. NEVER `.custom` (its hooks don't fire under CloudKit, Phase 4).
@@ -49,5 +50,14 @@ enum EndoMigrationPlan: SchemaMigrationPlan {
     static let v4toV5 = MigrationStage.lightweight(
         fromVersion: SchemaV4.self,
         toVersion: SchemaV5.self
+    )
+
+    /// Phase-9 additive stage (ImportedSample, DATA-05/D-01). Lightweight; NEVER `.custom` — its
+    /// `willMigrate`/`didMigrate` hooks do NOT fire under CloudKit (Phase 4), and the delta is purely
+    /// additive (one new model), so lightweight is correct AND sufficient. ImportedSample is populated
+    /// at RUNTIME by the import service (09-02), so no backfill migration is ever needed (Pitfall 3).
+    static let v5toV6 = MigrationStage.lightweight(
+        fromVersion: SchemaV5.self,
+        toVersion: SchemaV6.self
     )
 }
