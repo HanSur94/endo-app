@@ -33,11 +33,9 @@
 //
 // MV pattern (D-12): the view observes the injected `@Observable InsightsCoordinator`; no ViewModel.
 import SwiftUI
-import SwiftData
 import EndoInsights
 
 struct InsightsView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     /// The integration brain (08-02): `insights` + `isUpdating`, driven by `loadCached()`/`dataChanged()`.
     @Environment(\.insightsCoordinator) private var coordinator
@@ -150,11 +148,12 @@ struct InsightsView: View {
 
     // MARK: - Dismiss (D-09/D-10 — persist + recompute-excludes)
 
-    /// Persist the dismissal (Phase-6 `DismissedInsight`, syncs via Phase 4 — stays gone across sessions
-    /// and devices) and trigger a recompute that EXCLUDES the dismissed signalKey (D-10). The view owns
-    /// the Repository seam (mirrors `HomeView`); the card only signals intent via its `onDismiss` closure.
+    /// Hand the dismissal to the coordinator (D-09/D-10): it persists the Phase-6 `DismissedInsight`
+    /// THROUGH ITS OWN context (syncs via Phase 4 — stays gone across sessions and devices) and triggers a
+    /// recompute that EXCLUDES the signalKey. Routing the write through the coordinator (NOT the view's
+    /// separate `modelContext`) guarantees the recompute's `dismissedSignalKeys()` read observes it — the
+    /// card stays gone, not just until the next recompute re-adds it.
     private func dismiss(_ insight: Insight) {
-        try? SwiftDataRepository(context: modelContext).dismissInsight(signalKey: insight.signalKey)
-        coordinator.dataChanged()
+        coordinator.dismiss(signalKey: insight.signalKey)
     }
 }

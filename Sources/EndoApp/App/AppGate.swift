@@ -54,9 +54,11 @@ private struct ConsentedShell: View {
 
             InsightsView()
                 .tabItem {
+                    // The id MUST live on the tab-item label: a `.accessibilityIdentifier` on the tab's
+                    // CONTENT view does not propagate to the tab-bar button XCUITest queries (UI-SPEC §D).
                     Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
+                        .accessibilityIdentifier("tab.insights")
                 }
-                .accessibilityIdentifier("tab.insights")
         }
     }
 }

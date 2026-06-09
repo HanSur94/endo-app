@@ -40,6 +40,11 @@ final class InsightsCoordinator {
     private let loadSnapshots: () throws -> [DaySnapshot]
     /// Read the dismissed signalKeys on the MAIN actor (repo.dismissedSignalKeys()).
     private let loadDismissed: () throws -> Set<String>
+    /// Persist a dismissal on the MAIN actor THROUGH THE COORDINATOR'S OWN context (repo.dismissInsight),
+    /// so the very next `recompute()` — which reads `loadDismissed()` from that SAME context — observes it.
+    /// (Routing the write through the view's separate `modelContext` would NOT be visible to the
+    /// coordinator's context in time, so the recompute would not exclude the dismissed card — D-09/D-10.)
+    private let persistDismissal: (String) throws -> Void
     /// Persist the fresh insights (repo.replaceCachedInsights(_:computedAt:fingerprint:)).
     private let persist: ([Insight], Date, String) -> Void
     /// Load the cached insights instantly on open (repo.loadCachedInsights()).
@@ -67,6 +72,7 @@ final class InsightsCoordinator {
         persist: @escaping ([Insight], Date, String) -> Void,
         loadCache: @escaping () -> [Insight],
         now: @escaping () -> Date,
+        persistDismissal: @escaping (String) throws -> Void = { _ in },
         engine: @escaping @Sendable ([DaySnapshot], Date, Set<String>) -> [Insight] = { snaps, asOf, dismissed in
             InsightsEngine.insights(from: snaps, asOf: asOf, dismissed: dismissed)
         },
@@ -79,6 +85,7 @@ final class InsightsCoordinator {
         self.persist = persist
         self.loadCache = loadCache
         self.now = now
+        self.persistDismissal = persistDismissal
         self.engine = engine
         self.sleep = sleep
     }
@@ -100,6 +107,18 @@ final class InsightsCoordinator {
             guard !Task.isCancelled else { return }
             await self?.recompute()
         }
+    }
+
+    /// Dismiss an insight (D-09/D-10): persist the dismissal THROUGH THE COORDINATOR'S OWN context (so the
+    /// recompute that follows observes it), optimistically drop the card from the published `insights` for
+    /// an instant UI response, then trigger a recompute that re-reads the dismissed set and excludes the
+    /// signal for good. Routing the WRITE here (not through the view's separate context) is what makes the
+    /// stays-gone guarantee hold — the view's context would not be visible to this coordinator's reads.
+    func dismiss(signalKey: String) {
+        try? persistDismissal(signalKey)
+        // Optimistic removal so the card animates out immediately; the recompute then makes it authoritative.
+        insights = insights.filter { $0.signalKey != signalKey }
+        dataChanged()
     }
 
     /// Recompute the insights: read inputs on the main actor, compute the fingerprint, SKIP on a cache hit,

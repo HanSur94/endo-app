@@ -138,7 +138,11 @@ final class AppDependencies {
                                                         fingerprint: fingerprint)
             },
             loadCache: { (try? insightsRepo.loadCachedInsights()) ?? [] },
-            now: { Date() })
+            now: { Date() },
+            // Route the dismiss WRITE through the coordinator's OWN repo/context (D-09/D-10) so the
+            // immediately-following recompute reads the new dismissal from the same context and excludes
+            // the card. A separate view-owned context would not be visible to the coordinator's reads.
+            persistDismissal: { signalKey in try insightsRepo.dismissInsight(signalKey: signalKey) })
     }
 
     /// Test-only fixture seam (T-08-06): insert a deterministic, threshold-crossing symptom history so the

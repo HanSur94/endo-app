@@ -48,6 +48,8 @@ struct InsightsCoordinatorTests {
         // Persist observations:
         var persistCallCount = 0
         var lastPersistedFingerprint: String?
+        // Dismiss-write observations:
+        var dismissedWrites: [String] = []
         // Sleep seam control: the coordinator awaits `sleep()`; the test releases pending sleeps.
         private var sleepContinuations: [CheckedContinuation<Void, Never>] = []
         let sleepLock = NSLock()
@@ -69,6 +71,22 @@ struct InsightsCoordinatorTests {
             for c in pending { c.resume() }
         }
 
+        /// Synchronous readiness check (no lock held across an `await`) — `true` once a debounce task has
+        /// parked in `sleepSeam()`.
+        func hasPendingSleep() -> Bool {
+            sleepLock.lock()
+            defer { sleepLock.unlock() }
+            return !sleepContinuations.isEmpty
+        }
+
+        /// Wait until a debounce task has actually parked in `sleepSeam()` (its continuation is registered),
+        /// THEN release — avoiding the race where `releaseSleeps()` fires before the task reaches the seam
+        /// (which would leave the later-registered continuation parked forever and hang the drain).
+        func releaseSleepsWhenReady() async {
+            while !hasPendingSleep() { await Task.yield() }
+            releaseSleeps()
+        }
+
         func sleepSeam() async {
             await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
                 sleepLock.lock()
@@ -87,6 +105,12 @@ struct InsightsCoordinatorTests {
                 },
                 loadCache: { self.cache },
                 now: { InsightsCoordinatorTests.epoch },
+                persistDismissal: { key in
+                    // Mirror the real repo's append-only dismiss: record the write AND make the next
+                    // `loadDismissed()` observe it (the same-context visibility the seam guarantees).
+                    self.dismissedWrites.append(key)
+                    self.dismissed.insert(key)
+                },
                 engine: { snaps, _, dismissed in
                     self.engineCallCount += 1
                     self.lastDismissedSeen = dismissed
@@ -163,6 +187,38 @@ struct InsightsCoordinatorTests {
 
         #expect(h.lastDismissedSeen.contains("symptom.pelvicPain.severity"),
                 "A dismissed signalKey must feed through into the engine's `dismissed` set on recompute (D-10).")
+    }
+
+    // MARK: - Dismiss: persist-through-own-context + optimistic removal (D-09/D-10).
+
+    @Test func dismiss_persistsThroughOwnSeam_andOptimisticallyRemovesCard() async {
+        let kept = Self.insight("kept")
+        let toDismiss = Self.insight("symptom.pelvicPain.frequency")
+        let h = Harness(snapshots: [Self.snapshot(on: Self.day(0))],
+                        cache: [kept, toDismiss], engineResult: [kept])
+        let coordinator = h.makeCoordinator()
+        // Seed the published insights as if a prior recompute had rendered both cards (via the cache seam).
+        coordinator.loadCached()
+        #expect(coordinator.insights == [kept, toDismiss], "Precondition: both cards are rendered.")
+
+        coordinator.dismiss(signalKey: "symptom.pelvicPain.frequency")
+
+        // The write went through the coordinator's OWN seam (so the next recompute's read observes it),
+        // and the card was optimistically removed for an instant UI response (D-09).
+        #expect(h.dismissedWrites == ["symptom.pelvicPain.frequency"],
+                "dismiss() must persist the dismissal through the coordinator's own context seam (D-09).")
+        #expect(coordinator.insights == [kept],
+                "dismiss() must optimistically remove the dismissed card for an instant UI response.")
+
+        // Drive the debounced recompute the dismiss scheduled (so no continuation leaks), then verify it
+        // fed the dismissed key into the engine and kept the card excluded (D-10). Wait for the debounce
+        // task to PARK in the sleep seam before releasing, so the drain can never hang on a race.
+        await h.releaseSleepsWhenReady()
+        await coordinator.awaitPendingForTests()
+        #expect(h.lastDismissedSeen.contains("symptom.pelvicPain.frequency"),
+                "The recompute after a dismiss must feed the dismissed key into the engine (D-10).")
+        #expect(coordinator.insights == [kept],
+                "After the recompute the dismissed card stays excluded (D-09/D-10).")
     }
 
     // MARK: - Debounce coalesces N→1 (D-01).
