@@ -35,6 +35,7 @@ public enum InsightsEngine {
         let candidates =
             TrendsEngine.trends(from: snapshots, asOf: today, calendar: calendar)
             + CyclePhaseMapper.insights(from: snapshots, asOf: today, calendar: calendar)
+            + CorrelationEngine.insights(from: snapshots, asOf: today, calendar: calendar)
         return HonestyGate.apply(candidates, dismissed: dismissed)
     }
 }
