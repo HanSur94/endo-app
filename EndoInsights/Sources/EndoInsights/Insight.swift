@@ -13,7 +13,7 @@ import Foundation
 
 /// The kind of insight. `.trend` ships in Phase 5; the rest are RESERVED now (D-17) so the
 /// Phase 6–12 contract is visible without a later contract change.
-public enum InsightKind: String, Sendable, Equatable, CaseIterable {
+public enum InsightKind: String, Sendable, Equatable, Codable, CaseIterable {
     /// Phase 5 — descriptive trends (INST-01).
     case trend
     /// Reserved — Phase 6 cycle-phase mapping (INST-02).
@@ -28,7 +28,7 @@ public enum InsightKind: String, Sendable, Equatable, CaseIterable {
 
 /// The rolling window a trend is computed over (D-06). Anchored on absolute calendar dates ending at
 /// the injected `today` — NOT cycle phase (that is Phase 6).
-public enum TrendWindow: String, Sendable, Equatable, CaseIterable {
+public enum TrendWindow: String, Sendable, Equatable, Codable, CaseIterable {
     case last7
     case last30
     case last90
@@ -38,7 +38,7 @@ public enum TrendWindow: String, Sendable, Equatable, CaseIterable {
 /// Descriptive confidence in an insight (D-02). `Int`-backed + `Comparable` so callers can order it
 /// (`none < low < medium < high`). A direct lift of the app's `Confidence` enum for cross-codebase
 /// consistency. Phase 5 populates it descriptively; the formal gating/withholding layer is Phase 6.
-public enum InsightConfidence: Int, Sendable, Equatable, Comparable, CaseIterable {
+public enum InsightConfidence: Int, Sendable, Equatable, Comparable, Codable, CaseIterable {
     case none = 0
     case low = 1
     case medium = 2
@@ -50,7 +50,7 @@ public enum InsightConfidence: Int, Sendable, Equatable, Comparable, CaseIterabl
 }
 
 /// A single supporting data point for an insight (for the future Phase 8 chart).
-public struct InsightPoint: Sendable, Equatable {
+public struct InsightPoint: Sendable, Equatable, Codable {
     public let date: Date
     public let value: Double
 
@@ -62,7 +62,7 @@ public struct InsightPoint: Sendable, Equatable {
 
 /// A generic, `Sendable`, `Equatable` insight value (D-02). `headline`/`detail` are plain,
 /// descriptive, non-causal copy (the `ClaimsPolicy` posture; Phase 8 renders them).
-public struct Insight: Sendable, Equatable, Identifiable {
+public struct Insight: Sendable, Equatable, Codable, Identifiable {
     /// Deterministically derived from `kind` + `window` + a signal key (Pitfall 4) — never `UUID()`.
     public let id: UUID
     public let kind: InsightKind
