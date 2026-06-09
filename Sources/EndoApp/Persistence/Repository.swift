@@ -848,8 +848,12 @@ struct SwiftDataRepository: Repository {
                     continue   // unknown/corrupt domain raw → contribute nothing (defensive, never crash).
                 }
             }
-            // Derive the sleep band from the SUMMED total (CR-01) — not any single fragment's band.
-            sleepQuality = sleepHours.map { HealthSampleMapping.sleepQuality(forAsleepHours: $0) }
+            // Derive the sleep band from the SUMMED total (CR-01) — not any single fragment's band. The
+            // mapping returns the app-side `SleepQuality`; bridge to the package enum via its raw value
+            // (same-raw passthrough, mirroring the other `EndoInsights.SleepQuality(raw:)` sites).
+            sleepQuality = sleepHours.map {
+                EndoInsights.SleepQuality(raw: HealthSampleMapping.sleepQuality(forAsleepHours: $0).rawValue)
+            } ?? nil
             activityMinutes = workoutMinutesTotal
         }
     }

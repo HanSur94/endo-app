@@ -137,16 +137,16 @@ struct HealthImportMergeTests {
         let segments: [Double] = [1.5, 1.0, 2.0, 0.5, 1.5, 1.0]   // sums to 7.5h
         #expect(segments.reduce(0, +) == 7.5)
         for hours in segments {
-            // The per-segment `quality` is advisory (each fragment alone would be .poor); the merge
-            // recomputes the band from the night total, so we pass the per-fragment band the reader would.
-            let fragmentBand = hours < 5 ? SleepQuality.poor : (hours < 7 ? .okay : .good)
+            // The per-segment `quality` is ADVISORY — each fragment alone (< 5h) is .poor; the merge
+            // recomputes the band from the night TOTAL, so the stored per-fragment band is irrelevant.
+            // (Payload uses the app-side SleepQuality; the merged DaySnapshot field is EndoInsights'.)
             try repo.upsertImportedSample(
-                imported(.sleep(hours: hours, quality: fragmentBand), domain: .sleep, on: day0))
+                imported(.sleep(hours: hours, quality: EndoApp.SleepQuality.poor), domain: .sleep, on: day0))
         }
 
         let snap = try #require(try repo.daySnapshots().first)
-        #expect(snap.sleepHours == 7.5)        // SUMMED, not last-writer-wins on one fragment
-        #expect(snap.sleepQuality == .good)    // band of the 7.5h TOTAL (>= 7.0 ceiling), not a fragment's .poor
+        #expect(snap.sleepHours == 7.5)                          // SUMMED, not last-writer-wins on one fragment
+        #expect(snap.sleepQuality == EndoInsights.SleepQuality.good)  // band of the 7.5h TOTAL (>= 7.0), not a fragment's .poor
     }
 
     // MARK: - replaceOrInsertImported batch (CR-02, atomic delete+upsert)
