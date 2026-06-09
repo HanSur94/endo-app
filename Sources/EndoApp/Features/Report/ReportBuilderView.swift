@@ -25,11 +25,24 @@ import EndoInsights
 struct ReportBuilderView: View {
     @Environment(\.modelContext) private var modelContext
 
+    /// TEST-ONLY: `-uitest-report-invalid-range` seeds the builder into an INVERTED custom range
+    /// (To before From) so `ReportFlowUITests` can assert the invalid-range guard deterministically
+    /// without driving the compact `DatePicker` calendar (brittle/locale-dependent in XCUITest).
+    /// Inert in production — only consulted in the @State defaults below.
+    private static var uitestInvalidRange: Bool {
+        ProcessInfo.processInfo.arguments.contains("-uitest-report-invalid-range")
+    }
+
     /// The chosen range preset (default: the 30-day preset — the most common clinician window).
-    @State private var preset: RangePreset = .last30
-    /// The custom-range bounds (only consulted when `preset == .custom`). Defaults to a ~30-day window.
-    @State private var customFrom: Date = Calendar.current.date(byAdding: .day, value: -30, to: .now) ?? .now
-    @State private var customTo: Date = .now
+    @State private var preset: RangePreset = ReportBuilderView.uitestInvalidRange ? .custom : .last30
+    /// The custom-range bounds (only consulted when `preset == .custom`). Defaults to a ~30-day window;
+    /// under the test seam, From = today and To = a week earlier → an intentionally invalid (To < From) range.
+    @State private var customFrom: Date = ReportBuilderView.uitestInvalidRange
+        ? .now
+        : (Calendar.current.date(byAdding: .day, value: -30, to: .now) ?? .now)
+    @State private var customTo: Date = ReportBuilderView.uitestInvalidRange
+        ? (Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now)
+        : .now
 
     /// The generation lifecycle. `.idle` → tap Generate → `.generating` (non-blocking caption) →
     /// `.ready(url)` (push the preview) or `.failed` (honest error + retry). Never a fabricated result.

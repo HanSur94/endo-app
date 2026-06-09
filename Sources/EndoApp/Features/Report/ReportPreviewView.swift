@@ -20,6 +20,11 @@ struct ReportPreviewView: View {
 
     var body: some View {
         PDFKitView(url: url)
+            // The a11y id lives on the SwiftUI layer (PDFKit's PDFView does not reliably surface a UIView
+            // accessibilityIdentifier to XCUITest — its internal subviews dominate the hierarchy). The
+            // SwiftUI representable wrapper carries the stable `report.preview.pdf` contract the E2E drives.
+            .accessibilityIdentifier("report.preview.pdf")
+            .accessibilityElement(children: .contain)
             .ignoresSafeArea(edges: .bottom)
             .navigationTitle(ReportCopy.builderTitle)
             .navigationBarTitleDisplayMode(.inline)

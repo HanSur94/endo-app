@@ -65,6 +65,14 @@ final class AppDependencies {
         // write to the user's real local/CloudKit store. Unreachable in normal launches.
         let seedInsights = ProcessInfo.processInfo.arguments.contains("-uitest-seed-insights")
 
+        // Test-only, launch-arg-guarded REPORT seed (used by ReportFlowUITests, 10-03). When present we
+        // insert a deterministic, populated date range — a couple of weeks of symptoms PLUS at least one
+        // daily factor (sleep) + a bleeding day — so the report builder produces a non-empty PDF over the
+        // "Last 30 days" preset. PAIRED with `-uitest-reset` (T-10-13): the seed only ever touches the
+        // in-memory store, so it can NEVER write to the user's real local/CloudKit store. Unreachable in
+        // normal launches.
+        let seedReport = ProcessInfo.processInfo.arguments.contains("-uitest-seed-report")
+
         // Test-only, launch-arg-guarded HealthKit fixture selection (used by HealthConnectUITests, 09-03).
         // Mirrors `-uitest-reset`/`-uitest-seed-insights`: a `-uitest-health-*` arg swaps the REAL
         // `SystemHealthDataReading` for the deterministic `FixtureHealthDataReading` so the whole import →
@@ -145,6 +153,12 @@ final class AppDependencies {
         // in-memory `-uitest-reset` store are active, so a threshold fixture can never leak to a real store.
         if seedInsights && uiTestReset {
             Self.seedThresholdCrossingInsights(into: insightsRepo)
+        }
+
+        // T-10-13 safety: the report seed is inserted ONLY when BOTH `-uitest-seed-report` AND the
+        // in-memory `-uitest-reset` store are active, so a populated range can never leak to a real store.
+        if seedReport && uiTestReset {
+            Self.seedReportRange(into: insightsRepo)
         }
 
         self.insightsCoordinator = InsightsCoordinator(
@@ -241,6 +255,28 @@ final class AppDependencies {
         for offset in stride(from: 21, through: 1, by: -1) {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
             try? repo.upsertSymptom(type: .pelvicPain, severity: 6, on: day)
+        }
+    }
+
+    /// Test-only fixture seam (T-10-13): insert a deterministic, POPULATED date range so the report
+    /// builder produces a non-empty PDF over the "Last 30 days" preset (ReportFlowUITests, 10-03). Logs
+    /// ~21 consecutive days of one symptom (`pelvicPain`) PLUS a daily factor (sleep) and a bleeding day,
+    /// all within the last 30 days. PAIRED with the in-memory `-uitest-reset` store; it can never touch a
+    /// real store. Best-effort; a seed failure must not crash a UI-test launch.
+    private static func seedReportRange(into repo: SwiftDataRepository) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // 21 consecutive days ending yesterday: symptoms + a sleep factor (so the report's symptoms +
+        // daily-factor sections are non-empty and the legend surfaces a self-reported source label).
+        for offset in stride(from: 21, through: 1, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            try? repo.upsertSymptom(type: .pelvicPain, severity: 6, on: day)
+            try? repo.setSleep(hours: 7, quality: .okay, on: day)
+        }
+        // A couple of bleeding days near the start of the window so the cycle section has flow to summarize.
+        for offset in [20, 19] {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            try? repo.setBleeding(intensity: .medium, clots: false, on: day)
         }
     }
 
