@@ -150,6 +150,53 @@ struct ReportModelTests {
     }
 
     @Test
+    func symptomChartPointsAreRealLoggedDays() throws {
+        // WR-03: the embedded chart must plot the REAL per-day series — genuine logged dates + the day's
+        // recorded severity — NEVER fabricated every-other-day dates or interpolated severities.
+        let (repo, _) = try makeRepo()
+        let cal = Calendar.current
+        // Log pelvicPain on three NON-CONTIGUOUS in-range days (so an honest gap exists between them).
+        let d1 = cal.startOfDay(for: cal.date(byAdding: .day, value: -20, to: day0)!)
+        let d2 = cal.startOfDay(for: cal.date(byAdding: .day, value: -10, to: day0)!)
+        let d3 = cal.startOfDay(for: cal.date(byAdding: .day, value: -3, to: day0)!)
+        try repo.upsertSymptom(type: .pelvicPain, severity: 3, on: d1)
+        try repo.upsertSymptom(type: .pelvicPain, severity: 7, on: d2)
+        try repo.upsertSymptom(type: .pelvicPain, severity: 5, on: d3)
+
+        let model = try ReportModel.assemble(
+            range: range, repository: repo, engine: engine, asOf: day0)
+
+        let row = try #require(model.symptoms.rows.first { $0.type == .pelvicPain })
+        // EXACTLY one point per logged day — never synthesized intermediate dates.
+        #expect(row.points.count == 3,
+                "The chart series has one point per real logged day — no fabricated dates.")
+        // The dates are the ACTUAL start-of-day keys we logged on (sorted ascending), not every-other-day
+        // dates counted back from today.
+        #expect(row.points.map(\.date) == [d1, d2, d3],
+                "The plotted dates are the real logged days, in order — never invented.")
+        // The values are the REAL severities (7 is the genuine peak), not a linear min→max ramp.
+        #expect(row.points.map(\.value) == [3.0, 7.0, 5.0],
+                "The plotted severities are the real recorded values — never interpolated.")
+    }
+
+    @Test
+    func symptomChartPointsOmitSeverityLessDays() throws {
+        // WR-03 / absence ≠ 0: a day logged present-WITHOUT a severity contributes to daysLogged but
+        // NOT to the chart series — there is no honest value to plot, so the gap stays a gap (no fabrication).
+        let (repo, _) = try makeRepo()
+        let cal = Calendar.current
+        let withSev = cal.startOfDay(for: cal.date(byAdding: .day, value: -8, to: day0)!)
+        try repo.upsertSymptom(type: .fatigue, severity: 4, on: withSev)
+
+        let model = try ReportModel.assemble(
+            range: range, repository: repo, engine: engine, asOf: day0)
+
+        let row = try #require(model.symptoms.rows.first { $0.type == .fatigue })
+        #expect(row.points == [InsightPoint(date: withSev, value: 4.0)],
+                "Only severity-bearing logged days become chart points; absence is never a fabricated value.")
+    }
+
+    @Test
     func sourceLabelsMatchProvenance() throws {
         let (repo, _) = try makeRepo()
         let cal = Calendar.current

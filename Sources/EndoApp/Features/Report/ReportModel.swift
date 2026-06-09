@@ -89,6 +89,12 @@ struct SymptomRow: Equatable, Sendable {
     var maxSeverity: Int?
     /// Distinct calendar days in range this symptom was logged.
     var daysLogged: Int
+    /// The REAL per-day severity series for this symptom (WR-03): one point per day this symptom was
+    /// logged WITH a severity, at the day's start-of-day date and that day's max recorded severity.
+    /// NEVER fabricated — days without a logged severity (or unlogged days) are simply absent, so the
+    /// embedded chart honors honest gaps (absence is a break, never an interpolated value). Sorted
+    /// ascending by date for deterministic Equatable fixtures + a stable chart.
+    var points: [InsightPoint]
 }
 
 /// Section 3 — Symptoms & pain: the descriptive trend table + chart points for the range. When the
@@ -313,8 +319,12 @@ struct ReportModel: Equatable, Sendable {
     private static func symptomsSection(
         inRange: [DaySnapshot], sources: [DaySnapshotSource]
     ) -> SymptomsSection {
-        // Group every logged symptom point by type across the in-range days.
+        // Group every logged symptom point by type across the in-range days. `dailyMaxSeverity` collects
+        // the REAL per-day series (WR-03): the day's MAX recorded severity for the type, keyed by the
+        // snapshot's start-of-day date. A day where the symptom was logged WITHOUT a severity contributes
+        // to `days` but NOT to the chart series (no fabricated value), preserving honest gaps.
         var byType: [EndoInsights.SymptomType: (min: Int?, max: Int?, days: Int)] = [:]
+        var dailyMaxSeverity: [EndoInsights.SymptomType: [Date: Int]] = [:]
         for snap in inRange {
             // A symptom type counts ONCE per day toward `daysLogged`, even if it appears multiple times.
             var seenToday = Set<EndoInsights.SymptomType>()
@@ -323,14 +333,25 @@ struct ReportModel: Equatable, Sendable {
                 if let sev = point.severity {
                     entry.min = entry.min.map { Swift.min($0, sev) } ?? sev
                     entry.max = entry.max.map { Swift.max($0, sev) } ?? sev
+                    // Real per-day point: keep the day's HIGHEST recorded severity for this type.
+                    var perDay = dailyMaxSeverity[point.type] ?? [:]
+                    perDay[snap.day] = perDay[snap.day].map { Swift.max($0, sev) } ?? sev
+                    dailyMaxSeverity[point.type] = perDay
                 }
                 if seenToday.insert(point.type).inserted { entry.days += 1 }
                 byType[point.type] = entry
             }
         }
         let rows = byType
-            .map { SymptomRow(type: $0.key, minSeverity: $0.value.min,
-                              maxSeverity: $0.value.max, daysLogged: $0.value.days) }
+            .map { type, value -> SymptomRow in
+                // The REAL series for this symptom: one point per day-with-a-logged-severity, at the
+                // start-of-day date + the day's max severity. Sorted ascending; gaps stay gaps.
+                let points = (dailyMaxSeverity[type] ?? [:])
+                    .map { InsightPoint(date: $0.key, value: Double($0.value)) }
+                    .sorted { $0.date < $1.date }
+                return SymptomRow(type: type, minSeverity: value.min,
+                                  maxSeverity: value.max, daysLogged: value.days, points: points)
+            }
             .sorted { $0.type.rawValue < $1.type.rawValue }   // deterministic order for Equatable fixtures
 
         // HONEST SPARSE GATE: a descriptive trend table is only meaningful with the SAME floor the LOCKED

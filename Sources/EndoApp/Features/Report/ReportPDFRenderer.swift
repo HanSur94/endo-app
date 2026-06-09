@@ -205,8 +205,9 @@ enum ReportPDFRenderer {
             ], widths: cols, cursor: cursor)
         }
 
-        // The embedded chart (D-02): a FRESH InsightTrendChart in single-ink black drawn as VECTOR.
-        drawChart(for: section, cursor: cursor)
+        // The embedded chart (D-02): a FRESH InsightTrendChart in single-ink black drawn as VECTOR,
+        // plotting the busiest symptom's REAL per-day series (WR-03).
+        drawChart(for: model, cursor: cursor)
     }
 
     /// Cycle (three-state, NO phantom cycle): render the model's `CycleSection` verbatim.
@@ -282,23 +283,31 @@ enum ReportPDFRenderer {
     /// Construct a FRESH `InsightTrendChart` (off any live view tree, Pitfall 4) in single-ink BLACK and
     /// draw it as VECTOR into the PDF CGContext using the A3 transform RESOLVED in Plan 01 (translate-only,
     /// no y-flip). Always paired with the symptoms table above so the chart is never the sole meaning.
-    private static func drawChart(for section: SymptomsSection, cursor: Cursor) {
+    private static func drawChart(for model: ReportModel, cursor: Cursor) {
+        let section = model.symptoms
         guard let row = section.rows.max(by: { $0.daysLogged < $1.daysLogged }) else { return }
 
-        // The chart's points are the model's own descriptive series for the busiest symptom — a single
-        // representative point per logged day at the max severity (deterministic; no fabricated gap fill).
-        let points = chartPoints(for: row)
-        guard !points.isEmpty else { return }
+        // WR-03: the chart plots the row's REAL per-day series (genuine logged dates + severities) — never
+        // fabricated dates or interpolated values. If the busiest symptom carries no severity-bearing points
+        // (logged present-without-severity), there is nothing honest to plot, so we draw the text fallback
+        // instead of inventing data; the honest evidence count stays in the table beside it.
+        let points = row.points
+        guard !points.isEmpty else {
+            drawText(ReportCopy.notEnoughDataInRange, font: bodyFont, color: secondaryInk, cursor: cursor)
+            return
+        }
 
         let chartBox = CGSize(width: contentWidth, height: 180)
         ensureRoom(chartBox.height + sectionGap / 2, cursor: cursor)
 
+        // WR-06: thread a FIXED `asOf` (the model's range.end) into the chart so neither layout pass reads
+        // `.now`; both passes are byte-identical and the two-pass page count can never drift across midnight.
         let chart = InsightTrendChart(
             points: points,
             window: .last30,
             directionWord: directionWord(points),
             headline: appSymptomLabel(row.type),
-            asOf: points.map(\.date).max() ?? .now,
+            asOf: model.range.end,
             inkColor: .black)   // single print-ink black (D-02)
 
         if let ctx = cursor.context {
@@ -317,24 +326,6 @@ enum ReportPDFRenderer {
             }
         }
         cursor.y += chartBox.height + sectionGap / 2
-    }
-
-    /// One representative point per logged day for the busiest symptom (max severity, at the day). Synthesized
-    /// across the range so the chart shows the trend without fabricating values between logged days.
-    private static func chartPoints(for row: SymptomRow) -> [InsightPoint] {
-        guard let maxSeverity = row.maxSeverity else { return [] }
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: .now)
-        // Distribute the row's logged days across the last-30 window deterministically (descriptive only —
-        // the honest evidence count is `row.daysLogged`, surfaced verbatim in the table beside the chart).
-        let count = max(1, row.daysLogged)
-        let minSeverity = row.minSeverity ?? maxSeverity
-        return (0..<count).map { i in
-            let day = cal.date(byAdding: .day, value: -(count - 1 - i) * 2, to: today) ?? today
-            let value = count == 1 ? Double(maxSeverity)
-                : Double(minSeverity) + (Double(maxSeverity - minSeverity) * Double(i) / Double(count - 1))
-            return InsightPoint(date: day, value: value)
-        }
     }
 
     /// The descriptive direction word from first→last point (words only — never "higher"/"lower").
