@@ -36,6 +36,10 @@ public enum InsightsEngine {
             TrendsEngine.trends(from: snapshots, asOf: today, calendar: calendar)
             + CyclePhaseMapper.insights(from: snapshots, asOf: today, calendar: calendar)
             + CorrelationEngine.insights(from: snapshots, asOf: today, calendar: calendar)
+            // Phase 11 (INST-05, D-08): re-framed associations. Concatenated AFTER the correlations they
+            // derive from (matches the dashboard section order, D-06) and routed through the SAME single
+            // HonestyGate below — no separate gating path. The public signature stays LOCKED (D-16).
+            + RecommendationsEngine.recommendations(from: snapshots, asOf: today, calendar: calendar)
         return HonestyGate.apply(candidates, dismissed: dismissed)
     }
 }

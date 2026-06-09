@@ -130,6 +130,29 @@ struct HonestyGateTests {
         #expect(gated.count == 1, "A trend at sampleSize == minSample(.trend) must survive (no-regression, Pitfall 1).")
     }
 
+    // MARK: (b''') Phase 11 — minSample(.recommendation) inherits the correlation floor (Pitfall 3).
+
+    @Test func minSampleRecommendation_equalsCorrelationFloor() async throws {
+        #expect(HonestyGate.minSample(for: .recommendation) == HonestyGate.minSample(for: .correlation),
+                "minSample(.recommendation) must equal minSample(.correlation) (D-02 — a recommendation re-frames a gated correlation).")
+        #expect(HonestyGate.minSample(for: .recommendation) == 10,
+                "minSample(.recommendation) must be 10 — a 14 floor silently drops valid n=10-13 recommendations (Pitfall 3).")
+    }
+
+    @Test func recommendationFromN10Correlation_survivesGate() async throws {
+        // A recommendation re-framed from an n=10 correlation (sampleSize == minSample(.correlation) == 10),
+        // clean non-prescriptive copy, .medium confidence → MUST survive the gate (Pitfall 3 — not dropped).
+        let n10 = candidate(
+            kind: .recommendation, signalKey: "recommendation.dairy.symptom.pelvicPain",
+            confidence: .medium, sampleSize: 10,
+            headline: "Your pelvic pain tends to be more intense on days with dairy — something you might explore.",
+            detail: "This is a pattern in your own data, not advice — something to discuss with your clinician."
+        )
+        let gated = HonestyGate.apply([n10], dismissed: [])
+        #expect(gated.count == 1,
+                "A recommendation at sampleSize == 10 == minSample(.recommendation) must survive the gate (Pitfall 3).")
+    }
+
     // MARK: (d) MANDATORY — ZERO forbidden (causal) terms across EVERY fixture's emitted insights (D-08).
 
     @Test func allEmittedInsights_haveZeroForbiddenTerms() async throws {

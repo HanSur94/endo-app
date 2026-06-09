@@ -28,14 +28,16 @@ enum HonestyGate {
     ///   - `.trend`          → 3  (LOCKED == `TrendsEngine.minLoggedDays`; the no-regression invariant, D-06).
     ///   - `.cyclePhase`     → 2  (mirrors `CyclePhaseMapper`'s `gaps.count >= 2`).
     ///   - `.correlation`    → 10 (Phase 7 LOCKED — D-14/A1; == the engine self-gate floor).
-    ///   - `.recommendation` → 14 (Phase 11 placeholder).
+    ///   - `.recommendation` → 10 (Phase 11 LOCKED — inherits minSample(.correlation) (D-02): a recommendation
+    ///                         re-frames an already-gated correlation (sampleSize == pairedDays >= 10), so a 14
+    ///                         floor would silently drop valid n=10-13 recommendations (Pitfall 3).
     ///   - `.flare`          → 21 (Phase 12 placeholder).
     static func minSample(for kind: InsightKind) -> Int {
         switch kind {
         case .trend:          return 3
         case .cyclePhase:     return 2
         case .correlation:    return 10
-        case .recommendation: return 14
+        case .recommendation: return 10
         case .flare:          return 21
         }
     }

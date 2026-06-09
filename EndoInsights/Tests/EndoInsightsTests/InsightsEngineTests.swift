@@ -82,6 +82,44 @@ struct InsightsEngineTests {
                 "A suppressed user must yield NO cyclePhase correlation through the gate (D-04 by construction).")
     }
 
+    // MARK: (a'') Phase-11 composition — a strong association surfaces a `.recommendation` through the gate.
+
+    @Test func composition_surfacesRecommendation_overStrongFixture() async throws {
+        // The aggravating fixture (dairy PRESENT → HIGHER pelvic-pain severity) is a strong, well-sampled
+        // correlation; the composed RecommendationsEngine re-frames it into a `.recommendation` behind the gate.
+        let kinds = Set(engine(Fixtures.strongAssociationFixture()).map(\.kind))
+        #expect(kinds.contains(.recommendation),
+                "InsightsEngine must compose RecommendationsEngine — a strong association surfaces a .recommendation.")
+    }
+
+    // MARK: (b'') Withholding — suppressed + flood users yield ZERO recommendations through the public engine (SC3).
+
+    @Test func gate_withholdsRecommendation_forSuppressedAndFlood() async throws {
+        let suppressed = engine(Fixtures.suppressedUserCorrelationFixture())
+        #expect(!suppressed.contains { $0.kind == .recommendation },
+                "A suppressed user must yield ZERO recommendations through the public engine (SC3).")
+        let flood = engine(Fixtures.multipleComparisonFloodFixture())
+        #expect(!flood.contains { $0.kind == .recommendation },
+                "A multiple-comparison flood of pure noise must surface ZERO recommendations (SC3).")
+    }
+
+    // MARK: (c'') Dismissal-exclusion of a recommendation + idempotence (D-07).
+
+    @Test func dismissal_excludesRecommendation_andStaysExcluded() async throws {
+        let fixture = Fixtures.strongAssociationFixture()
+        let baseline = engine(fixture)
+        let rec = baseline.first { $0.kind == .recommendation }
+        let target = try #require(rec?.signalKey, "The strong fixture must surface a recommendation to dismiss.")
+
+        let afterDismiss = engine(fixture, dismissed: [target])
+        #expect(!afterDismiss.contains { $0.signalKey == target }, "The dismissed recommendation must be excluded.")
+
+        // Idempotence (D-07): a second recompute with the same dismissed set keeps it excluded.
+        let afterDismissAgain = engine(fixture, dismissed: [target])
+        #expect(afterDismissAgain.map(\.id) == afterDismiss.map(\.id),
+                "A dismissed recommendation STAYS dismissed across recompute (D-07).")
+    }
+
     // MARK: (c) Dismissal-exclusion + idempotence (D-12: stays dismissed across recomputation).
 
     @Test func dismissal_excludesExactlyThatSignal_andStaysExcluded() async throws {
