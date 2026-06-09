@@ -57,6 +57,53 @@ enum ReportCopy {
     // MARK: Surface 2 — PDF document copy (UI-SPEC §Copywriting Contract / §Honesty Contract)
 
     static let pdfTitle = "Endo-App — Self-Tracking Report"
+
+    // The 8 numbered section headings (D-04 order). Plain, descriptive nouns — no causal/diagnostic verb.
+    static let sectionHeaderTitle = "1. Overview"
+    static let sectionSummaryTitle = "2. Coverage"
+    static let sectionSymptomsTitle = "3. Symptoms & pain"
+    static let sectionCycleTitle = "4. Cycle & bleeding"
+    static let sectionLifestyleTitle = "5. Daily factors"
+    static let sectionInsightsTitle = "6. Patterns"
+    static let sectionLegendTitle = "7. Source labels"
+
+    // Summary / coverage line scaffolding (the day count is interpolated; this is the fixed wording).
+    static func coverageLine(daysLogged: Int) -> String {
+        "Logged days in this range: \(daysLogged)"
+    }
+
+    // Symptoms table column headers (descriptive, absolute — never cycle-relative).
+    static let symptomsColSymptom = "Symptom"
+    static let symptomsColRange = "Severity range"
+    static let symptomsColDays = "Days logged"
+    /// One symptom row's severity-range cell (e.g. "2–6"); a dash when no severity was recorded.
+    static func severityRange(min: Int?, max: Int?) -> String {
+        guard let min, let max else { return "\u{2014}" }   // em dash = no severity recorded
+        return min == max ? "\(min)" : "\(min)\u{2013}\(max)"
+    }
+
+    // Lifestyle / daily-factor row labels (absence ≠ 0; a nil field renders `notLogged`).
+    static let lifestyleSleep = "Sleep"
+    static let lifestyleActivity = "Activity"
+    static let lifestyleFood = "Food logged"
+    static let lifestyleStress = "Stress"
+    static let lifestyleMood = "Mood"
+    /// The honest absence marker for an unlogged factor (absence ≠ 0 — distinct from a logged value).
+    static let notLogged = "Not logged"
+    static let foodYes = "Yes"
+
+    // Cycle section derived framing. `cycleDayValue` formats the optional cycle-day; the next-window is a
+    // DATE RANGE the renderer interpolates around `cycleNextWindowLabel`.
+    static func cycleDayValue(_ day: Int) -> String { "\(cycleDayPrefix) \(day)" }
+    /// A plain confidence WORD for a derived cycle estimate (never a number/percentage — D-11).
+    static func cycleConfidenceWord(_ confidence: Confidence) -> String {
+        switch confidence {
+        case .high:   return "Confidence: high"
+        case .medium: return "Confidence: medium"
+        case .low:    return "Confidence: low"
+        case .none:   return "Confidence: low"
+        }
+    }
     /// The header-meta format: "Generated {date} · Covers {start} – {end}" (a date RANGE, never a single
     /// hard date). The dates are interpolated by the renderer; this is the fixed scaffolding.
     static func headerMeta(generated: String, rangeStart: String, rangeEnd: String) -> String {
@@ -116,6 +163,13 @@ enum ReportCopy {
             // Surface 2
             pdfTitle,
             headerMeta(generated: "Jun 9, 2026", rangeStart: "May 10", rangeEnd: "Jun 9"),
+            sectionHeaderTitle, sectionSummaryTitle, sectionSymptomsTitle, sectionCycleTitle,
+            sectionLifestyleTitle, sectionInsightsTitle, sectionLegendTitle,
+            coverageLine(daysLogged: 12),
+            symptomsColSymptom, symptomsColRange, symptomsColDays, severityRange(min: 2, max: 6),
+            lifestyleSleep, lifestyleActivity, lifestyleFood, lifestyleStress, lifestyleMood,
+            notLogged, foodYes,
+            cycleDayValue(7),
             sourceSelfReported, sourceAppleHealth, sourceMixed,
             legendIntro, legendSelfReported, legendAppleHealth, legendMixed,
             notEnoughDataInRange,
@@ -123,5 +177,6 @@ enum ReportCopy {
             insightsSparse,
             footer, pageNumber(2, of: 5),
         ]
+        + Confidence.allCases.map(cycleConfidenceWord)
     }
 }
