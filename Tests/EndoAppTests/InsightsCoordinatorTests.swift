@@ -17,10 +17,10 @@ struct InsightsCoordinatorTests {
 
     // MARK: - Fixtures
 
-    private static let epoch = Date(timeIntervalSince1970: 1_700_000_000)
-    private static func day(_ offset: Int) -> Date { epoch.addingTimeInterval(Double(offset) * 86_400) }
+    nonisolated static let epoch = Date(timeIntervalSince1970: 1_700_000_000)
+    nonisolated private static func day(_ offset: Int) -> Date { epoch.addingTimeInterval(Double(offset) * 86_400) }
 
-    private static func snapshot(on day: Date) -> DaySnapshot {
+    nonisolated private static func snapshot(on day: Date) -> DaySnapshot {
         DaySnapshot(
             day: day, symptoms: [], pain: [], flow: nil, clots: false, foodTags: [],
             activityType: nil, activityMinutes: nil, activityIntensity: nil,
@@ -28,7 +28,7 @@ struct InsightsCoordinatorTests {
             stress: nil, mood: nil, hasNote: false, suppressed: false)
     }
 
-    private static func insight(_ signalKey: String) -> Insight {
+    nonisolated private static func insight(_ signalKey: String) -> Insight {
         Insight.derived(
             kind: .trend, window: .last30, signalKey: signalKey,
             headline: "H", detail: "D", confidence: .medium,
@@ -77,7 +77,7 @@ struct InsightsCoordinatorTests {
             }
         }
 
-        func makeCoordinator() -> InsightsCoordinator {
+        @MainActor func makeCoordinator() -> InsightsCoordinator {
             InsightsCoordinator(
                 loadSnapshots: { self.snapshots },
                 loadDismissed: { self.dismissed },
