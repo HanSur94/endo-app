@@ -38,7 +38,7 @@ public enum TrendWindow: String, Sendable, Equatable, Codable, CaseIterable {
 /// Descriptive confidence in an insight (D-02). `Int`-backed + `Comparable` so callers can order it
 /// (`none < low < medium < high`). A direct lift of the app's `Confidence` enum for cross-codebase
 /// consistency. Phase 5 populates it descriptively; the formal gating/withholding layer is Phase 6.
-public enum InsightConfidence: Int, Sendable, Equatable, Comparable, Codable, CaseIterable {
+public enum InsightConfidence: Int, Sendable, Equatable, Hashable, Comparable, Codable, CaseIterable {
     case none = 0
     case low = 1
     case medium = 2
@@ -50,7 +50,7 @@ public enum InsightConfidence: Int, Sendable, Equatable, Comparable, Codable, Ca
 }
 
 /// A single supporting data point for an insight (for the future Phase 8 chart).
-public struct InsightPoint: Sendable, Equatable, Codable {
+public struct InsightPoint: Sendable, Equatable, Hashable, Codable {
     public let date: Date
     public let value: Double
 
@@ -62,7 +62,7 @@ public struct InsightPoint: Sendable, Equatable, Codable {
 
 /// A generic, `Sendable`, `Equatable` insight value (D-02). `headline`/`detail` are plain,
 /// descriptive, non-causal copy (the `ClaimsPolicy` posture; Phase 8 renders them).
-public struct Insight: Sendable, Equatable, Codable, Identifiable {
+public struct Insight: Sendable, Equatable, Hashable, Codable, Identifiable {
     /// Deterministically derived from `kind` + `window` + a signal key (Pitfall 4) — never `UUID()`.
     public let id: UUID
     public let kind: InsightKind
