@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 8 complete — UAT-verified (9/9 testable passed, 0 issues) + threat-secured (16/16 closed). Ready to plan Phase 9 (HealthKit Import).
+stopped_at: Phase 9 (HealthKit Import) PLANNED — 3 plans / 3 waves (09-01 seam+schema spine, 09-02 import+manual-wins-merge+recompute, 09-03 permission UX+entitlement+E2E). All 16 locked decisions + DATA-05 + SC1/2/3 covered; VALIDATION per-task map populated, Wave-0 = 09-01. Ready to execute.
 last_updated: "2026-06-09T15:03:02.614Z"
 last_activity: 2026-06-09
 progress:
@@ -26,9 +26,10 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 ## Current Position
 
 Phase: 9
-Plan: Not started
-Status: Phase 9 (HealthKit Import) ready to plan. Phase 8 closed 2026-06-09 — UAT-verified (08-UAT.md: 9/9 testable on iOS Simulator passed, 0 issues; chart-VISUAL-quality human-verify done live) and threat-secured (08-SECURITY.md: 16/16 closed, threats_open:0). Carried to RELEASE (not blockers): on-device CachedInsight cross-device sync (needs 2 iCloud devices) + CloudKit Console deploy of the CachedInsight record type (Dev→Prod). Minor polish backlog: dismiss optimistic-vs-recompute scope (signal-level dismissal drops all same-signal windows on re-entry — by-design, cosmetic).
-Last activity: 2026-06-09 — Marked Phase 8 complete after UAT + secure-phase; advanced to Phase 9.
+Plan: Planned (3 plans / 3 waves) — not yet executed
+Status: Phase 9 (HealthKit Import) PLANNED. 09-01 (Wave 1): HealthDataReading seam + Sendable value contracts + pure HK->app mapping tables + CloudKit-safe ImportedSample @Model + additive SchemaV6/lightweight V5->V6 migration + package HealthKit-boundary lint. 09-02 (Wave 2): anchored-pull HealthImportService (isolated, dedupe/deletions, calls Phase-8 dataChanged()) + anchor-outside-CloudKit + FixtureHealthDataReading + manual-wins/nil-honest merge in daySnapshots() (SC1/SC3). 09-03 (Wave 3, autonomous:false): read-only HealthKit entitlement + NSHealthShareUsageDescription in project.yml + real SystemHealthDataReading (365-day backfill) + rationale-before-sheet permission + graceful denial deep-link + "from Apple Health" badge + Refresh from Health + -uitest-health-* fixture wiring + HealthConnectUITests + deferred real-device human-verify checkpoint. All plans validate (frontmatter+structure GREEN); all 16 D-decisions + DATA-05 covered; 09-VALIDATION per-task map populated (nyquist_compliant:true).
+Status_was: Phase 9 (HealthKit Import) ready to plan. Phase 8 closed 2026-06-09 — UAT-verified (08-UAT.md: 9/9 testable on iOS Simulator passed, 0 issues; chart-VISUAL-quality human-verify done live) and threat-secured (08-SECURITY.md: 16/16 closed, threats_open:0). Carried to RELEASE (not blockers): on-device CachedInsight cross-device sync (needs 2 iCloud devices) + CloudKit Console deploy of the CachedInsight record type (Dev→Prod). Minor polish backlog: dismiss optimistic-vs-recompute scope (signal-level dismissal drops all same-signal windows on re-entry — by-design, cosmetic).
+Last activity: 2026-06-09 — Planned Phase 9 (HealthKit Import): 3 plans, 3 waves, dependency-driven vertical slices.
 
 Progress: [█████████████░░░░░░░] 8/12 phases complete (67%) — Phase 9 next
 

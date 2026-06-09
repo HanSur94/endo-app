@@ -422,7 +422,12 @@ to reduce double-logging; stays on your device and in your private iCloud; entir
 
 **If this table is empty:** it is not — A1–A4 above need confirmation, but none block planning; each degrades gracefully and honors the locked decisions.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three resolved during planning; the Phase 9 plans commit to these answers.
+> **Q1 → RESOLVED:** `menstrualFlow` only per locked D-14; `vaginalBleeding` is NOT added (kept as a future belt-and-suspenders option, not implemented).
+> **Q2 → RESOLVED:** anchor persisted in `UserDefaults` (NSKeyedArchiver), per-`HealthDomain` — out of the CloudKit-synced store (locked by 09-02 T1).
+> **Q3 → RESOLVED:** `ImportedSample` IS CloudKit-safe per D-01, with dedupe-by-`HKSample.uuid` so cross-device mirroring collapses harmlessly (locked by 09-01 T3 + 09-02 T1).
 
 1. **`menstrualFlow` vs `vaginalBleeding` on iOS 18 (D-14 is locked to `menstrualFlow`).**
    - What we know: both identifiers exist; `menstrualFlow` shows no deprecation banner in current docs and has historically been the Cycle-Tracking-populated type. `[CITED: developer.apple.com/.../menstrualFlow]`

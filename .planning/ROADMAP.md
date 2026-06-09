@@ -261,7 +261,22 @@ Plans:
   2. Permission is requested incrementally and contextually (with in-app rationale before the system sheet), not as one mega-prompt at launch.
   3. If HealthKit access is fully denied, the app remains fully usable via manual logging, and empty reads never render as "you have no symptoms."
 
-**Plans**: TBD
+**Plans**: 3 plans, 3 waves (dependency-driven: seam+schema -> import+merge+recompute -> permission UX+entitlement+E2E)
+**UI hint**: yes
+
+Plans:
+
+**Wave 1**
+
+- [ ] 09-01-PLAN.md — Wave-0 seam + persistence spine: HealthDataReading protocol + Sendable value contracts (no HKSample escapes), pure HK->app mapping tables (D-14/15/16), CloudKit-safe ImportedSample @Model + additive SchemaV6 + lightweight V5->V6 migration + survival test, EndoInsights HealthKit-boundary lint (DATA-05, D-01)
+
+**Wave 2** *(blocked on 09-01)*
+
+- [ ] 09-02-PLAN.md — The make-or-break slice: anchored-pull HealthImportService (isolated, dedupe-by-uuid, deletions, calls Phase-8 dataChanged()) + per-domain anchor persistence outside CloudKit + FixtureHealthDataReading + manual-wins/nil-honest merge in daySnapshots() (DATA-05, SC1/SC3, D-02/D-04/D-09/D-12)
+
+**Wave 3** *(blocked on 09-02)*
+
+- [ ] 09-03-PLAN.md — Payoff slice: read-only HealthKit entitlement + NSHealthShareUsageDescription in project.yml + real SystemHealthDataReading (365-day backfill/incremental) + rationale-before-sheet contextual permission + graceful denial deep-link + "from Apple Health" badge + Refresh from Health + launch-arg fixture wiring + HealthConnectUITests + human-verify checkpoint (DATA-05, SC2/SC3, D-03/D-05/D-06/D-07/D-08/D-10)
 
 ### Phase 10: Doctor-Ready PDF Report
 
@@ -323,7 +338,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
-| 9. HealthKit Import | 0/TBD | Not started | - |
+| 9. HealthKit Import | 0/3 | Planned | - |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |
