@@ -191,3 +191,40 @@ enum RecommendationCopy {
     /// The shared detail line — the honest "your own data, not advice" framing (matches `ClaimsPolicy`).
     static let detail = "This is a pattern in your own data, not advice — something to discuss with your clinician."
 }
+
+// MARK: - Cross-boundary drift-guard surface (WR-02 / WR-03) — the ONLY public window onto the mirrors.
+
+/// PUBLIC, TEST-SUPPORT-ONLY window onto the package-internal mirrors that the APP duplicates and must keep
+/// in sync (the app↔package "drift guard" precedent established by `DaySnapshotMappingTests`' enum-parity
+/// assertions). The app test target sees ONLY the package's PUBLIC API (it imports `EndoInsights` as a
+/// release product, NOT `@testable`), so the package-internal `RecommendationCopy` template strings and
+/// `ForbiddenTerms.imperative` list are invisible to it. This shim forwards those two mirrored surfaces —
+/// and NOTHING else — so an app-side test can assert the two halves are byte-identical / in-sync and a
+/// future edit to ONE side without the other fails a test (WR-02: the copy mirror; WR-03: the imperative
+/// list). The forwarded values are pure data with no behavior; exposing them does NOT widen the engine's
+/// real API surface or the Foundation-only boundary (BoundaryLintTests stays green — this imports nothing).
+public enum RecommendationsDriftGuard {
+
+    /// The package-internal `RecommendationCopy.beneficialHeadline` mirror, for byte-identity comparison
+    /// against the app's audited `RecommendationsCopy.beneficialHeadline` (WR-02).
+    public static func packageBeneficialHeadline(factor: String) -> String {
+        RecommendationCopy.beneficialHeadline(factor: factor)
+    }
+
+    /// The package-internal `RecommendationCopy.aggravatingHeadline` mirror (WR-02).
+    public static func packageAggravatingHeadline(symptom: String, factor: String) -> String {
+        RecommendationCopy.aggravatingHeadline(symptom: symptom, factor: factor)
+    }
+
+    /// The package-internal `RecommendationCopy.detail` mirror (WR-02).
+    public static var packageDetail: String { RecommendationCopy.detail }
+
+    /// The package-internal imperative forbidden list (`ForbiddenTerms.imperative`), for parity comparison
+    /// against the app's `ClaimsPolicy.forbiddenImperatives` (WR-03).
+    public static var packageForbiddenImperatives: [String] { ForbiddenTerms.imperative }
+
+    /// The package-internal causal forbidden list (`ForbiddenTerms.causal`). The app's
+    /// `ClaimsPolicy.forbiddenVerbs` is intentionally a SUBSET (the package EXTENDS it with the D-08
+    /// connectives), so an app-side guard asserts a subset relation, not equality (WR-03 note).
+    public static var packageForbiddenCausal: [String] { ForbiddenTerms.causal }
+}
