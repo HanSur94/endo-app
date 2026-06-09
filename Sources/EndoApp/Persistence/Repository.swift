@@ -769,26 +769,58 @@ struct SwiftDataRepository: Repository {
         /// Nutrition presence (D-16). `true` ⇒ an "ate that day" food-presence signal exists.
         var ateThatDay: Bool?
 
-        /// Flatten a day's rows. Last-writer-wins per domain (rows are already deduped by hkUUID upstream);
-        /// only the columns relevant to a row's domain are read.
+        /// Flatten a day's rows into per-day signals.
+        ///
+        /// SLEEP (CR-01): Apple Health records ONE night as MANY sleep-analysis segments (one per
+        /// stage/awake transition), and each segment is its own `ImportedSample` row (distinct hkUUID).
+        /// So a night's asleep hours is the SUM of its rows, not any single row. We accumulate
+        /// `sleepHours` across the day's `.sleep` rows and derive the coarse `sleepQuality` band from the
+        /// running TOTAL via the same `HealthSampleMapping` thresholds the reader used per-segment — never
+        /// last-writer-wins on a single ~minutes-long fragment. The per-row `sleepQualityRaw` is advisory.
+        ///
+        /// WORKOUTS (WR-04): a day can have MULTIPLE workouts, each its own row. We sum the minutes and
+        /// keep the LONGEST session's type (deterministic regardless of fetch order), instead of an
+        /// arbitrary last-writer-wins on whichever row iterated last.
+        ///
+        /// CYCLE / NUTRITION: a day's flow / "ate that day" presence is single-valued (rows are deduped
+        /// by hkUUID upstream); last-writer-wins is correct there.
         init(rows: [SchemaV1.ImportedSample]) {
+            // Workout accumulators (WR-04): sum minutes; the type comes from the longest session.
+            var workoutMinutesTotal: Double?
+            var longestWorkoutMinutes = -1.0
             for row in rows {
                 switch HealthDomain(rawValue: row.domainRaw ?? "") {
                 case .cycle:
                     // nil/unknown flow raw → nil (never fabricated), mirroring FlowIntensity(raw:).
                     flow = EndoInsights.FlowIntensity(raw: row.flowRaw)
                 case .sleep:
-                    sleepHours = row.sleepHours
-                    sleepQuality = EndoInsights.SleepQuality(raw: row.sleepQualityRaw)
+                    // SUM the night's segments (CR-01). A nil row contributes nothing; `sleepHours` stays
+                    // nil until at least one real `.sleep` row arrives (nil≠0, SC3 honesty).
+                    if let rowHours = row.sleepHours {
+                        sleepHours = (sleepHours ?? 0) + rowHours
+                    }
                 case .workouts:
-                    activityType = row.activityTypeRaw.map { EndoInsights.ActivityType(raw: $0) }
-                    activityMinutes = row.activityMinutes
+                    // SUM minutes; keep the LONGEST session's type (WR-04 deterministic collapse).
+                    if let minutes = row.activityMinutes {
+                        workoutMinutesTotal = (workoutMinutesTotal ?? 0) + minutes
+                        if minutes > longestWorkoutMinutes {
+                            longestWorkoutMinutes = minutes
+                            activityType = row.activityTypeRaw.map { EndoInsights.ActivityType(raw: $0) }
+                        }
+                    } else if activityType == nil {
+                        // A typed-but-minute-less workout row still establishes the type (never fabricates
+                        // minutes — those stay nil unless a row carries them).
+                        activityType = row.activityTypeRaw.map { EndoInsights.ActivityType(raw: $0) }
+                    }
                 case .nutrition:
                     ateThatDay = row.ateThatDay
                 case .none:
                     continue   // unknown/corrupt domain raw → contribute nothing (defensive, never crash).
                 }
             }
+            // Derive the sleep band from the SUMMED total (CR-01) — not any single fragment's band.
+            sleepQuality = sleepHours.map { HealthSampleMapping.sleepQuality(forAsleepHours: $0) }
+            activityMinutes = workoutMinutesTotal
         }
     }
 

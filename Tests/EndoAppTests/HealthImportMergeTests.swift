@@ -126,4 +126,41 @@ struct HealthImportMergeTests {
         // A field with neither manual nor imported data has no source (nil) — never fabricated.
         #expect(sources.flow == nil)
     }
+
+    // MARK: - multiSegmentSleepSums (CR-01, load-bearing honesty)
+
+    @Test func multiSegmentSleepSumsAndBandFollowsTotal() throws {
+        let repo = try makeRepo()
+        // Apple Watch records ONE night as MANY short sleep-analysis segments, each its own row
+        // (distinct hkUUID). Six fragments summing to 7.5h must merge to 7.5h / .good — NOT a single
+        // ~0.4h fragment read as .poor (the CR-01 regression). Quality is the band of the SUMMED total.
+        let segments: [Double] = [1.5, 1.0, 2.0, 0.5, 1.5, 1.0]   // sums to 7.5h
+        #expect(segments.reduce(0, +) == 7.5)
+        for hours in segments {
+            // The per-segment `quality` is advisory (each fragment alone would be .poor); the merge
+            // recomputes the band from the night total, so we pass the per-fragment band the reader would.
+            let fragmentBand = hours < 5 ? SleepQuality.poor : (hours < 7 ? .okay : .good)
+            try repo.upsertImportedSample(
+                imported(.sleep(hours: hours, quality: fragmentBand), domain: .sleep, on: day0))
+        }
+
+        let snap = try #require(try repo.daySnapshots().first)
+        #expect(snap.sleepHours == 7.5)        // SUMMED, not last-writer-wins on one fragment
+        #expect(snap.sleepQuality == .good)    // band of the 7.5h TOTAL (>= 7.0 ceiling), not a fragment's .poor
+    }
+
+    // MARK: - multiWorkoutCollapse (WR-04, deterministic)
+
+    @Test func multiWorkoutSumsMinutesAndKeepsLongestType() throws {
+        let repo = try makeRepo()
+        // Two workouts on one day: a 20-min walk and a 45-min strength session. The day's imported
+        // activity must be deterministic: minutes SUM to 65, type is the LONGEST session's (.strength) —
+        // never an arbitrary last-writer-wins on whichever row iterates last.
+        try repo.upsertImportedSample(imported(.workout(type: .walking, minutes: 20), domain: .workouts, on: day0))
+        try repo.upsertImportedSample(imported(.workout(type: .strength, minutes: 45), domain: .workouts, on: day0))
+
+        let snap = try #require(try repo.daySnapshots().first)
+        #expect(snap.activityMinutes == 65)      // SUM of both sessions
+        #expect(snap.activityType == .strength)  // the LONGEST session's type (deterministic)
+    }
 }

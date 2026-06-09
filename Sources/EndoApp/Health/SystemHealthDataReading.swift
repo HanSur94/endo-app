@@ -126,11 +126,18 @@ final class SystemHealthDataReading: HealthDataReading {
                 payload: .cycle(flowRaw: flow.rawValue))
 
         case .sleep:
-            // Sleep (D-15): one sleep-analysis segment → nightly asleep hours + coarse quality. Each
-            // asleep segment contributes its own duration; in-bed/awake segments map to 0 asleep hours and
-            // are dropped (they are not "asleep"). The per-day rollup across segments is the merge's job
-            // (the dedupe-by-uuid store keeps each segment row; the merge sums them) — here we surface the
-            // single segment's asleep hours, mirroring the FixtureHealthDataReading's per-value shape.
+            // Sleep (D-15): one sleep-analysis segment → that segment's asleep hours + a coarse quality.
+            // Each asleep segment contributes its own duration; in-bed/awake segments map to 0 asleep
+            // hours and are dropped (they are not "asleep"). The per-day rollup across segments is the
+            // MERGE's job: the dedupe-by-uuid store keeps each segment as its own row, and
+            // `ImportedSignals.init` SUMS the day's `.sleep` rows into the night's hours and derives the
+            // band from that summed TOTAL (CR-01). The per-segment `quality` emitted here is therefore
+            // ADVISORY only — the merge recomputes the band from the night total, not from this fragment.
+            //
+            // NIGHT ATTRIBUTION (WR-02, known limitation): `day` is the segment's `startOfDay`, so a
+            // night that crosses midnight is split across two calendar days (each day sums its own
+            // segments). Correct night-attribution (rolling a whole sleep session under one day key)
+            // needs a session rollup in `pull` before emitting and is tracked as WR-02 follow-up.
             guard let category = sample as? HKCategorySample else { return nil }
             let segment = SleepSegmentValue(
                 value: category.value,
