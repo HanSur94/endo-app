@@ -144,6 +144,10 @@ struct HonestyGateTests {
             ("regularCycle", Fixtures.regularCycleFixture()),
             ("irregularCycle", Fixtures.irregularCycleFixture()),
             ("underSampledCycle", Fixtures.underSampledCycleFixture()),
+            // Phase 7 (.correlation) — the file's own contract mandates new kinds add their fixtures here.
+            ("strongAssociation", Fixtures.strongAssociationFixture()),
+            ("multipleComparisonFlood", Fixtures.multipleComparisonFloodFixture()),
+            ("suppressedUserCorrelation", Fixtures.suppressedUserCorrelationFixture()),
         ]
 
         for (name, snapshots) in streams {

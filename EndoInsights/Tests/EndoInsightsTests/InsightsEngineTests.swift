@@ -45,6 +45,43 @@ struct InsightsEngineTests {
         #expect(gatedIDs.isSuperset(of: rawIDs), "InsightsEngine.insights must be a superset of TrendsEngine.trends.")
     }
 
+    // MARK: (a') Phase-7 composition — a strong association surfaces a `.correlation` through the gate.
+
+    @Test func composition_surfacesCorrelation_overStrongFixture() async throws {
+        let kinds = Set(engine(Fixtures.strongAssociationFixture()).map(\.kind))
+        #expect(kinds.contains(.correlation),
+                "InsightsEngine must compose CorrelationEngine — a strong association surfaces a .correlation.")
+    }
+
+    // MARK: (b') Withholding — the gate drops under-sampled / spurious / flood correlations (the value, D-18).
+
+    @Test func gate_withholdsUnderSampledCorrelation() async throws {
+        let insights = engine(Fixtures.underSampledAssociationFixture())   // n=9 < minSample(.correlation)==10
+        #expect(!insights.contains { $0.kind == .correlation },
+                "An under-sampled (n=9) correlation must be WITHHELD through the public engine.")
+    }
+
+    @Test func gate_withholdsSpuriousCorrelation() async throws {
+        let insights = engine(Fixtures.spuriousAssociationFixture())
+        #expect(!insights.contains { $0.kind == .correlation },
+                "A spurious (independent) correlation must be WITHHELD through the public engine.")
+    }
+
+    @Test func gate_withholdsMultipleComparisonFlood() async throws {
+        // The load-bearing acceptance (SC3): K≈100+ pure-noise pairs surface ZERO correlations.
+        let insights = engine(Fixtures.multipleComparisonFloodFixture())
+        #expect(!insights.contains { $0.kind == .correlation },
+                "A multiple-comparison flood of pure noise must surface ZERO correlations (SC3).")
+    }
+
+    // MARK: (c') Suppressed user — no cycle-phase correlation ever reaches the public output (D-04).
+
+    @Test func suppressedUser_noCyclePhaseCorrelation_throughGate() async throws {
+        let insights = engine(Fixtures.suppressedUserCorrelationFixture())
+        #expect(!insights.contains { $0.signalKey.contains("cyclePhase") },
+                "A suppressed user must yield NO cyclePhase correlation through the gate (D-04 by construction).")
+    }
+
     // MARK: (c) Dismissal-exclusion + idempotence (D-12: stays dismissed across recomputation).
 
     @Test func dismissal_excludesExactlyThatSignal_andStaysExcluded() async throws {
