@@ -326,7 +326,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 11-01-PLAN.md — Wave-0 scaffold: package-internal scoredCandidates direction seam on CorrelationEngine + RED RecommendationsEngineTests + beneficial/aggravating fixtures + ClaimsPolicy.forbiddenImperatives & the CopyAuditTests imperative scan + the failing recommendation E2E & correlation seed seam
+- [x] 11-01-PLAN.md — Wave-0 scaffold: package-internal scoredCandidates direction seam on CorrelationEngine + RED RecommendationsEngineTests + beneficial/aggravating fixtures + ClaimsPolicy.forbiddenImperatives & the CopyAuditTests imperative scan + the failing recommendation E2E & correlation seed seam
 
 **Wave 2** *(blocked on 11-01)*
 
