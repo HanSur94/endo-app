@@ -355,7 +355,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 12-01-PLAN.md — Wave-0 (Nyquist) scaffold: the alarmist/diagnostic ForbiddenTerms/ClaimsPolicy list + scan (positive/negative controls, "warning" excluded for the header) + the FlareNoNotificationTests no-push source guard + the RED FlareEngineTests honesty/absence suite + new flare fixtures + the RED flare E2E + the -uitest-seed-flare seed seam
+- [x] 12-01-PLAN.md — Wave-0 (Nyquist) scaffold: the alarmist/diagnostic ForbiddenTerms/ClaimsPolicy list + scan (positive/negative controls, "warning" excluded for the header) + the FlareNoNotificationTests no-push source guard + the RED FlareEngineTests honesty/absence suite + new flare fixtures + the RED flare E2E + the -uitest-seed-flare seed seam — DONE 2026-06-09
 
 **Wave 2** *(blocked on 12-01)*
 
@@ -383,4 +383,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
 | 10. Doctor-Ready PDF Report | 3/3 | Complete    | 2026-06-09 |
 | 11. Personalized Recommendations | 3/3 | Complete    | 2026-06-09 |
-| 12. Flare Early-Warning | 0/TBD | Not started | - |
+| 12. Flare Early-Warning | 1/3 | In progress | - |
