@@ -272,7 +272,7 @@ Plans:
 
 **Wave 2** *(blocked on 09-01)*
 
-- [ ] 09-02-PLAN.md — The make-or-break slice: anchored-pull HealthImportService (isolated, dedupe-by-uuid, deletions, calls Phase-8 dataChanged()) + per-domain anchor persistence outside CloudKit + FixtureHealthDataReading + manual-wins/nil-honest merge in daySnapshots() (DATA-05, SC1/SC3, D-02/D-04/D-09/D-12)
+- [x] 09-02-PLAN.md — The make-or-break slice: anchored-pull HealthImportService (isolated, dedupe-by-uuid, deletions, calls Phase-8 dataChanged()) + per-domain anchor persistence outside CloudKit + FixtureHealthDataReading + manual-wins/nil-honest merge in daySnapshots() (DATA-05, SC1/SC3, D-02/D-04/D-09/D-12)
 
 **Wave 3** *(blocked on 09-02)*
 
@@ -338,7 +338,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
-| 9. HealthKit Import | 1/3 | In Progress|  |
+| 9. HealthKit Import | 2/3 | In Progress|  |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |

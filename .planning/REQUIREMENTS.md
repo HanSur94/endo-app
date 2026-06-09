@@ -60,7 +60,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [ ] **DATA-02**: Data syncs across the user's own Apple devices via private iCloud (CloudKit), with no account/login
 - [ ] **DATA-03**: Sync survives multi-device, offline, and reinstall scenarios without data loss
 - [ ] **DATA-04**: Deleting data removes it from the private CloudKit store too, not just locally
-- [ ] **DATA-05**: User can import cycle/sleep/workouts/nutrition from Apple HealthKit (read-only); the app stays fully usable if access is denied
+- [x] **DATA-05**: User can import cycle/sleep/workouts/nutrition from Apple HealthKit (read-only); the app stays fully usable if access is denied
 
 ## v2 Requirements
 
@@ -127,7 +127,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | INST-02 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer (rendered Phase 8) | COMPLETE — engine (06-01..03) NOW RENDERED: the Phase 8 dashboard (08-04) shows cycle-phase insights in the "Cycle phase" section, which is OMITTED entirely (provably absent) for suppressed/no-cycle users — InsightsDashboardUITests asserts insights.section.cyclePhase non-existence (no phantom phase, D-07). |
 | INST-04 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Engine COMPLETE — 06-03 dismissal persistence (CloudKit-safe DismissedInsight @Model + additive SchemaV4/lightweight V3→V4 + consent-gated append-only dismissInsight/dedupe-on-read dismissedSignalKeys) + 06-02 the single HonestyGate choke-point (non-causal ForbiddenTerms scan via DEBUG assert + zero-forbidden-terms test, confidence floor with `.insufficient` carve-out, per-kind min-sample SUPERSET filter, dismissal-exclusion) behind the LOCKED public InsightsEngine; 39 package tests GREEN incl. Phase-5 no-regression superset. User-visible dismiss button + live dismissedSignalKeys() → InsightsEngine wiring land in Phase 8 (rendering). |
 | INST-03 | Phase 7 — Correlation & Trigger Discovery | Engine COMPLETE — 07-01 CorrelationStats (Cliff's δ, mean-diff, risk diff/ratio, Fisher exact, Mann–Whitney p, BH-FDR, confidence band; hand-computed known values) + 07-02 Factor three-state binarization + CorrelationEngine producer (bounded pairs, BH-FDR once over the full set, three-AND hard gate, top-5 .correlation Insights, non-causal copy) + 07-03 composed into the public InsightsEngine behind the HonestyGate with minSample(.correlation)=10 LOCKED (single source of truth). Honesty acceptance proven END-TO-END through the PUBLIC API: strong association surfaces; under-sampled(n=9)/spurious/multiple-comparison-flood(K≈100+) WITHHELD; suppressed user no cyclePhase correlation; zero-forbidden-terms scan covers correlations; Phase-5 no-regression superset holds. 88 package tests GREEN; Foundation-only. User-visible rendering is Phase 8. |
-| DATA-05 | Phase 9 — HealthKit Import | Pending |
+| DATA-05 | Phase 9 — HealthKit Import | Complete |
 | RPRT-01 | Phase 10 — Doctor-Ready PDF Report | Pending |
 | RPRT-02 | Phase 10 — Doctor-Ready PDF Report | Pending |
 | RPRT-03 | Phase 10 — Doctor-Ready PDF Report | Pending |
