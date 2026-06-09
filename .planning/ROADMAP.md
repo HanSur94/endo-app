@@ -203,7 +203,11 @@ Plans:
   2. No correlation is shown below the minimum sample/observation threshold, and findings carry effect size plus a plain-language confidence.
   3. Spurious low-confidence correlations are suppressed rather than displayed, and every shown correlation uses non-causal "possible association" framing inherited from the honesty layer.
 
-**Plans**: TBD
+**Plans**: 3 plans, 3 waves (risk-first: prove the math, build the producer, lock the gate)
+Plans:
+- [ ] 07-01-PLAN.md — Wave 1 (TDD): CorrelationStats pure math (Cliff's δ, mean-diff, risk diff/ratio, Fisher exact, Mann–Whitney p, BH-FDR, confidence band) proven against hand-computed known values
+- [ ] 07-02-PLAN.md — Wave 2 (TDD): Factor binarization + CorrelationEngine producer (bounded pairs, BH-FDR once, three-AND gate, .correlation Insights, top-N=5) + strong/under-sampled/spurious/flood/suppressed fixtures
+- [ ] 07-03-PLAN.md — Wave 3: lock minSample(.correlation)=10 + compose CorrelationEngine into InsightsEngine through the HonestyGate + mandatory honesty acceptance tests (zero-forbidden-terms scan, withholding, no Phase-5/6 regression)
 
 ### Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard
 
@@ -291,7 +295,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Lifestyle Logging + Fast Daily Check-in & Reminders | 4/4 | Complete   | 2026-06-08 |
 | 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
 | 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
-| 6. Cycle-Phase Mapping + Insight-Honesty Layer | 2/3 | In progress | - |
+| 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
 | 7. Correlation & Trigger Discovery | 0/TBD | Not started | - |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
 | 9. HealthKit Import | 0/TBD | Not started | - |
