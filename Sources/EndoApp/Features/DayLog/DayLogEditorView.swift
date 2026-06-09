@@ -32,6 +32,10 @@ struct DayLogEditorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.terminologyStore) private var terminologyStore
     @Environment(\.dismiss) private var dismiss
+    /// The insights coordinator (08-02). After a successful save we call `dataChanged()` — the EXPLICIT,
+    /// deterministic recompute seam (RESEARCH Open Question 3) — so newly-logged data debounces into one
+    /// off-main recompute and the dashboard reflects it (D-01).
+    @Environment(\.insightsCoordinator) private var insightsCoordinator
 
     // Local editable draft state (committed to the store only on Save).
     @State private var severities: [SymptomType: Int] = [:]   // selected symptom -> severity
@@ -572,6 +576,10 @@ struct DayLogEditorView: View {
         // Note (bounded + empty -> nil at the seam). Always called so the day gets a `DayEntry`
         // anchor — even a symptom/bleeding-only day appears in the home `@Query(DayEntry)` history.
         try? repo.setNote(note, on: day)
+
+        // Newly-logged data changed the insight inputs: kick the EXPLICIT, debounced recompute seam
+        // (RESEARCH OQ3) so the dashboard reflects this save without a manual refresh (D-01).
+        insightsCoordinator.dataChanged()
 
         dismiss()
     }

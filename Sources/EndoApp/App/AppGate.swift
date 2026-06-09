@@ -31,10 +31,32 @@ struct AppGate: View {
             // check-in sheet can be presented before consent (T-03-14).
             OnboardingView()
         case .consented:
-            // The ONLY branch that constructs the health-data logging UI (T-01-03 / T-02-06). HomeView
-            // observes the injected `\.checkInRouter` here to present the check-in sheet on a reminder
-            // deep-link — so deep-link presentation is consent-gated by construction (D-16).
+            // The ONLY branch that constructs the health-data logging UI (T-01-03 / T-02-06 / T-08-12).
+            // A bottom `TabView` exposes Home + the Insights dashboard — BOTH built solely here, so no
+            // health UI (including the Insights dashboard reading health-derived insights) is constructed
+            // before explicit consent. `HomeView` still observes `\.checkInRouter` for the reminder
+            // deep-link, so deep-link presentation stays consent-gated by construction (D-16).
+            ConsentedShell()
+        }
+    }
+}
+
+/// The consented-only main shell (T-08-12): a bottom `TabView` with the "Log" (Home) tab and the
+/// "Insights" dashboard tab (`tab.insights`, UI-SPEC §D). Constructed EXCLUSIVELY in AppGate's
+/// `.consented` branch — the dashboard, like the logging UI, is never built before opt-in.
+private struct ConsentedShell: View {
+    var body: some View {
+        TabView {
             HomeView()
+                .tabItem {
+                    Label("Log", systemImage: "square.and.pencil")
+                }
+
+            InsightsView()
+                .tabItem {
+                    Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
+                }
+                .accessibilityIdentifier("tab.insights")
         }
     }
 }
