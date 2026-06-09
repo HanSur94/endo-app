@@ -319,8 +319,22 @@ Plans:
   2. Recommendations are phrased as discussion prompts, never as medical instructions ("take X"/"stop Y"), and inherit the honesty layer's confidence and non-causal framing.
   3. Recommendations are only shown when supported by sufficient data and are dismissable.
 
-**Plans**: TBD
+**Plans**: 3 plans, 3 waves (dependency-driven: Wave-0 scaffold + direction seam + imperative scan -> the RecommendationsEngine producer + RecommendationsCopy -> compose into InsightsEngine + minSample->10 + dashboard section + E2E)
 **UI hint**: yes
+
+Plans:
+
+**Wave 1**
+
+- [ ] 11-01-PLAN.md — Wave-0 scaffold: package-internal scoredCandidates direction seam on CorrelationEngine + RED RecommendationsEngineTests + beneficial/aggravating fixtures + ClaimsPolicy.forbiddenImperatives & the CopyAuditTests imperative scan + the failing recommendation E2E & correlation seed seam
+
+**Wave 2** *(blocked on 11-01)*
+
+- [ ] 11-02-PLAN.md — RecommendationsEngine producer (re-frames typed survivors into top-N <=3 .recommendation Insights, direction-aware non-prescriptive copy, suppressed/sparse -> zero) + RecommendationsCopy (audited) + ForbiddenTerms imperative extension
+
+**Wave 3** *(blocked on 11-02)*
+
+- [ ] 11-03-PLAN.md — Integration/payoff: compose RecommendationsEngine into the LOCKED InsightsEngine behind the single gate + minSample(.recommendation) 14->10 + the InsightsView .recommendation section (omit-when-empty) -> the recommendation dashboard E2E GREEN
 
 ### Phase 12: Flare Early-Warning
 
@@ -354,5 +368,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
 | 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
 | 10. Doctor-Ready PDF Report | 3/3 | Complete    | 2026-06-09 |
-| 11. Personalized Recommendations | 0/TBD | Not started | - |
+| 11. Personalized Recommendations | 0/3 | Planned     | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |
