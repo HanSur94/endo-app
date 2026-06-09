@@ -135,8 +135,9 @@ enum ReportPDFRenderer {
         drawSectionHeading(ReportCopy.sectionSymptomsTitle, source: model.symptoms.source, cursor: cursor)
         drawSymptoms(model, cursor: cursor)
 
-        // SECTION 4 — Cycle & bleeding (three-state, NO phantom cycle).
-        drawSectionHeading(ReportCopy.sectionCycleTitle, source: .none, cursor: cursor)
+        // SECTION 4 — Cycle & bleeding (three-state, NO phantom cycle). WR-07: the heading's source tag is
+        // the aggregated bleeding/flow provenance (self-reported vs. imported), not a hardcoded `.none`.
+        drawSectionHeading(ReportCopy.sectionCycleTitle, source: model.cycleSource, cursor: cursor)
         drawCycle(model.cycle, cursor: cursor)
 
         // SECTION 5 — Daily factors (absence ≠ 0; nil → "Not logged").

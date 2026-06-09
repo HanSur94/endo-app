@@ -164,6 +164,10 @@ struct ReportModel: Equatable, Sendable {
     let symptoms: SymptomsSection
     /// Section 4 — Cycle & bleeding (three-state, NO phantom cycle).
     let cycle: CycleSection
+    /// Section 4 provenance (RPRT-02, WR-07): aggregated from the in-range `flow` sources so the report
+    /// tells the clinician whether the cycle estimate rests on self-reported vs. imported (Apple Health)
+    /// bleeding. `CycleSection` is an enum (no room for a per-case field), so the source rides here.
+    let cycleSource: SectionSource
     /// Section 5 — Lifestyle factors (per factor: value OR nil → "Not logged"; absence ≠ 0).
     let lifestyle: LifestyleSection
     /// Section 6 — Insights: the engine output for the range, ALREADY gated (windows ⊆ range, asOf
@@ -233,6 +237,11 @@ struct ReportModel: Equatable, Sendable {
         // NEVER recompute provenance from values — the merge gate is the single source of truth.
         let sourcesByDay = try inRange.map { try repository.daySnapshotSources(on: $0.day) }
 
+        // SECTION 4 — Cycle provenance (RPRT-02, WR-07): the cycle estimate is derived from bleeding/flow
+        // days, so its source aggregates the in-range `flow` provenance (which can be .appleHealth for
+        // imported menstrual flow or .manual). NEVER hardcoded — consistent with the other sections.
+        let cycleSource = SectionSource.aggregate(sourcesByDay.map(\.flow))
+
         // SECTION 3 — Symptoms (descriptive trend table; absolute, never cycle-relative). One row per
         // symptom logged in range; min/max severity nil-honest (a present-without-severity stays nil).
         let symptoms = symptomsSection(inRange: inRange, sources: sourcesByDay)
@@ -267,6 +276,7 @@ struct ReportModel: Equatable, Sendable {
             summary: summary,
             symptoms: symptoms,
             cycle: cycle,
+            cycleSource: cycleSource,
             lifestyle: lifestyle,
             insights: insights,
             legend: legend)
