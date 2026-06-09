@@ -43,7 +43,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 - [ ] **INST-01**: User can see descriptive trend charts of symptoms and factors over time
 - [ ] **INST-02**: User can see how symptoms map onto their cycle phases (cycle-phase mapping)
-- [ ] **INST-03**: User can discover correlations/triggers across logged factors, gated by minimum-sample size and confidence
+- [x] **INST-03**: User can discover correlations/triggers across logged factors, gated by minimum-sample size and confidence
 - [x] **INST-04**: Every insight carries an honesty layer — non-causal language, a confidence indicator, dismissal, and low-confidence insights are withheld
 - [ ] **INST-05**: User receives personalized, data-driven recommendations derived from their own patterns
 - [ ] **INST-06**: User receives a heuristic, non-diagnostic flare early-warning with confidence (built last, gated by the honesty layer)
@@ -126,7 +126,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | INST-01 | Phase 5 — Snapshot Contract + Descriptive Trends Engine | Engine + live data path complete (05-01 contract + 05-02 TrendsEngine + 05-03 Repository.daySnapshots() store→DaySnapshot mapping, Option-D parity-guarded); user-visible charts render in Phase 8 |
 | INST-02 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Engine complete (06-01 CyclePhaseMapper: estimated phases from recorded bleeding, honesty-gated — suppressed/irregular(spread>9)/<2-cycle → no phantom phase, confidence ≤ .medium; descriptive non-causal copy; INST-02 acceptance fixtures GREEN). Honesty-layer wiring (HonestyGate/InsightsEngine) is 06-02; user-visible rendering is Phase 8 |
 | INST-04 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Engine COMPLETE — 06-03 dismissal persistence (CloudKit-safe DismissedInsight @Model + additive SchemaV4/lightweight V3→V4 + consent-gated append-only dismissInsight/dedupe-on-read dismissedSignalKeys) + 06-02 the single HonestyGate choke-point (non-causal ForbiddenTerms scan via DEBUG assert + zero-forbidden-terms test, confidence floor with `.insufficient` carve-out, per-kind min-sample SUPERSET filter, dismissal-exclusion) behind the LOCKED public InsightsEngine; 39 package tests GREEN incl. Phase-5 no-regression superset. User-visible dismiss button + live dismissedSignalKeys() → InsightsEngine wiring land in Phase 8 (rendering). |
-| INST-03 | Phase 7 — Correlation & Trigger Discovery | Pending |
+| INST-03 | Phase 7 — Correlation & Trigger Discovery | Engine COMPLETE — 07-01 CorrelationStats (Cliff's δ, mean-diff, risk diff/ratio, Fisher exact, Mann–Whitney p, BH-FDR, confidence band; hand-computed known values) + 07-02 Factor three-state binarization + CorrelationEngine producer (bounded pairs, BH-FDR once over the full set, three-AND hard gate, top-5 .correlation Insights, non-causal copy) + 07-03 composed into the public InsightsEngine behind the HonestyGate with minSample(.correlation)=10 LOCKED (single source of truth). Honesty acceptance proven END-TO-END through the PUBLIC API: strong association surfaces; under-sampled(n=9)/spurious/multiple-comparison-flood(K≈100+) WITHHELD; suppressed user no cyclePhase correlation; zero-forbidden-terms scan covers correlations; Phase-5 no-regression superset holds. 88 package tests GREEN; Foundation-only. User-visible rendering is Phase 8. |
 | DATA-05 | Phase 9 — HealthKit Import | Pending |
 | RPRT-01 | Phase 10 — Doctor-Ready PDF Report | Pending |
 | RPRT-02 | Phase 10 — Doctor-Ready PDF Report | Pending |

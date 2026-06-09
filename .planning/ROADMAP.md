@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Private CloudKit Sync** - Cross-device private iCloud sync that survives offline/reinstall and truly purges on delete (completed 2026-06-08)
 - [x] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures (completed 2026-06-08)
 - [x] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
-- [ ] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors
+- [x] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors ✓
 - [ ] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard
 - [ ] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage
 - [ ] **Phase 10: Doctor-Ready PDF Report** - Date-ranged, source-labeled, on-device vector PDF report shared via the system share sheet
@@ -214,7 +214,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 07-03-PLAN.md — Wave 3: lock minSample(.correlation)=10 + compose CorrelationEngine into InsightsEngine through the HonestyGate + mandatory honesty acceptance tests (zero-forbidden-terms scan, withholding, no Phase-5/6 regression)
+- [x] 07-03-PLAN.md — Wave 3: lock minSample(.correlation)=10 + compose CorrelationEngine into InsightsEngine through the HonestyGate + mandatory honesty acceptance tests (zero-forbidden-terms scan, withholding, no Phase-5/6 regression) ✓
 
 ### Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard
 
@@ -303,7 +303,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
 | 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
-| 7. Correlation & Trigger Discovery | 2/3 | In progress | 07-01 ✓, 07-02 ✓ |
+| 7. Correlation & Trigger Discovery | 3/3 | Complete | 07-01 ✓, 07-02 ✓, 07-03 ✓ |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
 | 9. HealthKit Import | 0/TBD | Not started | - |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
