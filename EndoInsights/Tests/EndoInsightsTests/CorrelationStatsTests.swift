@@ -132,11 +132,15 @@ struct CorrelationStatsTests {
     // MARK: - Mann–Whitney U normal-approx p — reuses the Cliff's-delta pair scan.
 
     @Test func mannWhitneyP_cleanSeparation_isSmall() {
-        // present [8,8,8,8] vs absent [1,1,1,1]: U=16, μ_U=8, no ties → σ_U=sqrt((16/12)·9)=sqrt(12)=3.4641,
-        // z=(16−8)/3.4641=2.3094, p=2·(1−Φ(2.3094)) ≈ 0.0209 (< 0.05). (Python cross-check this session.)
+        // present [8,8,8,8] vs absent [1,1,1,1]: U=16, μ_U=8. The pooled set has TIES (four 8s, four 1s),
+        // so Task 2's tie-corrected σ_U applies (NOT the no-tie 3.4641 the plan's prose mistakenly quoted):
+        // tieSum = (4³−4)·2 = 120, tieTerm = 120/(8·7) = 2.142857, σ_U² = (16/12)·(9 − 2.142857) = 9.142857,
+        // σ_U = 3.0237157, z = (16−8)/3.0237157 = 2.6457513, p = 2·(1−Φ(2.6457513)) ≈ 0.0081509716.
+        // (Cross-checked this session in Python AND isolated Swift; both give 0.0081509716.) Rule 1 fix:
+        // the plan's Task-1 prose value 0.0209 omitted the tie correction Task 2 mandates — that is wrong.
         let p = CorrelationStats.mannWhitneyP(present: [8, 8, 8, 8], absent: [1, 1, 1, 1])
         #expect(p < 0.05)
-        #expect(abs(p - 0.0209213353) < 1e-3)
+        #expect(abs(p - 0.0081509716) < 1e-6)
     }
 
     @Test func mannWhitneyP_identicalGroups_isOne() {
