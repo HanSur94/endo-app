@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Snapshot Contract + Descriptive Trends Engine** - The value-type snapshot seam and an isolated engine producing descriptive trend charts from fixtures (completed 2026-06-08)
 - [x] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
 - [x] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors ✓
-- [ ] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard
+- [x] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard (completed 2026-06-09)
 - [ ] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage
 - [ ] **Phase 10: Doctor-Ready PDF Report** - Date-ranged, source-labeled, on-device vector PDF report shared via the system share sheet
 - [ ] **Phase 11: Personalized Recommendations** - Data-driven, non-prescriptive recommendations derived from the user's own patterns
@@ -322,7 +322,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
-| 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/4 | Not started | - |
+| 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
 | 9. HealthKit Import | 0/TBD | Not started | - |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |

@@ -16,7 +16,7 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- ✓ Insights: trend & cycle-phase mapping with charts — Phase 8 (live Swift Charts dashboard via `tab.insights`; honest absolute-date axes + gap breaks; cycle-phase section omitted for suppressed/no-cycle users. UAT-verified on iOS Simulator + threat-secured.)
 
 ### Active
 
@@ -26,8 +26,7 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - [ ] Menstrual cycle tracking & prediction — cycle-aware but tolerant of irregular or hormonally suppressed cycles
 - [ ] Food & nutrition logging
 - [ ] Physical activity / sport tracking
-- [ ] Insights: correlations & triggers across logged factors (symptoms ↔ food, sleep, activity, cycle)
-- [ ] Insights: trend & cycle-phase mapping with charts
+- [ ] Insights: correlations & triggers across logged factors (symptoms ↔ food, sleep, activity, cycle) — engine shipped (Phase 7) + rendered in dashboard (Phase 8); pending confirmation with real multi-factor data
 - [ ] Insights: flare prediction / early warnings from personal history
 - [ ] Insights: personalized, data-driven recommendations
 - [ ] Doctor-ready report export (shareable PDF summary)
@@ -94,4 +93,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-03 after initialization*
+*Last updated: 2026-06-09 after Phase 8 (Insights Integration — dashboard shipped, verified & secured)*

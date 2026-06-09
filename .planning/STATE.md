@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 08-04-PLAN.md (Phase 8 plans complete; human-verify chart-quality + CloudKit-deploy deferred to the phase verification gate)
-last_updated: "2026-06-09T12:15:00.000Z"
-last_activity: 2026-06-09 -- Completed Phase 8 Plan 04 (InsightsView dashboard + tab.insights + recompute triggers + InsightsDashboardUITests E2E; chart-visual human-verify auto-approved, deferred to gate)
+status: planning
+stopped_at: Phase 8 complete — UAT-verified (9/9 testable passed, 0 issues) + threat-secured (16/16 closed). Ready to plan Phase 9 (HealthKit Import).
+last_updated: "2026-06-09T15:03:02.614Z"
+last_activity: 2026-06-09
 progress:
   total_phases: 12
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 27
   completed_plans: 27
   percent: 67
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 8 — Insights Integration — Coordinator, Cached Insights & Dashboard
+**Current focus:** Phase 9 — HealthKit Import
 
 ## Current Position
 
-Phase: 8 (Insights Integration — Coordinator, Cached Insights & Dashboard) — PLANS COMPLETE (awaiting phase verification gate)
-Plan: 4 of 4 (all complete)
-Status: Phase 8 plans 08-01..08-04 all complete; the dashboard renders live insights via tab.insights. Deferred to the phase verification gate: the chart-VISUAL-quality human-verify (auto-approved under auto-mode), on-device CachedInsight cross-device sync (Phase-4 device UAT), and the release-time CloudKit Console deploy of the CachedInsight record type (Dev→Prod).
-Last activity: 2026-06-09 -- Completed Phase 8 Plan 04 (InsightsView dashboard + tab.insights + recompute triggers + InsightsDashboardUITests E2E)
+Phase: 9
+Plan: Not started
+Status: Phase 9 (HealthKit Import) ready to plan. Phase 8 closed 2026-06-09 — UAT-verified (08-UAT.md: 9/9 testable on iOS Simulator passed, 0 issues; chart-VISUAL-quality human-verify done live) and threat-secured (08-SECURITY.md: 16/16 closed, threats_open:0). Carried to RELEASE (not blockers): on-device CachedInsight cross-device sync (needs 2 iCloud devices) + CloudKit Console deploy of the CachedInsight record type (Dev→Prod). Minor polish backlog: dismiss optimistic-vs-recompute scope (signal-level dismissal drops all same-signal windows on re-entry — by-design, cosmetic).
+Last activity: 2026-06-09 — Marked Phase 8 complete after UAT + secure-phase; advanced to Phase 9.
 
-Progress: [██████████] 100% (Phase 7)
+Progress: [█████████████░░░░░░░] 8/12 phases complete (67%) — Phase 9 next
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 3 (Phase 6: 06-01, 06-02, 06-03)
+- Total plans completed: 7 (Phase 6: 06-01, 06-02, 06-03)
 - Average duration: ~14 min
 - Total execution time: ~0.7 hours
 
@@ -45,6 +45,7 @@ Progress: [██████████] 100% (Phase 7)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 2 | ~32 min | ~16 min |
+| 8 | 4 | - | - |
 
 **Recent Trend:**
 
