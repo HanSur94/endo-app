@@ -196,6 +196,28 @@ final class InsightsDashboardUITests: XCTestCase {
     }
 
 
+    // MARK: - 5. A strong correlation eventually renders the Recommendations section (Plan 11 MVP slice)
+
+    // RED until Plan 11-03 adds the `insights.section.recommendations` section to InsightsView. The
+    // `-uitest-seed-recommendations` seed inserts a strong dairy→pelvicPain correlation (Plan 11-01); once
+    // the recommendation producer (Plan 02) + the dashboard section (Plan 03) ship, that gated correlation
+    // re-frames into a non-prescriptive recommendation card under the new section. This is the MVP
+    // end-to-end happy-path test for INST-05.
+    func testRecommendation_rendersAfterCorrelation() throws {
+        let app = launchAndOpenInsights(["-uitest-reset", "-uitest-seed-recommendations"])
+
+        // Wait for the dashboard to render any card first (the seeded correlation/recommendation pipeline).
+        XCTAssertTrue(firstInsightCard(in: app).waitForExistence(timeout: 15),
+                      "The seeded dashboard must render at least one card before asserting the recommendations section.")
+
+        // The Recommendations section appears once a strong correlation re-frames into a recommendation.
+        let recommendationsSection = app.descendants(matching: .any)["insights.section.recommendations"]
+        XCTAssertTrue(recommendationsSection.waitForExistence(timeout: 15),
+                      "A strong seeded correlation must eventually render the Recommendations section "
+                      + "(insights.section.recommendations) — the INST-05 MVP happy path.")
+        saveScreenshot(app, named: "insights-06-recommendations")
+    }
+
     // MARK: - Screenshot helper (verbatim from LoggingFlowUITests)
 
     private func saveScreenshot(_ app: XCUIApplication, named name: String) {

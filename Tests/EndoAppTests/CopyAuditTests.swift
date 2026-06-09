@@ -271,4 +271,112 @@ struct CopyAuditTests {
         #expect(ReportCopy.footer.lowercased().contains("self-tracked"))
         #expect(ReportCopy.footer.lowercased().contains("not diagnostic"))
     }
+
+    // MARK: - Phase-11 recommendation copy (Plan 11-01): the forbidden-IMPERATIVE scan (D-04)
+    //
+    // Recommendations are DISCUSSION PROMPTS, never instructions. A NEW imperative scan layers onto the
+    // existing forbidden-verb / gendered-token / numeric-confidence scans: no recommendation string may
+    // contain any `ClaimsPolicy.forbiddenImperatives` substring ("take"/"stop"/"avoid"/"start"/"should"/
+    // "must"/"use"/"try"/"cut"). Pitfall 2: this is a CASE-INSENSITIVE SUBSTRING scan, so curated copy
+    // must avoid the forbidden substrings ENTIRELY (no "use" ⊂ "because", "her" ⊂ "higher",
+    // "start" ⊂ "started"). The POSITIVE-CONTROL tests below prove the scan WORKS regardless of Plan 02.
+
+    /// The case-insensitive substring imperative scan (the SCAN LOGIC under test). Returns the first
+    /// forbidden imperative `text` contains, or `nil` if clean.
+    private func firstImperative(in text: String) -> String? {
+        let lower = text.lowercased()
+        return ClaimsPolicy.forbiddenImperatives.first { lower.contains($0.lowercased()) }
+    }
+
+    /// A small inline representative recommendation-copy surface (Plan 11-01). Plan 11-02 introduces the
+    /// real `RecommendationsCopy` enum and its `auditableStrings`; at that point swap the line below to
+    /// `RecommendationsCopy.auditableStrings` so the SAME scans guard the real surface. Keeping an inline
+    /// surface now makes the scan LOGIC testable immediately (Plan 01) without depending on Plan 02 symbols.
+    private var allRecommendationsCopy: [String] {
+        // Plan 02: swap `inlineRecommendationsCopy` → `RecommendationsCopy.auditableStrings`.
+        [
+            "Recommendations",
+            "You tend to feel better on days with activity — a pattern in your own data.",
+            "Your pelvic pain tends to be more intense on days with dairy — something you might explore.",
+            "This is a pattern in your own data, not advice — something to discuss with your clinician.",
+        ]
+    }
+
+    // GREEN now (Plan 11-01): no representative recommendation string contains a forbidden imperative.
+    // RED→GREEN in Plan 02 once this points at `RecommendationsCopy.auditableStrings`.
+    @Test func recommendationsCopy_containsNoImperative() {
+        for copy in allRecommendationsCopy {
+            #expect(firstImperative(in: copy) == nil,
+                    "Recommendation copy \"\(copy)\" must contain NO imperative substring.")
+        }
+    }
+
+    // GREEN now: no recommendation string contains a forbidden medical-purpose / causal verb.
+    @Test func recommendationsCopy_containsNoForbiddenVerb() {
+        for copy in allRecommendationsCopy {
+            let lower = copy.lowercased()
+            for verb in ClaimsPolicy.forbiddenVerbs {
+                #expect(!lower.contains(verb.lowercased()),
+                        "Recommendation copy \"\(copy)\" must not contain forbidden verb \"\(verb)\".")
+            }
+        }
+    }
+
+    // GREEN now: no recommendation string contains a gendered token (incl. the "her" ⊂ "higher" trap —
+    // the curated copy uses "more intense", never "higher").
+    @Test func recommendationsCopy_containsNoGenderedToken() {
+        for copy in allRecommendationsCopy {
+            let lower = copy.lowercased()
+            for token in ClaimsPolicy.forbiddenGenderedTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Recommendation copy \"\(copy)\" must not contain gendered token \"\(token)\".")
+            }
+        }
+    }
+
+    // GREEN now: no recommendation string carries a numeric-confidence / false-precision token (words only).
+    @Test func recommendationsCopy_hasNoNumericConfidence() {
+        let forbiddenPrecisionTokens = ["%", "p =", "p=", "r =", "r=", "p-value", "p value"]
+        for copy in allRecommendationsCopy {
+            let lower = copy.lowercased()
+            for token in forbiddenPrecisionTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Recommendation copy \"\(copy)\" must not contain false-precision token \"\(token)\".")
+            }
+        }
+    }
+
+    // MARK: Positive controls — prove the imperative scan WORKS (independent of Plan 02).
+
+    // NEGATIVE control: deliberate imperatives MUST be flagged by the scan.
+    @Test func imperativeScan_flagsDeliberateImperatives() {
+        // "you should avoid dairy" → contains "should" AND "avoid"; "try cutting gluten" → "try" (+ "cut").
+        let deliberateImperatives = [
+            "you should avoid dairy",
+            "try cutting gluten",
+        ]
+        for sentence in deliberateImperatives {
+            #expect(firstImperative(in: sentence) != nil,
+                    "A deliberate imperative \"\(sentence)\" MUST be flagged by the imperative scan.")
+        }
+    }
+
+    // POSITIVE control: the curated discussion-prompt words MUST pass clean (no substring-trap false hit).
+    @Test func imperativeScan_passesCuratedDiscussionWords() {
+        // Each verified BY HAND against the substring trap:
+        //   "explore"  — no "start"/"stop"/"try"/"use"/"cut"/"take"/"must"/"should"/"avoid"
+        //   "discuss"  — no "cut"/"use" (d-i-s-c-u-s-s has no "cut"; "us" is not "use")
+        //   "tend to feel better" — no imperative substring
+        //   "a pattern in your own data" — no imperative substring
+        let curatedWords = [
+            "explore",
+            "discuss",
+            "tend to feel better",
+            "a pattern in your own data",
+        ]
+        for word in curatedWords {
+            #expect(firstImperative(in: word) == nil,
+                    "Curated discussion word \"\(word)\" must pass the imperative scan clean (substring trap).")
+        }
+    }
 }

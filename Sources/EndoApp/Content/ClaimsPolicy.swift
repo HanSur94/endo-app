@@ -48,4 +48,27 @@ enum ClaimsPolicy {
         "lady",
         "ladies",
     ]
+
+    /// Phase-11 (D-04): the directive/IMPERATIVE verbs a RECOMMENDATION must never use — recommendations
+    /// are DISCUSSION PROMPTS ("you might explore…", "something to discuss with your clinician…"), never
+    /// instructions ("you should avoid dairy"). The `CopyAuditTests` imperative scan asserts no
+    /// `RecommendationsCopy` string contains any of these as a substring, ON TOP OF the existing
+    /// forbidden-verb / gendered-token / numeric-confidence scans.
+    ///
+    /// SUBSTRING TRAP (Pitfall 2): this is a CASE-INSENSITIVE SUBSTRING scan, so an innocent host word can
+    /// collide — e.g. "use" ⊂ "because"/"caused", "start" ⊂ "started", "cut" ⊂ "cute", "her" (gendered)
+    /// ⊂ "higher". Recommendation copy MUST therefore be CURATED to avoid the forbidden substrings ENTIRELY
+    /// (the scan enforces; curation avoids). The curated discussion words ("explore", "discuss", "tend to
+    /// feel better", "a pattern in your own data") are verified clean against this list in `CopyAuditTests`.
+    static let forbiddenImperatives: [String] = [
+        "take",
+        "stop",
+        "avoid",
+        "start",
+        "should",
+        "must",
+        "use",
+        "try",
+        "cut",
+    ]
 }

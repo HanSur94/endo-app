@@ -73,6 +73,13 @@ final class AppDependencies {
         // normal launches.
         let seedReport = ProcessInfo.processInfo.arguments.contains("-uitest-seed-report")
 
+        // Test-only, launch-arg-guarded RECOMMENDATION seed (used by the dashboard recommendation E2E,
+        // Plan 11-01/11-03). When present we insert a deterministic STRONG dairy→pelvicPain correlation
+        // (~22 consecutive days) that the engine will gate → a `.recommendation` once Plan 03 wires the
+        // section. PAIRED with `-uitest-reset` (mirrors `-uitest-seed-insights`): the seed only ever
+        // touches the in-memory store, so it can NEVER write to the user's real local/CloudKit store.
+        let seedReco = ProcessInfo.processInfo.arguments.contains("-uitest-seed-recommendations")
+
         // Test-only, launch-arg-guarded HealthKit fixture selection (used by HealthConnectUITests, 09-03).
         // Mirrors `-uitest-reset`/`-uitest-seed-insights`: a `-uitest-health-*` arg swaps the REAL
         // `SystemHealthDataReading` for the deterministic `FixtureHealthDataReading` so the whole import →
@@ -159,6 +166,13 @@ final class AppDependencies {
         // in-memory `-uitest-reset` store are active, so a populated range can never leak to a real store.
         if seedReport && uiTestReset {
             Self.seedReportRange(into: insightsRepo)
+        }
+
+        // Plan 11-01 safety: the recommendation seed is inserted ONLY when BOTH `-uitest-seed-recommendations`
+        // AND the in-memory `-uitest-reset` store are active, so the correlation fixture can never leak to a
+        // real store.
+        if seedReco && uiTestReset {
+            Self.seedRecommendationCorrelation(into: insightsRepo)
         }
 
         self.insightsCoordinator = InsightsCoordinator(
@@ -277,6 +291,29 @@ final class AppDependencies {
         for offset in [20, 19] {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
             try? repo.setBleeding(intensity: .medium, clots: false, on: day)
+        }
+    }
+
+    /// Test-only fixture seam (Plan 11-01): insert a deterministic, STRONG dairy→pelvicPain correlation so
+    /// the engine gates ONE `.correlation` → and (once Plan 03 wires the section) ONE `.recommendation` for
+    /// the dashboard recommendation E2E. Logs ~22 consecutive days: on ~half the days dairy + pelvicPain
+    /// severity 7, on the other ~half a DIFFERENT food (caffeine) + pelvicPain severity 2 — so the non-dairy
+    /// days are honestly `.absent` for dairy (a day-with-any-log, A7), not unobserved. This mirrors the
+    /// `strongAssociationFixture` shape (n=22 ≥ minSample(.correlation)==10, large |δ| → gated). PAIRED with
+    /// the in-memory `-uitest-reset` store; it can never touch a real store. Best-effort.
+    private static func seedRecommendationCorrelation(into repo: SwiftDataRepository) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // 22 consecutive days ending today: alternate dairy/high-severity vs caffeine/low-severity by parity.
+        for offset in 0..<22 {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            if offset % 2 == 0 {
+                try? repo.setFood(tags: [.dairy], freeText: nil, on: day)
+                try? repo.upsertSymptom(type: .pelvicPain, severity: 7, on: day)
+            } else {
+                try? repo.setFood(tags: [.caffeine], freeText: nil, on: day)
+                try? repo.upsertSymptom(type: .pelvicPain, severity: 2, on: day)
+            }
         }
     }
 
