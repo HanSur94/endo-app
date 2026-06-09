@@ -276,7 +276,7 @@ Plans:
 
 **Wave 3** *(blocked on 09-02)*
 
-- [ ] 09-03-PLAN.md — Payoff slice: read-only HealthKit entitlement + NSHealthShareUsageDescription in project.yml + real SystemHealthDataReading (365-day backfill/incremental) + rationale-before-sheet contextual permission + graceful denial deep-link + "from Apple Health" badge + Refresh from Health + launch-arg fixture wiring + HealthConnectUITests + human-verify checkpoint (DATA-05, SC2/SC3, D-03/D-05/D-06/D-07/D-08/D-10)
+- [x] 09-03-PLAN.md — Payoff slice: read-only HealthKit entitlement + NSHealthShareUsageDescription + real SystemHealthDataReading (365-day backfill/incremental, @globalActor-isolated) + rationale-before-sheet contextual permission + graceful denial deep-link + "from Apple Health" badge + Refresh from Health + -uitest-health-* fixture wiring + HealthConnectUITests (4 E2E GREEN) + HealthConnectCopyAuditTests (GREEN); real-device read = DEFERRED human-verify (auto-approved). (DATA-05, SC2/SC3, D-03/D-05/D-06/D-07/D-08/D-10)
 
 ### Phase 10: Doctor-Ready PDF Report
 
@@ -338,7 +338,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
-| 9. HealthKit Import | 2/3 | In Progress|  |
+| 9. HealthKit Import | 3/3 | Verifying  |  |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |
