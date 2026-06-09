@@ -1,7 +1,9 @@
 ---
 phase: 12
 slug: flare-early-warning
-status: draft
+status: approved
+reviewed_at: 2026-06-10
+review_note: "Near-pure inheritance from the approved Phase-8 dashboard contract; 5/6 dimensions inherited-and-verified. New surfaces = the calm-non-alarmist rule (identical neutral InsightCardView, no red/badge/alarm, no push UI) + FlareCopy uncertainty-first copy, enforced in code by the new alarmist/diagnostic ClaimsPolicy scan + verified at plan-check and code-review."
 shadcn_initialized: false
 preset: none
 platform: ios-swiftui
