@@ -239,7 +239,7 @@ Plans:
 
 **Wave 2** *(blocked on 08-01)*
 
-- [ ] 08-02-PLAN.md — InsightFingerprint (pure, launch-stable) + @Observable @MainActor InsightsCoordinator (debounced off-main recompute, cache hit/miss, instant load, dismiss feed-through) + AppDependencies injection + -uitest-seed-insights arg
+- [x] 08-02-PLAN.md — InsightFingerprint (pure, launch-stable) + @Observable @MainActor InsightsCoordinator (debounced off-main recompute, cache hit/miss, instant load, dismiss feed-through) + AppDependencies injection + -uitest-seed-insights arg ✓
 
 **Wave 3** *(blocked on 08-01)*
 
