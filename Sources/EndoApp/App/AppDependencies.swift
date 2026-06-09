@@ -27,6 +27,11 @@ final class AppDependencies {
     /// The notification deep-link router (D-16). The `UNUserNotificationCenterDelegate` flips its flag
     /// on a reminder tap; the consented-branch UI presents `DailyCheckInView`. Injected at the App root.
     let checkInRouter: CheckInRouter
+    /// The insights integration coordinator (D-01/D-04/D-13). Reads snapshots+dismissed on the main actor,
+    /// runs the pure `InsightsEngine` off-main, caches by fingerprint, and publishes `[Insight]` for the
+    /// dashboard (08-03/08-04). Constructed AFTER the container resolves so it can capture a live
+    /// `SwiftDataRepository`. Injected via `\.insightsCoordinator`.
+    let insightsCoordinator: InsightsCoordinator
     /// The account-availability seam (DATA-02/03, D-03). Resolved once at launch to decide local-vs-cloud
     /// sync BEFORE the container is built (P-2); also injected into the Environment so SettingsView (04-02)
     /// can show the iCloud sync status. `Sendable` (NOT `@MainActor`) — read off-main at build time.
@@ -42,6 +47,12 @@ final class AppDependencies {
         if uiTestReset {
             UserDefaults.standard.removeObject(forKey: "consent.grantedAt")
         }
+        // Test-only, launch-arg-guarded insights seed (used by the dashboard E2E). When present we insert
+        // a deterministic threshold-crossing fixture (≥14 consecutive days of one symptom severity, well
+        // past `HonestyGate.minSample(.trend) == 3`) so the engine reliably emits ≥1 `.trend` card. PAIRED
+        // with `-uitest-reset` (T-08-06): the seed only ever touches the in-memory store, so it can NEVER
+        // write to the user's real local/CloudKit store. Unreachable in normal launches.
+        let seedInsights = ProcessInfo.processInfo.arguments.contains("-uitest-seed-insights")
 
         // Resolve account availability FIRST, then derive `SyncMode` BEFORE building the container
         // (RESEARCH Pattern 2 / Pitfall P-2 — the local-only path must be a genuine `.none` store).
@@ -105,6 +116,43 @@ final class AppDependencies {
         self.terminologyStore = TerminologyStore()
         self.notificationScheduler = SystemNotificationScheduler()
         self.checkInRouter = CheckInRouter()
+
+        // Build the insights coordinator over a live `SwiftDataRepository` (D-13). A dedicated
+        // `ModelContext(modelContainer)` backs the coordinator's main-actor reads/writes; the seams wrap
+        // the 08-01 CRUD (daySnapshots / dismissedSignalKeys / loadCachedInsights / replaceCachedInsights).
+        let insightsRepo = SwiftDataRepository(context: ModelContext(self.modelContainer))
+
+        // T-08-06 safety: the seed fixture is inserted ONLY when BOTH `-uitest-seed-insights` AND the
+        // in-memory `-uitest-reset` store are active, so a threshold fixture can never leak to a real store.
+        if seedInsights && uiTestReset {
+            Self.seedThresholdCrossingInsights(into: insightsRepo)
+        }
+
+        self.insightsCoordinator = InsightsCoordinator(
+            loadSnapshots: { try insightsRepo.daySnapshots() },
+            loadDismissed: { try insightsRepo.dismissedSignalKeys() },
+            persist: { insights, computedAt, fingerprint in
+                // Best-effort persist: a cache write failure must never crash the app; the next recompute
+                // simply rewrites it. No health content is logged on failure (T-08-05).
+                try? insightsRepo.replaceCachedInsights(insights, computedAt: computedAt,
+                                                        fingerprint: fingerprint)
+            },
+            loadCache: { (try? insightsRepo.loadCachedInsights()) ?? [] },
+            now: { Date() })
+    }
+
+    /// Test-only fixture seam (T-08-06): insert a deterministic, threshold-crossing symptom history so the
+    /// engine reliably emits ≥1 `.trend` card for the dashboard E2E. Logs 21 consecutive days of one
+    /// symptom (`pelvicPain`) — well past `HonestyGate.minSample(.trend) == 3` (RESEARCH Open Question 1
+    /// recommends ~14–30 days). Best-effort; a seed failure must not crash a UI-test launch.
+    private static func seedThresholdCrossingInsights(into repo: SwiftDataRepository) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // 21 consecutive days ending today, ascending — a steady mid-high severity so a trend is emitted.
+        for offset in stride(from: 21, through: 1, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            try? repo.upsertSymptom(type: .pelvicPain, severity: 6, on: day)
+        }
     }
 
     /// Recovery helper (D-22 resilience): delete an unreadable SwiftData store (and its WAL/SHM
