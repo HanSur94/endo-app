@@ -288,19 +288,10 @@ struct CopyAuditTests {
         return ClaimsPolicy.forbiddenImperatives.first { lower.contains($0.lowercased()) }
     }
 
-    /// A small inline representative recommendation-copy surface (Plan 11-01). Plan 11-02 introduces the
-    /// real `RecommendationsCopy` enum and its `auditableStrings`; at that point swap the line below to
-    /// `RecommendationsCopy.auditableStrings` so the SAME scans guard the real surface. Keeping an inline
-    /// surface now makes the scan LOGIC testable immediately (Plan 01) without depending on Plan 02 symbols.
-    private var allRecommendationsCopy: [String] {
-        // Plan 02: swap `inlineRecommendationsCopy` → `RecommendationsCopy.auditableStrings`.
-        [
-            "Recommendations",
-            "You tend to feel better on days with activity — a pattern in your own data.",
-            "Your pelvic pain tends to be more intense on days with dairy — something you might explore.",
-            "This is a pattern in your own data, not advice — something to discuss with your clinician.",
-        ]
-    }
+    /// The real `RecommendationsCopy` auditable surface (Plan 11-02 re-pointed this from the Plan-01 inline
+    /// representative list to `RecommendationsCopy.auditableStrings`). The SAME causal/imperative/gendered/
+    /// numeric scans below now guard the production recommendation-copy surface the engine renders.
+    private var allRecommendationsCopy: [String] { RecommendationsCopy.auditableStrings }
 
     // GREEN now (Plan 11-01): no representative recommendation string contains a forbidden imperative.
     // RED→GREEN in Plan 02 once this points at `RecommendationsCopy.auditableStrings`.

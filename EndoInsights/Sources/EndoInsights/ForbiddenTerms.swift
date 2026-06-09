@@ -57,10 +57,38 @@ enum ForbiddenTerms {
         "aggravate",    // catches "aggravate"/"aggravates"/"aggravated".
     ]
 
+    /// Phase-11 (D-04): the directive/IMPERATIVE verbs a RECOMMENDATION must never use. A recommendation
+    /// is a DISCUSSION PROMPT ("something you might explore…"), never an instruction ("you should avoid
+    /// dairy"). PACKAGE-LOCAL MIRROR of the app's `ClaimsPolicy.forbiddenImperatives` (`Sources/EndoApp/
+    /// Content/ClaimsPolicy.swift`): the package CANNOT import the app target (SC1), so the imperative list
+    /// is duplicated here as data and MUST stay in sync with the app list. The `HonestyGate` now scans
+    /// every emitted insight's copy against this list too (see `violation(in:)`), so an imperative in any
+    /// engine-emitted recommendation is caught — the gate enforces, the curated copy avoids.
+    ///
+    /// SUBSTRING TRAP (Pitfall 2): this is a CASE-INSENSITIVE SUBSTRING scan, so an innocent host word can
+    /// collide — e.g. "use" ⊂ "because"/"caused", "start" ⊂ "started", "cut" ⊂ "cute"/"acute",
+    /// "try" ⊂ "country", "her" (gendered) ⊂ "higher". Emitted copy MUST therefore be CURATED to avoid
+    /// the forbidden substrings ENTIRELY (the scan enforces; curation avoids). The curated recommendation
+    /// words ("explore", "discuss", "tend to feel better", "a pattern in your own data") are verified
+    /// clean against this list.
+    static let imperative: [String] = [
+        "take",
+        "stop",
+        "avoid",
+        "start",
+        "should",
+        "must",
+        "use",
+        "try",
+        "cut",
+    ]
+
     /// The first forbidden term `text` contains (case-insensitive substring), or `nil` if the copy is
-    /// clean. Pure — value-in/value-out, no logging (V7).
+    /// clean. Scans BOTH the causal terms AND the imperative directives (D-04) so a causal claim OR an
+    /// instruction in any emitted insight is withheld. Pure — value-in/value-out, no logging (V7).
     static func violation(in text: String) -> String? {
         let lowered = text.lowercased()
         return causal.first { lowered.contains($0) }
+            ?? imperative.first { lowered.contains($0) }
     }
 }
