@@ -38,15 +38,13 @@ struct HealthConnectSection: View {
         }
         // The id reflects the action so the E2E can assert which path a previously-decided user takes.
         .accessibilityIdentifier(hasDecided ? "health.connect.openSettings" : "health.connect.button")
-        .sheet(isPresented: $showingRationale, onDismiss: {
-            // The rationale "Continue" went through the system sheet — mark decided so future taps
-            // deep-link to Settings (D-08). "Not now" also marks nothing destructive; we only flip on a
-            // dismiss that followed the connect flow. To keep it simple and non-nagging we mark decided on
-            // any dismiss of the rationale: the user has seen the contextual prompt, so subsequent taps go
-            // to Settings rather than re-presenting the rationale (no nag loop, D-08).
-            hasDecided = true
-        }) {
-            HealthRationaleView()
+        .sheet(isPresented: $showingRationale) {
+            // WR-03: mark "decided" ONLY when the user tapped "Continue" (which actually presents Apple's
+            // system sheet, D-08). A plain "Not now" dismiss leaves the affordance in its first-run state
+            // so the user can reach the in-app rationale again — nothing was requested, so routing them to
+            // Settings.app would be wrong. The rationale invokes `onProceed` from its Continue path before
+            // it dismisses; an `onDismiss`-based flip cannot distinguish Continue from Not-now.
+            HealthRationaleView(onProceed: { hasDecided = true })
         }
     }
 

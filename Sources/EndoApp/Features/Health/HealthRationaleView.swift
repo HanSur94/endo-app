@@ -20,6 +20,11 @@ struct HealthRationaleView: View {
     @Environment(\.healthImportService) private var healthImportService
     @Environment(\.dismiss) private var dismiss
 
+    /// Invoked from the "Continue" path ONLY (WR-03), so the host can mark the connect affordance
+    /// "decided" exclusively when the user actually proceeds to Apple's system sheet — NOT on "Not now".
+    /// Defaults to a no-op so previews / callers that don't track decided-state need no wiring.
+    var onProceed: () -> Void = {}
+
     /// Disables the buttons while the authorize + import round-trip is in flight (no double-taps).
     @State private var isRequesting = false
 
@@ -90,6 +95,9 @@ struct HealthRationaleView: View {
     /// status (Pitfall 1); a denied/empty read contributes nothing. Dismiss the rationale when done.
     private func proceed() {
         isRequesting = true
+        // WR-03: the user committed to connecting (Apple's system sheet is about to appear), so mark the
+        // affordance "decided" now — only this path flips it, never "Not now".
+        onProceed()
         let service = healthImportService
         Task {
             for domain in HealthDomain.allCases {
