@@ -348,8 +348,22 @@ Plans:
   2. The warning is withheld when confidence/data is insufficient (it can say "not enough data" rather than always producing an answer) and is never delivered as a speculative push notification.
   3. The early-warning passes through the same min-sample gate, confidence, and dismiss controls as every other insight, and carries pervasive "not medical advice" framing.
 
-**Plans**: TBD
+**Plans**: 3 plans, 3 waves (dependency-driven, mirroring the Phase-11 shape: Wave-0 scaffold + alarmist scan + no-push guard + RED honesty/absence suite -> the FlareEngine producer + FlareCopy + drift guard -> compose behind the gate + the calm .flare section first + E2E green)
 **UI hint**: yes
+
+Plans:
+
+**Wave 1**
+
+- [ ] 12-01-PLAN.md — Wave-0 (Nyquist) scaffold: the alarmist/diagnostic ForbiddenTerms/ClaimsPolicy list + scan (positive/negative controls, "warning" excluded for the header) + the FlareNoNotificationTests no-push source guard + the RED FlareEngineTests honesty/absence suite + new flare fixtures + the RED flare E2E + the -uitest-seed-flare seed seam
+
+**Wave 2** *(blocked on 12-01)*
+
+- [ ] 12-02-PLAN.md — The FlareEngine producer (compose rising-severity spine + active triggers + cycle-phase proximity into a bounded <=.medium confidence, withhold-by-default) + byte-identical FlareCopy/FlareCopyText + FlareDriftGuard + the FlareCopy alarmist scan; turns the Plan-01 RED suites GREEN
+
+**Wave 3** *(blocked on 12-02)*
+
+- [ ] 12-03-PLAN.md — Integration/payoff: compose FlareEngine into the LOCKED InsightsEngine behind the single gate + the calm .flare section placed FIRST (omit-when-empty, no alarm visual) in InsightsView + the package zero-forbidden-terms acceptance -> the flare dashboard E2E GREEN (INST-06 delivered)
 
 ## Progress
 
