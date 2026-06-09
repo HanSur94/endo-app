@@ -16,6 +16,18 @@ enum ValueSource: String, Sendable {
     case appleHealth
 }
 
+/// Per-field provenance for one merged day (D-03). A SEPARATE, app-side read the badge UI (09-03)
+/// consumes — kept OUT of the package's `DaySnapshot` so the `EndoInsights` contract (and its engine
+/// tests) stay untouched (minimal blast radius). Each field is `.manual` when the day's winning value
+/// came from manual logging, `.appleHealth` when it came from an imported sample, or `nil` when NEITHER
+/// source contributed (so a denied/empty day fabricates no badge — SC3 honesty extends to provenance).
+struct DaySnapshotSource: Sendable, Equatable {
+    var flow: ValueSource?
+    var sleep: ValueSource?
+    var activity: ValueSource?
+    var food: ValueSource?
+}
+
 /// The value-typed payload for one imported sample, one case per `HealthDomain`. Every associated value
 /// is a plain `Sendable` value (no `HK*`). `Equatable` so the mapping tests can assert exact outputs.
 enum ImportedPayload: Sendable, Equatable {

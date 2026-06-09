@@ -155,6 +155,9 @@ protocol Repository {
     /// The single entry the import service's persist closure calls: upsert each value (dedupe-by-uuid)
     /// and delete the rows HealthKit reported deleted, in one consent-gated unit (D-09 / Pitfall 5).
     func replaceOrInsertImported(values: [ImportedSampleValue], deletedUUIDs: [UUID]) throws
+    /// Per-field provenance for `day` (D-03 badge): `.manual` when manual logging supplied the winning
+    /// value, `.appleHealth` when an imported sample did, `nil` when neither — the merge's source half.
+    func daySnapshotSources(on day: Date) throws -> DaySnapshotSource
 }
 
 /// SwiftData-backed `Repository` over a `ModelContext`.
@@ -553,6 +556,13 @@ struct SwiftDataRepository: Repository {
         for entry in try context.fetch(FetchDescriptor<SchemaV1.DayEntry>()) where entry.note != nil {
             noteDays.insert(cal.startOfDay(for: entry.date))
         }
+        // Phase 9 (D-02/D-04): bucket imported samples by start-of-day too, so an imported-only day
+        // joins the union (importedDayJoinsTheUnion) and each day's imported rows feed the manual-wins
+        // merge. Imported rows NEVER mutate manual rows (D-01) — they only fill ABSENT fields below.
+        var importedByDay: [Date: [SchemaV1.ImportedSample]] = [:]
+        for sample in try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>()) {
+            importedByDay[cal.startOfDay(for: sample.day), default: []].append(sample)
+        }
 
         // The suppressed flag is a single current value (latest TreatmentState, matches CycleMath);
         // stamp it onto every snapshot so the per-day DaySnapshot shape (D-03) is preserved.
@@ -565,6 +575,7 @@ struct SwiftDataRepository: Repository {
         dayKeys.formUnion(bleedingByDay.keys)
         dayKeys.formUnion(factorsByDay.keys)
         dayKeys.formUnion(noteDays)
+        dayKeys.formUnion(importedByDay.keys)
 
         return dayKeys.sorted().map { key in
             Self.makeDaySnapshot(
@@ -573,9 +584,44 @@ struct SwiftDataRepository: Repository {
                 pain: painByDay[key] ?? [],
                 bleeding: bleedingByDay[key] ?? [],
                 factors: factorsByDay[key] ?? [],
+                imported: ImportedSignals(rows: importedByDay[key] ?? []),
                 hasNote: noteDays.contains(key),
                 suppressed: suppressed)
         }
+    }
+
+    /// Per-field provenance for a single day (D-03 badge). The SINGLE merge decision (`MergeResolution`)
+    /// is the source of truth for BOTH the value and its source — this read just surfaces the source half.
+    /// A field with NEITHER a manual nor an imported value reports `nil` (no badge — SC3 honesty).
+    func daySnapshotSources(on day: Date) throws -> DaySnapshotSource {
+        assertConsented()
+        let manualFactors = try factorReadings(on: day)
+        let manualBleeding = try bleedingEvents(on: day)
+        let manualFood = manualFactors.contains {
+            FactorKind(raw: $0.kindRaw) == .food
+        }
+        let manualSleep = manualFactors.contains {
+            FactorKind(raw: $0.kindRaw) == .sleep
+        }
+        let manualActivity = manualFactors.contains {
+            FactorKind(raw: $0.kindRaw) == .activity
+        }
+        let manualFlow = manualBleeding.contains { EndoInsights.FlowIntensity(raw: $0.flowRaw) != nil }
+
+        let imported = ImportedSignals(rows: try importedSamples(on: day))
+        return DaySnapshotSource(
+            flow: Self.source(manual: manualFlow, imported: imported.flow != nil),
+            sleep: Self.source(manual: manualSleep, imported: imported.sleepHours != nil || imported.sleepQuality != nil),
+            activity: Self.source(manual: manualActivity, imported: imported.activityType != nil || imported.activityMinutes != nil),
+            food: Self.source(manual: manualFood, imported: imported.ateThatDay == true))
+    }
+
+    /// Resolve a field's source: manual present → `.manual` (manual ALWAYS wins, D-02); else imported
+    /// present → `.appleHealth`; else `nil` (neither — no fabricated badge).
+    private static func source(manual: Bool, imported: Bool) -> ValueSource? {
+        if manual { return .manual }
+        if imported { return .appleHealth }
+        return nil
     }
 
     // MARK: - Phase 6 dismissal CRUD (INST-04, D-09/D-10)
@@ -710,6 +756,42 @@ struct SwiftDataRepository: Repository {
         row.importedAt = .now
     }
 
+    /// The decoded, package-facing imported signals for ONE day — flattened from that day's
+    /// `ImportedSample` rows (one row per domain, defensively decoded). This is the imported HALF of the
+    /// manual-wins merge: `makeDaySnapshot` uses each field ONLY where the manual value is absent (D-02).
+    /// Defensive decode throughout (unknown raws → the enum's defensive fallback; nil stays nil — never 0).
+    struct ImportedSignals {
+        var flow: EndoInsights.FlowIntensity?
+        var sleepHours: Double?
+        var sleepQuality: EndoInsights.SleepQuality?
+        var activityType: EndoInsights.ActivityType?
+        var activityMinutes: Double?
+        /// Nutrition presence (D-16). `true` ⇒ an "ate that day" food-presence signal exists.
+        var ateThatDay: Bool?
+
+        /// Flatten a day's rows. Last-writer-wins per domain (rows are already deduped by hkUUID upstream);
+        /// only the columns relevant to a row's domain are read.
+        init(rows: [SchemaV1.ImportedSample]) {
+            for row in rows {
+                switch HealthDomain(rawValue: row.domainRaw ?? "") {
+                case .cycle:
+                    // nil/unknown flow raw → nil (never fabricated), mirroring FlowIntensity(raw:).
+                    flow = EndoInsights.FlowIntensity(raw: row.flowRaw)
+                case .sleep:
+                    sleepHours = row.sleepHours
+                    sleepQuality = EndoInsights.SleepQuality(raw: row.sleepQualityRaw)
+                case .workouts:
+                    activityType = row.activityTypeRaw.map { EndoInsights.ActivityType(raw: $0) }
+                    activityMinutes = row.activityMinutes
+                case .nutrition:
+                    ateThatDay = row.ateThatDay
+                case .none:
+                    continue   // unknown/corrupt domain raw → contribute nothing (defensive, never crash).
+                }
+            }
+        }
+    }
+
     /// Project one day's raw `@Model` rows into the Sendable `EndoInsights.DaySnapshot`. Defensive
     /// decode throughout (never force-unwrap a decoded raw); honest nil≠0 for stress/mood; flow nil
     /// when no flow-bearing bleeding event. App-enum → package-enum is a same-raw-value passthrough.
@@ -719,6 +801,7 @@ struct SwiftDataRepository: Repository {
         pain: [SchemaV1.PainPoint],
         bleeding: [SchemaV1.BleedingEvent],
         factors: [SchemaV1.FactorReading],
+        imported: ImportedSignals,
         hasNote: Bool,
         suppressed: Bool
     ) -> DaySnapshot {
@@ -738,13 +821,36 @@ struct SwiftDataRepository: Repository {
             return EndoInsights.PainPoint(region: region, severity: p.severity)
         }
 
-        // Bleeding → the day's flow-bearing event (no event ⇒ flow nil; nil clots ⇒ false).
+        // Bleeding → the day's flow-bearing event (no event ⇒ manual flow nil; nil clots ⇒ false).
         let flowEvent = bleeding.first { EndoInsights.FlowIntensity(raw: $0.flowRaw) != nil }
-        let flow = EndoInsights.FlowIntensity(raw: flowEvent?.flowRaw)
+        let manualFlow = EndoInsights.FlowIntensity(raw: flowEvent?.flowRaw)
         let clots = flowEvent?.clots ?? false
 
         // Factor fields — reuse the shared FactorKind projection, mapped to the package enums.
         let f = projectFactors(factors)
+
+        // MANUAL-WINS, PER-FIELD, NIL-HONEST MERGE (D-02/D-04/SC3 — the make-or-break). For each
+        // imported-capable field: manual value present ⇒ use manual; else imported value present ⇒ use
+        // imported; else leave nil (NEVER 0, NEVER a fabricated reading). A denied/empty import has no
+        // imported values, so every field falls through to the manual value (or nil) — SC3 honesty.
+        //
+        // flow / sleep / activity (type+minutes): imported fills ONLY when the manual side is absent.
+        let flow = manualFlow ?? imported.flow
+        let sleepHours = f.sleepHours ?? imported.sleepHours
+        let sleepQuality = f.sleepQuality ?? imported.sleepQuality
+        // Activity type+minutes are one logical unit: imported fills both ONLY when there is no manual
+        // activity type (so an imported workout never grafts minutes onto a manual-typed activity).
+        let useImportedActivity = (f.activityType == nil) && (imported.activityType != nil)
+        let activityType = useImportedActivity ? imported.activityType : f.activityType
+        let activityMinutes = useImportedActivity ? imported.activityMinutes : f.activityMinutes
+
+        // Food: nutrition is presence-only (D-16). Imported "ate that day" contributes a single
+        // food-presence FoodTag (.other) ONLY when the day has NO manual food tags (manual wins, D-02).
+        // It is NEVER a fabricated specific tag and NEVER added when manual food exists.
+        var foodTags = f.foodTags
+        if foodTags.isEmpty, imported.ateThatDay == true {
+            foodTags = [.other]
+        }
 
         return DaySnapshot(
             day: day,
@@ -752,12 +858,12 @@ struct SwiftDataRepository: Repository {
             pain: painPoints,
             flow: flow,
             clots: clots,
-            foodTags: f.foodTags,
-            activityType: f.activityType,
-            activityMinutes: f.activityMinutes,
+            foodTags: foodTags,
+            activityType: activityType,
+            activityMinutes: activityMinutes,
             activityIntensity: f.activityIntensity,
-            sleepHours: f.sleepHours,
-            sleepQuality: f.sleepQuality,
+            sleepHours: sleepHours,
+            sleepQuality: sleepQuality,
             medicationsTaken: f.medicationsTaken,
             tookPRN: f.tookPRN,
             stress: f.stress,
