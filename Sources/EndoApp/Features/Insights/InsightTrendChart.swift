@@ -31,6 +31,11 @@ struct InsightTrendChart: View {
     let headline: String
     /// The absolute "today" the window ends at (injected for determinism; defaults to now).
     var asOf: Date = .now
+    /// The single ink color the line + points draw in. Additive (Phase 10, D-02): the live dashboard
+    /// keeps `.accentColor` (byte-identical on screen); the PDF renderer constructs a FRESH chart with
+    /// `inkColor: .black` so the embedded vector chart prints in a single print-ink color (UI-SPEC §Color
+    /// "chart renders in a single ink color for print"). NOTHING else about the chart changes.
+    var inkColor: Color = .accentColor
 
     /// Calendar for day-boundary math + the window start. `.current` is correct for display (the
     /// user's local dates); the pure grouping helper is unit-tested with a fixed UTC calendar.
@@ -88,7 +93,7 @@ struct InsightTrendChart: View {
                         y: .value("Severity", point.value),
                         series: .value("Run", run.id) // ← distinct per run = honest gap (Pitfall 1)
                     )
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(inkColor)
                     .accessibilityLabel(Text(point.date, format: .dateTime.month().day()))
                     .accessibilityValue(Text("severity \(Int(point.value.rounded())) of 10"))
                 }
@@ -100,7 +105,7 @@ struct InsightTrendChart: View {
                     x: .value("Date", point.date),
                     y: .value("Severity", point.value)
                 )
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(inkColor)
                 .accessibilityLabel(Text(point.date, format: .dateTime.month().day()))
                 .accessibilityValue(Text("severity \(Int(point.value.rounded())) of 10"))
             }
