@@ -56,6 +56,17 @@ final class SystemHealthDataReading: HealthDataReading {
         try await store.requestAuthorization(toShare: [], read: domain.readTypes)
     }
 
+    /// Request READ access for the UNION of every domain's read types in ONE call (WR-05). One
+    /// `HKHealthStore.requestAuthorization` over the combined read set presents at most a single system
+    /// sheet — the Apple-recommended pattern — instead of up to four sequential per-domain prompts.
+    @HealthStoreActor
+    func requestAuthorization() async throws {
+        guard HKHealthStore.isHealthDataAvailable() else { return }   // iPad/Mac/unsupported → no-op.
+        // Union of all domains' minimum read sets (D-14/D-15/D-16). READ-ONLY (T-09-14): toShare empty.
+        let readTypes = Set(HealthDomain.allCases.flatMap { $0.readTypes })
+        try await store.requestAuthorization(toShare: [], read: readTypes)
+    }
+
     /// Pull new/changed samples for `domain` since `anchor` (D-09 incremental). `anchor == nil` ⇒ the
     /// D-13 first-grant 365-day bounded backfill; otherwise incremental from the cursor. The anchored
     /// query's results handler maps every `HKSample` → `Sendable` `ImportedSampleValue` and the deletions

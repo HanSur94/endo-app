@@ -33,6 +33,13 @@ protocol HealthDataReading: Sendable {
     /// granted reads — read status is hidden (Pitfall 1). Callers attempt `pull` next regardless.
     func requestAuthorization(for domain: HealthDomain) async throws
 
+    /// Requests READ access for the UNION of EVERY domain's read types in ONE call (WR-05; read-only —
+    /// `toShare: []`). This is the Apple-recommended pattern: a single `requestAuthorization` for all read
+    /// types presents at most ONE system sheet, instead of up to four sequential per-domain prompts. Called
+    /// ONLY after the in-app rationale "Continue" (D-06); a successful return does NOT imply a grant
+    /// (Pitfall 1). Callers then loop `importNew(for:)` per domain.
+    func requestAuthorization() async throws
+
     /// Pulls new/changed samples for `domain` since `anchor` (D-09 incremental; `anchor == nil` ⇒ the
     /// D-13 first-grant 365-day backfill, decided inside the conformer). Returns the Sendable triple:
     ///   - `values`:    mapped `ImportedSampleValue` structs (NO `HKSample` escapes — Pitfall 2)

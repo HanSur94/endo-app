@@ -85,6 +85,12 @@ final class FixtureHealthDataReading: HealthDataReading {
         await state.recordAuthorization()
     }
 
+    /// Unioned no-op authorization (WR-05) that only RECORDS it was called — the fixture never grants or
+    /// denies; read status is hidden (Pitfall 1).
+    func requestAuthorization() async throws {
+        await state.recordAuthorization()
+    }
+
     /// Returns the scripted values + a synthetic non-nil anchor (the cursor the service persists). The
     /// anchor is a fresh opaque `HKQueryAnchor` — callers treat it as a black box.
     func pull(

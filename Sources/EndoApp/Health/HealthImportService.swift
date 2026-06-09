@@ -64,6 +64,15 @@ actor HealthImportService {
         try await reader.requestAuthorization(for: domain)
     }
 
+    /// Request READ access for the UNION of every domain in ONE call (WR-05) — at most one system sheet,
+    /// the Apple-recommended pattern, instead of up to four sequential per-domain prompts. Called ONLY
+    /// after the in-app rationale "Continue" (09-03). Consent-gated; a successful return does NOT imply a
+    /// grant (Pitfall 1) — the caller then loops `importNew(for:)` per domain.
+    func requestAuthorization() async throws {
+        guard consentGuard() else { return }
+        try await reader.requestAuthorization()
+    }
+
     /// Import new/changed samples for `domain` (D-09 incremental). Loads the persisted anchor (nil ⇒ the
     /// D-13 first-grant 365-day backfill, decided inside the real reader), pulls, persists the values +
     /// deletions (dedupe handled in the Repository — Pitfall 5), stores the new anchor, then fires the

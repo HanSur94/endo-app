@@ -100,10 +100,11 @@ struct HealthRationaleView: View {
         onProceed()
         let service = healthImportService
         Task {
+            // WR-05: ONE unioned authorization request → at most a single system sheet (Apple-recommended),
+            // instead of up to four sequential per-domain prompts. A throw is swallowed — we still attempt
+            // every pull, which contributes nothing on denial (Pitfall 1 / SC3).
+            try? await service.requestAuthorization()
             for domain in HealthDomain.allCases {
-                // requestAuthorization shows Apple's system sheet (a no-op in the fixture). A throw is
-                // swallowed — we still attempt the pull, which contributes nothing on denial (SC3).
-                try? await service.requestAuthorization(for: domain)
                 await service.importNew(for: domain)
             }
             await MainActor.run {
