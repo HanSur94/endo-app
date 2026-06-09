@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard (completed 2026-06-09)
 - [x] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage (completed 2026-06-09)
 - [x] **Phase 10: Doctor-Ready PDF Report** - Date-ranged, source-labeled, on-device vector PDF report shared via the system share sheet (completed 2026-06-09)
-- [ ] **Phase 11: Personalized Recommendations** - Data-driven, non-prescriptive recommendations derived from the user's own patterns
+- [x] **Phase 11: Personalized Recommendations** - Data-driven, non-prescriptive recommendations derived from the user's own patterns (completed 2026-06-10)
 - [ ] **Phase 12: Flare Early-Warning** - Built last and gated by the honesty layer: a heuristic, non-diagnostic flare early-warning with confidence
 
 ## Phase Details
@@ -334,7 +334,7 @@ Plans:
 
 **Wave 3** *(blocked on 11-02)*
 
-- [ ] 11-03-PLAN.md — Integration/payoff: compose RecommendationsEngine into the LOCKED InsightsEngine behind the single gate + minSample(.recommendation) 14->10 + the InsightsView .recommendation section (omit-when-empty) -> the recommendation dashboard E2E GREEN
+- [x] 11-03-PLAN.md — Integration/payoff: compose RecommendationsEngine into the LOCKED InsightsEngine behind the single gate + minSample(.recommendation) 14->10 + the InsightsView .recommendation section (omit-when-empty) -> the recommendation dashboard E2E GREEN
 
 ### Phase 12: Flare Early-Warning
 
