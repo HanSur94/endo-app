@@ -170,35 +170,40 @@ struct CorrelationStatsTests {
         #expect(CorrelationStats.benjaminiHochbergPasses([0.6, 0.7, 0.8, 0.9], q: 0.10) == Set<Int>())
     }
 
-    // MARK: - Confidence band — guard passedFDR && effectMag≥mediumFloor && n≥10; else .none (D-05/D-07/D-08).
+    // MARK: - Confidence band — guard passedFDR && effectMag≥mediumFloor && n≥minN; else .none (D-05/D-07/D-08).
+    //
+    // SSOT (WR-01): `minN` is sourced from `HonestyGate.minSample(for: .correlation)` — the SINGLE
+    // correlation floor — never a second literal `10`. The tests pass it the same way the engine does.
+
+    private static let minN = HonestyGate.minSample(for: .correlation)   // == 10, the one source of truth.
 
     @Test func confidence_high_needsLargeEffectAndN30() {
         // effectMag 0.5 ≥ largeFloor 0.474, n 35 ≥ 30, passedFDR → .high.
-        #expect(CorrelationStats.confidence(effectMag: 0.5, n: 35, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .high)
+        #expect(CorrelationStats.confidence(effectMag: 0.5, n: 35, minN: Self.minN, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .high)
     }
 
     @Test func confidence_medium_n20MediumEffect() {
         // effectMag 0.4 ≥ medium 0.33, n 22 ≥ 20 but < 30 (or effect < large) → .medium.
-        #expect(CorrelationStats.confidence(effectMag: 0.4, n: 22, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .medium)
+        #expect(CorrelationStats.confidence(effectMag: 0.4, n: 22, minN: Self.minN, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .medium)
     }
 
     @Test func confidence_low_n10to19() {
         // effectMag 0.4 ≥ medium, n 12 ≥ 10 but < 20 → .low.
-        #expect(CorrelationStats.confidence(effectMag: 0.4, n: 12, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .low)
+        #expect(CorrelationStats.confidence(effectMag: 0.4, n: 12, minN: Self.minN, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .low)
     }
 
     @Test func confidence_belowMediumFloor_isNone() {
         // effectMag 0.2 < medium floor 0.33 → .none regardless of n.
-        #expect(CorrelationStats.confidence(effectMag: 0.2, n: 35, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .none)
+        #expect(CorrelationStats.confidence(effectMag: 0.2, n: 35, minN: Self.minN, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .none)
     }
 
     @Test func confidence_underSampled_isNone() {
-        // n 9 < 10 → .none even with a large effect (the under-sampled withholding case).
-        #expect(CorrelationStats.confidence(effectMag: 0.5, n: 9, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .none)
+        // n 9 < minN (10) → .none even with a large effect (the under-sampled withholding case).
+        #expect(CorrelationStats.confidence(effectMag: 0.5, n: 9, minN: Self.minN, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: true) == .none)
     }
 
     @Test func confidence_failedFDR_capsAtNone() {
         // passedFDR == false caps confidence at .none regardless of effect/sample (the FDR withholding case).
-        #expect(CorrelationStats.confidence(effectMag: 0.5, n: 35, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: false) == .none)
+        #expect(CorrelationStats.confidence(effectMag: 0.5, n: 35, minN: Self.minN, mediumFloor: 0.33, largeFloor: 0.474, passedFDR: false) == .none)
     }
 }

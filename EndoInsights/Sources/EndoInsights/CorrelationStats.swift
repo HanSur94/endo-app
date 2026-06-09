@@ -172,12 +172,27 @@ enum CorrelationStats {
 
     // MARK: - Confidence band (post-hard-gate). Floors are PARAMETERS — no literals leak to callers (D-05/D-08).
 
-    /// `.none` unless passedFDR && effectMag ≥ mediumFloor && n ≥ 10. `.high` needs n ≥ 30 & a large effect;
-    /// else `.medium` (n ≥ 20) / `.low`. Return type is the existing public `InsightConfidence`.
-    static func confidence(effectMag: Double, n: Int, mediumFloor: Double, largeFloor: Double, passedFDR: Bool) -> InsightConfidence {
-        guard passedFDR, effectMag >= mediumFloor, n >= 10 else { return .none }
-        if n >= 30 && effectMag >= largeFloor { return .high }
-        if n >= 20 { return .medium }
+    /// `.none` unless passedFDR && effectMag ≥ mediumFloor && n ≥ `minN`. `.high` needs n ≥ `highSampleFloor`
+    /// & a large effect; else `.medium` (n ≥ `mediumSampleFloor`) / `.low`. Return type is the existing
+    /// public `InsightConfidence`.
+    ///
+    /// SINGLE SOURCE OF TRUTH (WR-01): the gate floor `minN` is a PARAMETER — the caller supplies
+    /// `HonestyGate.minSample(for: .correlation)` so there is exactly ONE literal `10`, in `HonestyGate`.
+    /// No second copy here that could silently drift from the gate. The band floors `highSampleFloor`/
+    /// `mediumSampleFloor` are likewise named parameters (IN-01) so no numeric literal is buried in the body.
+    static func confidence(
+        effectMag: Double,
+        n: Int,
+        minN: Int,
+        mediumFloor: Double,
+        largeFloor: Double,
+        passedFDR: Bool,
+        highSampleFloor: Int = 30,
+        mediumSampleFloor: Int = 20
+    ) -> InsightConfidence {
+        guard passedFDR, effectMag >= mediumFloor, n >= minN else { return .none }
+        if n >= highSampleFloor && effectMag >= largeFloor { return .high }
+        if n >= mediumSampleFloor { return .medium }
         return .low
     }
 }

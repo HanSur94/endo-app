@@ -106,6 +106,7 @@ enum CorrelationEngine {
             let confidence = CorrelationStats.confidence(
                 effectMag: candidate.effectMagnitude,
                 n: candidate.pairedDays,
+                minN: HonestyGate.minSample(for: .correlation),   // SSOT: the ONE correlation floor (WR-01).
                 mediumFloor: candidate.mediumFloor,
                 largeFloor: candidate.largeFloor,
                 passedFDR: passingIndices.contains(idx)
