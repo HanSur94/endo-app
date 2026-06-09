@@ -206,7 +206,7 @@ Plans:
 **Plans**: 3 plans, 3 waves (risk-first: prove the math, build the producer, lock the gate)Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Wave 1 (TDD): CorrelationStats pure math (Cliff's δ, mean-diff, risk diff/ratio, Fisher exact, Mann–Whitney p, BH-FDR, confidence band) proven against hand-computed known values
+- [x] 07-01-PLAN.md — Wave 1 (TDD): CorrelationStats pure math (Cliff's δ, mean-diff, risk diff/ratio, Fisher exact, Mann–Whitney p, BH-FDR, confidence band) proven against hand-computed known values ✓
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -303,7 +303,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
 | 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
-| 7. Correlation & Trigger Discovery | 0/TBD | Not started | - |
+| 7. Correlation & Trigger Discovery | 1/3 | In progress | 07-01 ✓ |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
 | 9. HealthKit Import | 0/TBD | Not started | - |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
