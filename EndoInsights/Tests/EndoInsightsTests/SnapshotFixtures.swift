@@ -344,6 +344,36 @@ enum Fixtures {
         }
     }
 
+    /// Phase 11 (WR-01): TWO different factors both correlating with the SAME `bleeding` presence target,
+    /// so the per-target collapse (`dominantPerSymptom`) MUST fold them into ONE bleeding recommendation —
+    /// the bug being that a fixed `suffix(2)` grouping key pulled the trailing FACTOR fragment into the key
+    /// (`dairy.bleeding` vs `poor.bleeding`) and kept them as two separate groups. ~40 days: on ~20 days
+    /// BOTH dairy is logged AND sleep is poor AND bleeding is logged (`flow != nil`); on ~20 other logged
+    /// days NEITHER (a different food, good sleep, no flow). Both `food.dairy` and `sleep.poor` therefore
+    /// have a large positive risk-difference vs the SAME `bleeding` target (an AGGRAVATING presence finding:
+    /// bleeding logged MORE often on factor-present days). After the fix, the two findings share the key
+    /// `bleeding` and collapse to a SINGLE recommendation. Deterministic; absence is honest `.absent`
+    /// (a day with SOME log), never `.unobserved` (A7).
+    static func twoFactorsSameBleedingTargetFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for i in 0..<20 {   // dairy + poor sleep + bleeding present
+            days.append(snapshot(
+                offset: -i,
+                flow: .medium,
+                foodTags: [.dairy],
+                sleepQuality: .poor
+            ))
+        }
+        for i in 20..<40 {  // a different food + good sleep + NO bleeding (day still logged → honest absent)
+            days.append(snapshot(
+                offset: -i,
+                foodTags: [.caffeine],
+                sleepQuality: .good
+            ))
+        }
+        return days
+    }
+
     /// WR-05: a SHORT but REGULAR cycle whose estimated phase windows OVERLAP. Starts at offsets
     /// -48, -32, -16, 0 → gaps 16/16/16 (spread 0, count 3 → `phaseConfidence == .medium`, so it clears
     /// the confidence/regularity gates). With median 16 and a 5-day current bleed (offsets 0…4): band = 2,

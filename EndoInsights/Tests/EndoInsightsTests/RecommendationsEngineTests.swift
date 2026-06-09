@@ -121,6 +121,26 @@ struct RecommendationsEngineTests {
         #expect(recs.count <= 3, "The recommendation count is capped at top-N == 3 (D-02).")
     }
 
+    // MARK: - Per-target collapse: two factors → the SAME bleeding target collapse to ONE recommendation.
+    //
+    // WR-01 regression: the per-target grouping key must be the TARGET identity (`bleeding`), not a fixed
+    // trailing suffix that drags the factor fragment in (`dairy.bleeding` vs `poor.bleeding`). Two distinct
+    // factors (dairy, poor sleep) that both correlate with the SAME `bleeding` presence target must fold
+    // into a SINGLE bleeding recommendation — exactly matching the symptom-target collapse behavior (D-02).
+
+    @Test func twoFactorsSameBleedingTarget_collapseToOneRecommendation() async throws {
+        let recs = recommendationInsights(Fixtures.twoFactorsSameBleedingTargetFixture())
+        // Both factors target `bleeding`; after collapse exactly ONE bleeding recommendation survives.
+        let bleedingRecs = recs.filter { $0.signalKey.hasSuffix(".bleeding") }
+        #expect(bleedingRecs.count == 1,
+                "Two factors on the SAME bleeding target must collapse to ONE recommendation (WR-01), got: \(recs.map(\.signalKey)).")
+        // The kept recommendation is a real bleeding-target recommendation (stable `recommendation.<stem>.bleeding`).
+        let rec = try #require(bleedingRecs.first)
+        #expect(rec.kind == .recommendation)
+        #expect(rec.signalKey.hasPrefix("recommendation."))
+        assertNoForbiddenTerms(rec)
+    }
+
     // MARK: - Determinism: the same fixture twice yields exactly equal `[Insight]`.
 
     @Test func output_isDeterministic() async throws {

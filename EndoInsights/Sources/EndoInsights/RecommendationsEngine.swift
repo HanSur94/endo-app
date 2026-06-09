@@ -89,13 +89,21 @@ enum RecommendationsEngine {
     private static func dominantPerSymptom(
         _ findings: [CorrelationEngine.CorrelationFinding]
     ) -> [CorrelationEngine.CorrelationFinding] {
-        // Group by symptom target (the signalKey with its leading `correlation.<factor>.` stripped).
+        // Group by the actual TARGET (symptom type or bleeding), keyed by the signalKey with its leading
+        // `correlation.<factor.key>.` stem stripped — NOT a fixed trailing-suffix length.
         func targetKey(_ f: CorrelationEngine.CorrelationFinding) -> String {
-            // signalKey is `correlation.<factor.key>.<target-fragment>`; the target fragment is the stable
-            // per-symptom grouping key. Fall back to the whole signalKey if the shape is unexpected.
+            // signalKey is `correlation.<factor.key>.<target-fragment>` where `<factor.key>` is ALWAYS two
+            // dot-components (`food.dairy`, `sleep.poor`, `prn.taken`, `cyclePhase.luteal`, …) and the
+            // target fragment is either `symptom.<type>` (two components) OR `bleeding` (one). Taking a
+            // FIXED `suffix(2)` is wrong for the one-component `bleeding` target — it pulls the trailing
+            // factor fragment into the key (`dairy.bleeding` vs `poor.bleeding`), so two factors on the
+            // SAME bleeding target land in SEPARATE groups and are NOT collapsed (WR-01). Instead drop the
+            // leading `correlation` + the two factor components deterministically, so the key is the TARGET
+            // identity — `symptom.pelvicPain` or `bleeding` — regardless of factor or fragment length. Fall
+            // back to the whole signalKey if the shape is unexpected (never crash).
             let parts = f.signalKey.split(separator: ".")
-            guard parts.count >= 3 else { return f.signalKey }
-            return parts.suffix(2).joined(separator: ".")   // e.g. "symptom.pelvicPain" or "bleeding"
+            guard parts.count >= 4 else { return f.signalKey }   // correlation.<a>.<b>.<target…>
+            return parts.dropFirst(3).joined(separator: ".")     // "symptom.pelvicPain" or "bleeding"
         }
 
         var orderedTargets: [String] = []
