@@ -5,17 +5,21 @@
 // sheet, fired ONLY on an explicit tap (RPRT-03/D-09). There is NO automatic upload anywhere.
 //
 // PRIVACY (T-10-09 / V8): the temp PDF holds GDPR Art.9 special-category health data in
-// `FileManager.temporaryDirectory`. We DELETE it on dismiss (`onDisappear`) so it does not linger after
-// the user is done. The builder also deletes any prior temp file before a fresh generation (belt + braces:
-// both the producer and the consumer clean up). No confirmation dialog — preview dismissal is
-// non-destructive to the user's logged data (only the throwaway file is removed).
+// `FileManager.temporaryDirectory`. Cleanup is owned by the PRODUCER, not this consumer: the builder
+// deletes any prior temp file before each fresh generation (`ReportBuilderView.generate()`), so the
+// throwaway file is not leaked. We deliberately do NOT delete on `onDisappear` — the system share sheet
+// reads the URL lazily/asynchronously (Mail draft, Files write, AirDrop, Print) and is presented OVER
+// this preview, so `onDisappear` can fire while the chosen activity is still reading the file; an eager
+// delete there races the share and can export a zero-byte/half-written Art.9 PDF (CR-01). No confirmation
+// dialog — preview dismissal is non-destructive to the user's logged data.
 import SwiftUI
 
 /// The PDF preview + explicit-share surface (RPRT-01/RPRT-03). Binds to the LOCAL temp-file URL the
-/// renderer produced; deletes that file on dismiss (the temp PDF is health data — T-10-09 / V8).
+/// renderer produced. Cleanup of that file is owned by the builder (pre-generation delete), NOT this view,
+/// so the system share sheet can finish reading the URL safely (CR-01).
 struct ReportPreviewView: View {
     /// The LOCAL temp-file URL (Plan 02's `renderToTempFile`). The preview reads it and `ShareLink`
-    /// shares it; this view OWNS its deletion on dismiss.
+    /// shares it. The PRODUCER (`ReportBuilderView`) owns its deletion before the next generation.
     let url: URL
 
     var body: some View {
@@ -40,9 +44,9 @@ struct ReportPreviewView: View {
                     .accessibilityIdentifier("report.share")
                 }
             }
-            // Delete the temp PDF (Art.9 data) once the user leaves the preview (T-10-09 / V8 / Pitfall 5).
-            .onDisappear {
-                try? FileManager.default.removeItem(at: url)
-            }
+            // CR-01: NO `onDisappear` delete. The builder removes any prior temp PDF before the next
+            // generation, so the Art.9 throwaway file is not leaked — and the system share sheet (which
+            // reads the URL lazily, often after this view disappears) can complete safely without racing
+            // a premature delete.
     }
 }
