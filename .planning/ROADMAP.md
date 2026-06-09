@@ -368,5 +368,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
 | 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
 | 10. Doctor-Ready PDF Report | 3/3 | Complete    | 2026-06-09 |
-| 11. Personalized Recommendations | 0/3 | Planned     | - |
+| 11. Personalized Recommendations | 3/3 | Complete    | 2026-06-09 |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |
