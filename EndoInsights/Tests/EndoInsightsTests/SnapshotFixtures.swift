@@ -224,6 +224,36 @@ enum Fixtures {
         return days
     }
 
+    /// Phase-11 (INST-05): a STRONG, well-sampled BENEFICIAL association — the factor's PRESENT group has
+    /// LOWER symptom severity (meanDiff < 0), the mirror image of `strongAssociationFixture` (which is the
+    /// AGGRAVATING case: dairy PRESENT → HIGHER pelvic-pain severity). ~40 days: on ~20 days an ACTIVITY is
+    /// logged (`activityType: .walking`) WITH pelvicPain severity ~2; on ~20 other logged days NO activity
+    /// (a different food log so the day exists) WITH pelvicPain severity ~7. The chosen factor is
+    /// `Factor.activityPresent` — `state(of:)` cleanly splits present (activity logged) vs absent
+    /// (day-with-any-log, no activity), yielding a large |δ| BENEFICIAL finding (present-group severity is
+    /// LOWER → meanDiff < 0 → `RecommendationDirection.beneficial`). Deterministic; absence is honest
+    /// `.absent` (a day with SOME log), never `.unobserved` (A7). Flipping this fixture's effect vs
+    /// `strongAssociationFixture` MUST flip the recommendation template (Pitfall 1).
+    static func beneficialAssociationFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for i in 0..<20 {   // ACTIVITY days, LOW pelvic-pain severity → beneficial (present-group fares better)
+            days.append(snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: 2)],
+                activityType: .walking,
+                activityMinutes: 30
+            ))
+        }
+        for i in 20..<40 {  // NO-activity days (a food logged so the day exists / is honestly absent), HIGH severity
+            days.append(snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: 7)],
+                foodTags: [.caffeine]
+            ))
+        }
+        return days
+    }
+
     /// An UNDER-SAMPLED association: the SAME strong shape but only 9 paired days total (< minSample) →
     /// ZERO correlations. 5 dairy + 4 non-dairy days = 9 paired days, dropped by the sample floor.
     static func underSampledAssociationFixture() -> [DaySnapshot] {
