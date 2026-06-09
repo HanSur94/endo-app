@@ -124,6 +124,21 @@ struct SettingsView: View {
                     )
                 }
 
+                // Export report (RPRT-01/RPRT-03, D-07): the doctor-ready PDF builder. Placed near Privacy
+                // (above it) so it stays ABOVE the destructive withdraw button — the new Section must not
+                // push the withdraw button below the fold (the 03-03 ConsentFlowUITests regression lesson).
+                Section {
+                    NavigationLink {
+                        ReportBuilderView()
+                    } label: {
+                        Label(ReportCopy.settingsEntryLabel, systemImage: "doc.text")
+                    }
+                    .accessibilityIdentifier("settings.report.entry")
+                } footer: {
+                    Text(ReportCopy.settingsEntryFooter)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 // (c) Privacy reachable from Settings (ONBD-04).
                 Section {
                     NavigationLink {
