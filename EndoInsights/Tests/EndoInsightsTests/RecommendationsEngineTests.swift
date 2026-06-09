@@ -121,6 +121,65 @@ struct RecommendationsEngineTests {
         #expect(recs.count <= 3, "The recommendation count is capped at top-N == 3 (D-02).")
     }
 
+    // MARK: - WR-04: EXHAUSTIVE templated-label audit over the ACTUAL interpolation domain.
+    //
+    // Both recommendation headlines interpolate domain labels — `beneficialHeadline(factor:)` takes a
+    // `Factor.displayLabel`; `aggravatingHeadline(symptom:factor:)` takes a `CyclePhaseMapper.displayName`
+    // symptom label AND a factor label. The app-side `CopyAuditTests` only spot-checks three representative
+    // interpolations, so it cannot PROVE the real production labels are clean. This test enumerates EVERY
+    // factor label and EVERY symptom label, renders both headlines for every combination, and scans them
+    // against the package forbidden lists — turning the spot-check into exhaustive proof. A future label
+    // whose text contains a forbidden substring (e.g. "start"/"use"/"her") now fails HERE, instead of being
+    // silently DROPPED at runtime by the HonestyGate (an invisible loss of a valid recommendation).
+
+    /// Every production `Factor.displayLabel` — enumerated across all parametric families (Factor has no
+    /// `CaseIterable` because of its associated values, so the family enumeration is spelled out here, and
+    /// must mirror `CorrelationEngine.enumerateFactors`).
+    private var allFactorLabels: [String] {
+        var factors: [Factor] = []
+        factors += FoodTag.allCases.map { Factor.food($0) }
+        factors.append(.activityPresent)
+        factors += ActivityType.allCases.map { Factor.activity($0) }
+        factors.append(.sleepPoor)
+        factors.append(.stressHigh)
+        factors.append(.moodLow)
+        factors.append(.medicationTaken)
+        factors.append(.prnTaken)
+        factors += CyclePhase.allCases.map { Factor.cyclePhase($0) }
+        return factors.map(\.displayLabel)
+    }
+
+    /// Every production symptom label as interpolated by the aggravating headline.
+    private var allSymptomLabels: [String] {
+        SymptomType.allCases.map { CyclePhaseMapper.displayName($0) }
+    }
+
+    @Test func everyProductionLabel_rendersCleanRecommendationCopy() async throws {
+        #expect(!allFactorLabels.isEmpty, "The factor-label audit surface must be non-empty.")
+        #expect(!allSymptomLabels.isEmpty, "The symptom-label audit surface must be non-empty.")
+
+        // Beneficial headline: interpolates EVERY factor label.
+        for factor in allFactorLabels {
+            let headline = RecommendationCopy.beneficialHeadline(factor: factor)
+            #expect(ForbiddenTerms.violation(in: headline) == nil,
+                    "Beneficial headline for factor \"\(factor)\" must scan clean: \"\(headline)\".")
+        }
+
+        // Aggravating headline: interpolates EVERY (symptom × factor) combination — the full domain.
+        for symptom in allSymptomLabels {
+            for factor in allFactorLabels {
+                let headline = RecommendationCopy.aggravatingHeadline(symptom: symptom, factor: factor)
+                #expect(ForbiddenTerms.violation(in: headline) == nil,
+                        "Aggravating headline for symptom \"\(symptom)\" / factor \"\(factor)\" must scan clean: \"\(headline)\".")
+            }
+        }
+
+        // The bleeding presence target interpolates the literal "bleeding" label (not a SymptomType).
+        let bleedingHeadline = RecommendationCopy.aggravatingHeadline(symptom: "bleeding", factor: allFactorLabels[0])
+        #expect(ForbiddenTerms.violation(in: bleedingHeadline) == nil,
+                "Aggravating headline for the bleeding target must scan clean: \"\(bleedingHeadline)\".")
+    }
+
     // MARK: - Per-target collapse: two factors → the SAME bleeding target collapse to ONE recommendation.
     //
     // WR-01 regression: the per-target grouping key must be the TARGET identity (`bleeding`), not a fixed
