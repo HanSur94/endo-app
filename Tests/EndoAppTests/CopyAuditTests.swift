@@ -434,4 +434,81 @@ struct CopyAuditTests {
                     "Curated calm flare word \"\(word)\" must pass the alarmist scan clean (substring trap).")
         }
     }
+
+    // MARK: - Phase-12 FlareCopy scan (Plan 12-02): the real flare-copy surface vs the FULL scan union
+    //
+    // Plan 01 proved the alarmist SCAN works (positive/negative controls). Plan 02 ships the real
+    // `FlareCopy.auditableStrings` surface and points the FULL scan union at it: a flare string may contain
+    // NO causal verb, NO gendered token (incl. the "her" ⊂ "higher" trap), NO numeric-confidence /
+    // false-precision token, NO imperative substring, AND NO alarmist/diagnostic/certainty term. The
+    // curated copy ("more difficult days", not "higher"; OMITS "not a prediction") dodges every trap.
+
+    /// The real `FlareCopy` auditable surface (section header + headline + detail + contributing +
+    /// insufficient title/subtitle), the surface the full scan union below guards.
+    private var allFlareCopy: [String] { FlareCopy.auditableStrings }
+
+    // No flare string contains a forbidden medical-purpose / causal verb.
+    @Test func flareCopy_containsNoForbiddenVerb() {
+        for copy in allFlareCopy {
+            let lower = copy.lowercased()
+            for verb in ClaimsPolicy.forbiddenVerbs {
+                #expect(!lower.contains(verb.lowercased()),
+                        "Flare copy \"\(copy)\" must not contain forbidden verb \"\(verb)\".")
+            }
+        }
+    }
+
+    // No flare string contains a gendered token (incl. the "her" ⊂ "higher" trap — the curated copy uses
+    // "more difficult days", never "higher-symptom days").
+    @Test func flareCopy_containsNoGenderedToken() {
+        for copy in allFlareCopy {
+            let lower = copy.lowercased()
+            for token in ClaimsPolicy.forbiddenGenderedTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Flare copy \"\(copy)\" must not contain gendered token \"\(token)\".")
+            }
+        }
+    }
+
+    // No flare string contains an imperative substring (a flare card is a discussion prompt, not an order).
+    @Test func flareCopy_containsNoImperative() {
+        for copy in allFlareCopy {
+            #expect(firstImperative(in: copy) == nil,
+                    "Flare copy \"\(copy)\" must contain NO imperative substring.")
+        }
+    }
+
+    // No flare string contains an alarmist / diagnostic / certainty term ("warning" is allowed in the
+    // section HEADER only — it is excluded from the alarmist list precisely so the header is legal).
+    @Test func flareCopy_containsNoAlarmistTerm() {
+        for copy in allFlareCopy {
+            #expect(firstAlarmist(in: copy) == nil,
+                    "Flare copy \"\(copy)\" must contain NO alarmist/diagnostic term.")
+        }
+    }
+
+    // No flare string carries a numeric-confidence / false-precision token (words-only card, D-11).
+    @Test func flareCopy_hasNoNumericConfidence() {
+        let forbiddenPrecisionTokens = ["%", "p =", "p=", "r =", "r=", "p-value", "p value"]
+        for copy in allFlareCopy {
+            let lower = copy.lowercased()
+            for token in forbiddenPrecisionTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Flare copy \"\(copy)\" must not contain false-precision token \"\(token)\".")
+            }
+        }
+    }
+
+    // The audited surface is non-empty and every string is a non-empty string.
+    @Test func flareCopy_isNonEmpty() {
+        #expect(!allFlareCopy.isEmpty)
+        for copy in allFlareCopy {
+            #expect(!copy.trimmingCharacters(in: .whitespaces).isEmpty,
+                    "Every FlareCopy string must be non-empty.")
+        }
+        // The section header is the one sanctioned use of "early-warning" (D-07).
+        #expect(FlareCopy.sectionFlare.lowercased().contains("early-warning"))
+        // The insufficiency notice carries the honest "not enough data" framing (mirror the sparse title).
+        #expect(FlareCopy.insufficientTitle.lowercased().contains("not enough data"))
+    }
 }
