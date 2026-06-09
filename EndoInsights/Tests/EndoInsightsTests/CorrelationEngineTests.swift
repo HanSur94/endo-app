@@ -118,6 +118,62 @@ struct CorrelationEngineTests {
         }
     }
 
+    // MARK: CR-01 — a duplicate calendar-day input must NOT crash the public pipeline.
+
+    @Test func duplicateDay_doesNotCrash_andProducesSensibleResult() async throws {
+        // Two snapshots on the SAME calendar day (offset 0) — previously trapped via
+        // Dictionary(uniqueKeysWithValues:). The engine must collapse to one day (last-wins) and degrade
+        // gracefully instead of crashing the whole insights screen.
+        let snapshots: [DaySnapshot] = [
+            Fixtures.snapshot(offset: 0, symptoms: [SymptomPoint(type: .pelvicPain, severity: 3)], foodTags: [.dairy]),
+            Fixtures.snapshot(offset: 0, symptoms: [SymptomPoint(type: .pelvicPain, severity: 7)], foodTags: [.caffeine]),
+            Fixtures.snapshot(offset: -1, symptoms: [SymptomPoint(type: .fatigue, severity: 4)], stress: 5),
+        ]
+        // Direct engine entry (CorrelationEngine.insights) — must not trap.
+        let direct = correlations(snapshots)
+        #expect(direct.isEmpty, "Three days (one a duplicate) is far below the floor → ZERO correlations, no crash.")
+
+        // The PUBLIC pipeline (InsightsEngine.insights) passes snapshots straight through — also must not
+        // trap. Reaching this assertion at all proves the duplicate-day input did not crash the pipeline.
+        let viaPublic = InsightsEngine.insights(
+            from: snapshots, asOf: Fixtures.day(0), dismissed: [], calendar: Fixtures.calendar
+        )
+        #expect(viaPublic.allSatisfy { $0.kind != .correlation },
+                "A 3-day stream is below the correlation floor → no correlation insight, and no crash.")
+    }
+
+    // MARK: WR-02 — the severity arm counts DAYS, not severity observations (one obs per day).
+
+    @Test func severityArm_countsDaysNotObservations() async throws {
+        // Build a strong dairy↔pelvicPain association where EVERY dairy day carries TWO pelvicPain
+        // SymptomPoints. Pre-fix, each such day appended 2 values → n/sampleSize would be inflated past the
+        // observed-day count. Post-fix, each day reduces to one value (max), so sampleSize == day count.
+        var days: [DaySnapshot] = []
+        for i in 0..<20 {   // dairy days, DUPLICATE same-day pelvicPain points (severities 6 and 7)
+            days.append(Fixtures.snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: 6),
+                           SymptomPoint(type: .pelvicPain, severity: 7)],
+                foodTags: [.dairy]
+            ))
+        }
+        for i in 20..<40 {  // non-dairy days, single low-severity point
+            days.append(Fixtures.snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: 2)],
+                foodTags: [.caffeine]
+            ))
+        }
+        let insights = correlations(days)
+        let dairyPain = try #require(
+            insights.first { $0.signalKey == "correlation.food.dairy.symptom.pelvicPain" },
+            "The strong association should still surface."
+        )
+        // 40 observed days → sampleSize must be EXACTLY 40 (days), not 60 (20×2 + 20 observations).
+        #expect(dairyPain.sampleSize == 40,
+                "sampleSize must count the 40 observed DAYS, not the 60 severity observations (WR-02): got \(dairyPain.sampleSize).")
+    }
+
     // MARK: Task 3 — determinism: same fixture + same injected today → exactly equal [Insight].
 
     @Test func output_isDeterministic() async throws {

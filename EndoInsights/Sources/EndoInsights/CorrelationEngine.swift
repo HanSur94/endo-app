@@ -227,11 +227,15 @@ enum CorrelationEngine {
         var absent: [Double] = []
         for snap in snapshots {
             guard let state = stateByDay[snap.day], state != .unobserved else { continue }
-            // The severity for THIS symptom on this day (nil if not logged with a severity → excluded).
-            let severities = snap.symptoms.filter { $0.type == symptom }.compactMap { $0.severity }
-            for s in severities {
-                if state == .present { present.append(Double(s)) } else { absent.append(Double(s)) }
-            }
+            // The severities for THIS symptom on this day (nil severities excluded — absence ≠ 0).
+            // ONE OBSERVATION PER DAY (WR-02): a single day may carry more than one SymptomPoint of the
+            // same type ([SymptomPoint] is not contract-unique-per-type), and appending each one would
+            // make a single day contribute 2+ data points — inflating `n`/`sampleSize` past the observed
+            // day count, weakening the n ≥ minSample floor, and violating Mann–Whitney's independence
+            // assumption. Reduce the day to ONE value (the max recorded severity) so `n` counts DAYS.
+            let daySeverities = snap.symptoms.filter { $0.type == symptom }.compactMap { $0.severity }
+            guard let s = daySeverities.max() else { continue }
+            if state == .present { present.append(Double(s)) } else { absent.append(Double(s)) }
         }
         let pairedDays = present.count + absent.count
         guard passesSampleFloor(pairedDays: pairedDays, present: present.count, absent: absent.count) else { return nil }
