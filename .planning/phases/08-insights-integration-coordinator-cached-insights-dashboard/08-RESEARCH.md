@@ -437,7 +437,10 @@ func replaceCachedInsights(_ insights: [Insight], computedAt: Date, fingerprint:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Resolved in the plans: Q1 seed size → 08-02 T3 (≥14 days, crosses minSample(.trend)=3); Q2 foreground hook → 08-04 T2 (scenePhase .active); Q3 data-changed signal → 08-04 T2 (explicit dataChanged() from save/dismiss seams).
+
 
 1. **What sample size does the seed fixture need to produce a rendered (non-withheld) insight?**
    - What we know: `HonestyGate` enforces `sampleSize >= minSample(for: kind)`; the fixture must exceed it for at least one `.trend`.
