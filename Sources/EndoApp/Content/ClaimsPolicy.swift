@@ -71,4 +71,28 @@ enum ClaimsPolicy {
         "try",
         "cut",
     ]
+
+    /// Phase-12 (D-04): the ALARMIST / DIAGNOSTIC / CERTAINTY terms a FLARE early-warning must never use —
+    /// the flare card is a CALM, uncertainty-first discussion prompt, NEVER an alarm ("a flare attack is
+    /// imminent"), a diagnosis ("we diagnose a flare"), a prediction ("we predict a flare"), or a certainty
+    /// ("you will flare"). The `CopyAuditTests` alarmist scan asserts no flare-related copy contains any of
+    /// these as a substring, ON TOP OF the existing forbidden-verb / gendered-token / numeric-confidence /
+    /// imperative scans. This list is the APP-SIDE MIRROR of the package's `ForbiddenTerms.alarmist` and MUST
+    /// stay BYTE-SET-IDENTICAL to it (Plan 02's `FlareDriftGuard` + drift test assert set-equality).
+    ///
+    /// SUBSTRING-TRAP RATIONALE (Pitfall 2 — CASE-INSENSITIVE SUBSTRING scan):
+    ///   • `"diagnos"` is a STEM catching diagnose / diagnosis / diagnostic in ONE entry.
+    ///   • `"predict"` catches predict / prediction / predicts (the naive "not a prediction" phrasing is
+    ///     itself FLAGGED — the curated calm copy AVOIDS the word entirely).
+    ///   • `"certain"` catches certain / certainty / certainly; `"definitely"` is the certainty adverb.
+    ///   • `"will flare"` is a TWO-WORD stem catching the binary "you will flare".
+    ///   • `"alarm"`/`"alert"`/`"danger"` ⊄ any curated calm copy; `"episode"`/`"attack"` are the
+    ///     ENDO-SPECIFIC additions (a flare must never read as an "attack"/"episode").
+    ///   • `"warning"` is DELIBERATELY EXCLUDED: the section HEADER is literally "Flare early-warning"
+    ///     (D-07 / UI-SPEC); forbidding it would self-fail the header. This scan covers the IN-CARD copy.
+    static let forbiddenAlarmist: [String] = [
+        "attack", "alarm", "alert", "emergency", "urgent", "danger",
+        "diagnos", "predict", "imminent", "certain", "definitely",
+        "episode", "will flare", "guarantee",
+    ]
 }

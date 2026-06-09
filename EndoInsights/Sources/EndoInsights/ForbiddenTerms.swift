@@ -83,12 +83,47 @@ enum ForbiddenTerms {
         "cut",
     ]
 
+    /// Phase-12 (D-04): the ALARMIST / DIAGNOSTIC / CERTAINTY terms a FLARE early-warning must never use.
+    /// A flare card is a CALM, uncertainty-first discussion prompt ("your recent pattern looks similar to
+    /// times before more difficult days — something to keep an eye on / discuss with your clinician"), NEVER
+    /// an alarm ("a flare attack is imminent"), a diagnosis ("we diagnose a flare"), a prediction ("we
+    /// predict a flare"), or a certainty ("you will flare"). PACKAGE-LOCAL MIRROR of the app's
+    /// `ClaimsPolicy.forbiddenAlarmist` (`Sources/EndoApp/Content/ClaimsPolicy.swift`): the package CANNOT
+    /// import the app target (SC1), so the alarmist list is duplicated here as data and MUST stay
+    /// BYTE-SET-IDENTICAL to the app list (Plan 02's `FlareDriftGuard` + drift test assert set-equality).
+    /// The `HonestyGate` now scans every emitted insight's copy against this list too (see `violation(in:)`),
+    /// so an alarmist/diagnostic/certain word in any engine-emitted flare warning is caught — the gate
+    /// enforces, the curated copy avoids.
+    ///
+    /// SUBSTRING-TRAP RATIONALE (Pitfall 2 — this is a CASE-INSENSITIVE SUBSTRING scan; each stem below is
+    /// verified to NOT collide with any curated calm FlareCopy word Plan 02 ships):
+    ///   • `"diagnos"` is a STEM catching diagnose / diagnosis / diagnostic in ONE entry.
+    ///   • `"predict"` catches predict / prediction / predicts (so the naive "not a prediction" phrasing is
+    ///     itself FLAGGED — the curated calm copy deliberately AVOIDS the word entirely).
+    ///   • `"certain"` catches certain / certainty / certainly; `"definitely"` is the certainty adverb.
+    ///   • `"will flare"` is a TWO-WORD stem catching the binary "you will flare" (note: `"will"` ALONE is
+    ///     already in `causal`; this two-word stem is the alarmist-specific binary form).
+    ///   • `"alarm"` ⊄ any calm copy; `"alert"` ⊄ "alerted" (unused). `"danger"` is whole-word.
+    ///   • `"episode"` and `"attack"` are the ENDO-SPECIFIC additions — a flare must never read as an
+    ///     "attack" or an "episode".
+    ///   • `"warning"` is DELIBERATELY EXCLUDED: the SECTION HEADER copy is literally "Flare early-warning"
+    ///     (D-07 / UI-SPEC), so forbidding `"warning"` as a substring would self-fail the header. The header
+    ///     is the ONLY sanctioned use of the word; this scan covers the IN-CARD copy. Exclamation marks are
+    ///     caught structurally by curating no `"!"` into FlareCopy, not by this list.
+    static let alarmist: [String] = [
+        "attack", "alarm", "alert", "emergency", "urgent", "danger",
+        "diagnos", "predict", "imminent", "certain", "definitely",
+        "episode", "will flare", "guarantee",
+    ]
+
     /// The first forbidden term `text` contains (case-insensitive substring), or `nil` if the copy is
-    /// clean. Scans BOTH the causal terms AND the imperative directives (D-04) so a causal claim OR an
-    /// instruction in any emitted insight is withheld. Pure — value-in/value-out, no logging (V7).
+    /// clean. Scans the causal terms, the imperative directives (D-04), AND the alarmist/diagnostic terms
+    /// (D-04, Phase 12) so a causal claim OR an instruction OR an alarmist/diagnostic/certain word in any
+    /// emitted insight is withheld. Pure — value-in/value-out, no logging (V7).
     static func violation(in text: String) -> String? {
         let lowered = text.lowercased()
         return causal.first { lowered.contains($0) }
             ?? imperative.first { lowered.contains($0) }
+            ?? alarmist.first { lowered.contains($0) }
     }
 }

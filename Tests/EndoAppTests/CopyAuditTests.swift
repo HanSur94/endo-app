@@ -370,4 +370,68 @@ struct CopyAuditTests {
                     "Curated discussion word \"\(word)\" must pass the imperative scan clean (substring trap).")
         }
     }
+
+    // MARK: - Phase-12 flare ALARMIST/DIAGNOSTIC scan (Plan 12-01): the new alarmist guard (D-04)
+    //
+    // A flare early-warning is a CALM, uncertainty-first discussion prompt — never alarmist ("a flare
+    // attack is imminent"), diagnostic ("we diagnose a flare"), a prediction ("we predict a flare"), or a
+    // certainty ("you will flare"). A NEW alarmist scan layers onto the existing forbidden-verb / gendered /
+    // numeric / imperative scans: no flare-related string may contain any `ClaimsPolicy.forbiddenAlarmist`
+    // substring ("attack"/"alarm"/"alert"/"emergency"/"urgent"/"danger"/"diagnos"/"predict"/"imminent"/
+    // "certain"/"definitely"/"episode"/"will flare"/"guarantee"). `"warning"` is DELIBERATELY EXCLUDED —
+    // the section HEADER is literally "Flare early-warning" (D-07). The controls below prove the SCAN WORKS
+    // independent of Plan 02 (which ships the real `FlareCopy.auditableStrings` surface to scan).
+
+    /// The case-insensitive substring alarmist scan (the SCAN LOGIC under test). Returns the first
+    /// forbidden alarmist term `text` contains, or `nil` if clean.
+    private func firstAlarmist(in text: String) -> String? {
+        let lower = text.lowercased()
+        return ClaimsPolicy.forbiddenAlarmist.first { lower.contains($0.lowercased()) }
+    }
+
+    // POSITIVE control (negative test): deliberate alarmist/diagnostic/certain sentences MUST be flagged.
+    @Test func alarmistScan_flagsDeliberateAlarmistCopy() {
+        // Each contains at least one alarmist/diagnostic/certainty stem:
+        //   "a flare attack is imminent"  → "attack" AND "imminent"
+        //   "we predict a flare"          → "predict"
+        //   "you will flare"              → "will flare"
+        //   "this is an emergency"        → "emergency"
+        let deliberateAlarmist = [
+            "a flare attack is imminent",
+            "we predict a flare",
+            "you will flare",
+            "this is an emergency",
+        ]
+        for sentence in deliberateAlarmist {
+            #expect(firstAlarmist(in: sentence) != nil,
+                    "A deliberate alarmist sentence \"\(sentence)\" MUST be flagged by the alarmist scan.")
+        }
+    }
+
+    // NEGATIVE control (positive test): the curated CALM flare words MUST pass clean (no substring-trap hit).
+    @Test func alarmistScan_passesCuratedCalmWords() {
+        // The SAME curated calm forms Plan 02 ships — each verified BY HAND against the substring trap:
+        //   "your recent pattern looks similar to times before more difficult days"
+        //       — "more difficult" (NOT "higher" → the "her" gendered trap); no "predict"/"attack"/"certain"
+        //   "something to keep an eye on and discuss with your clinician"
+        //       — no alarmist substring (note: deliberately NOT "alert"/"warning")
+        //   "based on a recent rising pattern and a factor you have logged recently"
+        //       — no "predict"/"diagnos"/"certain"; "rising pattern", not "prediction"
+        // (The naive UI-SPEC "not a prediction" wording contains "predict" → it WOULD be flagged, so the
+        //  curated copy AVOIDS the word entirely; this control uses the final clean forms only.)
+        let curatedCalmWords = [
+            "pattern",
+            "keep an eye on",
+            "discuss",
+            "similar to",
+            "something to",
+            "your recent pattern looks similar to times before more difficult days",
+            "something to keep an eye on and discuss with your clinician",
+            "based on a recent rising pattern and a factor you have logged recently",
+        ]
+        for word in curatedCalmWords {
+            #expect(firstAlarmist(in: word) == nil,
+                    "Curated calm flare word \"\(word)\" must pass the alarmist scan clean (substring trap).")
+        }
+    }
 }
