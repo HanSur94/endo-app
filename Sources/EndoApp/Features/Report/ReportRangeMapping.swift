@@ -45,10 +45,17 @@ enum ReportRangeMapping {
     ) -> DateInterval {
         switch preset {
         case .last30:
-            let start = calendar.date(byAdding: .day, value: -30, to: asOf) ?? asOf
+            // WR-01: anchor the START to start-of-day so it aligns with a snapshot day key (snapshots'
+            // `day` is start-of-day 00:00). `asOf` carries today's wall-clock time, so a naive
+            // `asOf - 30 days` start sits at e.g. 14:00, leaving the earliest snapshot day (00:00) BEFORE
+            // `range.start` → `DateInterval.contains` (half-open `[start, end)`) drops the first claimed
+            // day. Keep `end` at `asOf` so today's logs stay in via the inclusive-end posture.
+            let endDay = calendar.startOfDay(for: asOf)
+            let start = calendar.date(byAdding: .day, value: -30, to: endDay) ?? endDay
             return DateInterval(start: start, end: asOf)
         case .last90:
-            let start = calendar.date(byAdding: .day, value: -90, to: asOf) ?? asOf
+            let endDay = calendar.startOfDay(for: asOf)
+            let start = calendar.date(byAdding: .day, value: -90, to: endDay) ?? endDay
             return DateInterval(start: start, end: asOf)
         case .custom:
             let start = calendar.startOfDay(for: from)
