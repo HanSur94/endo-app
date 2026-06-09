@@ -247,7 +247,7 @@ Plans:
 
 **Wave 4** *(blocked on 08-02 + 08-03)*
 
-- [ ] 08-04-PLAN.md — InsightsView dashboard (sections + honest states + disclaimer + instant-load/recompute + dismiss) + tab.insights entry + scenePhase/save recompute triggers + InsightsDashboardUITests E2E + human-verify chart-quality checkpoint
+- [x] 08-04-PLAN.md — InsightsView dashboard (sections + honest states + disclaimer + instant-load/recompute + dismiss) + tab.insights entry + scenePhase/save recompute triggers + InsightsDashboardUITests E2E + human-verify chart-quality checkpoint ✓
 
 ### Phase 9: HealthKit Import
 
