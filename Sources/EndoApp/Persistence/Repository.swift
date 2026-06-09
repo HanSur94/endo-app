@@ -128,6 +128,19 @@ protocol Repository {
     /// The deduped set of all dismissed signalKeys (D-10/D-12). Read-side `Set` dedupe collapses any
     /// append-only duplicates. The insights engine consumes this `Set` in Phase 8. Consent-gated.
     func dismissedSignalKeys() throws -> Set<String>
+
+    // MARK: Phase 8 — cached-insight CRUD (D-02/D-14/D-18). Consent-gated; replace-all on recompute.
+
+    /// Load the cached gated insights (D-02/D-04) — decodes each `CachedInsight.payload` blob back into
+    /// an `Insight`. A `nil`/corrupt/undecodable blob is SKIPPED (compactMap), never fatal (T-08-04): a
+    /// corrupt cache degrades to "recompute", never a crash. MUST NOT be called before consent (ONBD-01).
+    func loadCachedInsights() throws -> [Insight]
+    /// Replace the WHOLE cache (D-04 / D-14): delete every existing `CachedInsight` row, then persist one
+    /// row per insight (flat `signalKey`/`kindRaw`/`windowRaw` identity columns + a `Codable` `payload`
+    /// blob carrying the WHOLE `Insight`). Replace-all (not upsert) so a stale or dismissed insight can
+    /// never linger. The blob encodes ONLY the gated `Insight`, never a `DaySnapshot` (T-08-01).
+    /// MUST NOT be called before consent (ONBD-01).
+    func replaceCachedInsights(_ insights: [Insight], computedAt: Date, fingerprint: String) throws
 }
 
 /// SwiftData-backed `Repository` over a `ModelContext`.
@@ -566,6 +579,37 @@ struct SwiftDataRepository: Repository {
         assertConsented()   // ONBD-01 / V4 — first statement, like every sibling read.
         // Dedupe-on-read: a `Set` collapses any append-only duplicates; drop nil keys (CloudKit-optional).
         return Set(try context.fetch(FetchDescriptor<SchemaV1.DismissedInsight>()).compactMap(\.signalKey))
+    }
+
+    // MARK: - Phase 8 cached-insight CRUD (D-02/D-14/D-18)
+
+    func loadCachedInsights() throws -> [Insight] {
+        assertConsented()   // ONBD-01 / V4 — first statement, like every sibling read (T-08-02).
+        // Decode each row's payload blob back into an Insight. A nil/corrupt blob is compactMap-SKIPPED
+        // (T-08-04 / V5 input validation): a corrupt cache degrades to "recompute", never a fatal read.
+        return try context.fetch(FetchDescriptor<SchemaV1.CachedInsight>())
+            .compactMap(\.payload)
+            .compactMap { try? JSONDecoder().decode(Insight.self, from: $0) }
+    }
+
+    func replaceCachedInsights(_ insights: [Insight], computedAt: Date, fingerprint: String) throws {
+        assertConsented()   // ONBD-01 / V4 — first statement, like every sibling write (T-08-02).
+        // Replace-all (D-04/D-14): delete every existing cache row first so a stale/dismissed insight
+        // can never linger, then re-insert one row per insight.
+        for old in try context.fetch(FetchDescriptor<SchemaV1.CachedInsight>()) { context.delete(old) }
+        for insight in insights {
+            // T-08-01: encode ONLY the gated `Insight` (non-causal copy + category signalKey + numeric
+            // points) — NEVER a `DaySnapshot` and never note prose.
+            let payload = try JSONEncoder().encode(insight)
+            context.insert(SchemaV1.CachedInsight(
+                signalKey: insight.signalKey,
+                kindRaw: insight.kind.rawValue,
+                windowRaw: insight.window.rawValue,
+                payload: payload,
+                computedAt: computedAt,
+                fingerprint: fingerprint))
+        }
+        try context.save()
     }
 
     /// Project one day's raw `@Model` rows into the Sendable `EndoInsights.DaySnapshot`. Defensive
