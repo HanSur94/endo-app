@@ -210,7 +210,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07-02-PLAN.md — Wave 2 (TDD): Factor binarization + CorrelationEngine producer (bounded pairs, BH-FDR once, three-AND gate, .correlation Insights, top-N=5) + strong/under-sampled/spurious/flood/suppressed fixtures
+- [x] 07-02-PLAN.md — Wave 2 (TDD): Factor binarization + CorrelationEngine producer (bounded pairs, BH-FDR once, three-AND gate, .correlation Insights, top-N=5) + strong/under-sampled/spurious/flood/suppressed fixtures ✓
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -303,7 +303,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
 | 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
-| 7. Correlation & Trigger Discovery | 1/3 | In progress | 07-01 ✓ |
+| 7. Correlation & Trigger Discovery | 2/3 | In progress | 07-01 ✓, 07-02 ✓ |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
 | 9. HealthKit Import | 0/TBD | Not started | - |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
