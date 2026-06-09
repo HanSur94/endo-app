@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors ✓
 - [x] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard (completed 2026-06-09)
 - [x] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage (completed 2026-06-09)
-- [ ] **Phase 10: Doctor-Ready PDF Report** - Date-ranged, source-labeled, on-device vector PDF report shared via the system share sheet
+- [x] **Phase 10: Doctor-Ready PDF Report** - Date-ranged, source-labeled, on-device vector PDF report shared via the system share sheet (completed 2026-06-09)
 - [ ] **Phase 11: Personalized Recommendations** - Data-driven, non-prescriptive recommendations derived from the user's own patterns
 - [ ] **Phase 12: Flare Early-Warning** - Built last and gated by the honesty layer: a heuristic, non-diagnostic flare early-warning with confidence
 
@@ -305,7 +305,7 @@ Plans:
 
 **Wave 3** *(blocked on 10-01 + 10-02)*
 
-- [ ] 10-03-PLAN.md — Payoff slice: Settings "Export report" entry -> ReportBuilderView (presets + custom DatePickers + Generate) -> ReportPreviewView (PDFView + ShareLink local file URL, no upload) + temp-file cleanup + ReportNoNetworkTests (RPRT-03 grep invariant) + ReportFlowUITests E2E (RPRT-01/03)
+- [x] 10-03-PLAN.md — Payoff slice: Settings "Export report" entry -> ReportBuilderView (presets + custom DatePickers + Generate) -> ReportPreviewView (PDFView + ShareLink local file URL, no upload) + temp-file cleanup + ReportNoNetworkTests (RPRT-03 grep invariant) + ReportFlowUITests E2E (RPRT-01/03)
 
 ### Phase 11: Personalized Recommendations
 
@@ -353,6 +353,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
 | 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
-| 10. Doctor-Ready PDF Report | 1/3 | In progress | - |
+| 10. Doctor-Ready PDF Report | 3/3 | Complete   | 2026-06-09 |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |

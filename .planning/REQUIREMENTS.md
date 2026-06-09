@@ -50,9 +50,9 @@ Requirements for the initial release. Each maps to a roadmap phase.
 
 ### Reports
 
-- [ ] **RPRT-01**: User can generate a doctor-ready PDF report for a chosen date range
-- [ ] **RPRT-02**: Report labels each data source (self-reported vs Apple Health) and carries "self-tracked, not diagnostic" framing
-- [ ] **RPRT-03**: User can share/export the PDF via the system share sheet
+- [x] **RPRT-01**: User can generate a doctor-ready PDF report for a chosen date range
+- [x] **RPRT-02**: Report labels each data source (self-reported vs Apple Health) and carries "self-tracked, not diagnostic" framing
+- [x] **RPRT-03**: User can share/export the PDF via the system share sheet
 
 ### Data, Sync & Platform
 
@@ -128,9 +128,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | INST-04 | Phase 6 — Cycle-Phase Mapping + Insight-Honesty Layer | Engine COMPLETE — 06-03 dismissal persistence (CloudKit-safe DismissedInsight @Model + additive SchemaV4/lightweight V3→V4 + consent-gated append-only dismissInsight/dedupe-on-read dismissedSignalKeys) + 06-02 the single HonestyGate choke-point (non-causal ForbiddenTerms scan via DEBUG assert + zero-forbidden-terms test, confidence floor with `.insufficient` carve-out, per-kind min-sample SUPERSET filter, dismissal-exclusion) behind the LOCKED public InsightsEngine; 39 package tests GREEN incl. Phase-5 no-regression superset. User-visible dismiss button + live dismissedSignalKeys() → InsightsEngine wiring land in Phase 8 (rendering). |
 | INST-03 | Phase 7 — Correlation & Trigger Discovery | Engine COMPLETE — 07-01 CorrelationStats (Cliff's δ, mean-diff, risk diff/ratio, Fisher exact, Mann–Whitney p, BH-FDR, confidence band; hand-computed known values) + 07-02 Factor three-state binarization + CorrelationEngine producer (bounded pairs, BH-FDR once over the full set, three-AND hard gate, top-5 .correlation Insights, non-causal copy) + 07-03 composed into the public InsightsEngine behind the HonestyGate with minSample(.correlation)=10 LOCKED (single source of truth). Honesty acceptance proven END-TO-END through the PUBLIC API: strong association surfaces; under-sampled(n=9)/spurious/multiple-comparison-flood(K≈100+) WITHHELD; suppressed user no cyclePhase correlation; zero-forbidden-terms scan covers correlations; Phase-5 no-regression superset holds. 88 package tests GREEN; Foundation-only. User-visible rendering is Phase 8. |
 | DATA-05 | Phase 9 — HealthKit Import | Complete |
-| RPRT-01 | Phase 10 — Doctor-Ready PDF Report | In progress — 10-01 shipped the PURE testable core: ReportModel.assemble (range-scoped honest section assembly) + ReportRangeMapping (A1 resolved) + the A3 ImageRenderer→PDF transform (resolved, no y-flip). Renderer (10-02) + builder/preview UI (10-03) complete the user-visible PDF. |
-| RPRT-02 | Phase 10 — Doctor-Ready PDF Report | In progress — 10-01 shipped per-section source labels (SectionSource.aggregate from daySnapshotSources, never recomputed) + the ClaimsPolicy-audited ReportCopy choke-point + the "self-tracked, not diagnostic" footer framing. The rendered PDF surface lands in 10-02/10-03. |
-| RPRT-03 | Phase 10 — Doctor-Ready PDF Report | Pending |
+| RPRT-01 | Phase 10 — Doctor-Ready PDF Report | COMPLETE — on-device PDF for a chosen range: ReportModel.assemble (range-scoped honest assembly, A1) → @MainActor ReportPDFRenderer (8-section CoreText vector PDF + vector chart embed via the A3 transform) → ReportBuilderView (presets + custom range) → PDFKit preview. Verified: ReportModelTests + ReportRenderTests (page-count + PDFDocument.string) + ReportFlowUITests E2E GREEN. |
+| RPRT-02 | Phase 10 — Doctor-Ready PDF Report | COMPLETE — per-section source labels (SectionSource.aggregate from daySnapshotSources, never recomputed) + a source legend + the prominent "self-tracked, not diagnostic" disclaimer band, all ClaimsPolicy-audited (ReportCopy). PDFDocument.string asserts the disclaimer + legend + both source labels render. |
+| RPRT-03 | Phase 10 — Doctor-Ready PDF Report | COMPLETE — ShareLink(item: localFileURL) is the ONLY egress (explicit-action, no auto-upload); ReportNoNetworkTests source-scans Features/Report/ for URLSession/URLRequest/dataTask (none) to lock the no-silent-upload invariant. |
 | INST-05 | Phase 11 — Personalized Recommendations | Pending |
 | INST-06 | Phase 12 — Flare Early-Warning | Pending |
 
