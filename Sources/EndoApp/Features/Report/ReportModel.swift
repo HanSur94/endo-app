@@ -200,9 +200,182 @@ struct ReportModel: Equatable, Sendable {
         engine: ([DaySnapshot], Date) -> [Insight],
         asOf: Date
     ) throws -> ReportModel {
-        // Task 2 implements: filter daySnapshots() to the range, anchor the engine at range.end, compute
-        // the descriptive sections directly from range-filtered reads (honest), and aggregate per-section
-        // provenance from daySnapshotSources(on:). Until then the contract is intentionally unimplemented.
-        throw AssemblyError.notImplemented
+        let cal = Calendar.current
+
+        // RANGE SCOPING (A1, explicit): read the projected snapshots ONCE, then FILTER to the range
+        // INCLUSIVE of range.end's day (the engine is window-based, so we filter the array rather than
+        // pass a range). Every descriptive section is computed from THIS filtered set so it honors the
+        // EXACT range independent of the engine's windows.
+        let allSnapshots = try repository.daySnapshots()
+        let inRange = allSnapshots.filter { Self.dayInRange($0.day, range: range, calendar: cal) }
+
+        // SECTION 6 — Insights (A1): hand the RANGE-FILTERED snapshots to the LOCKED engine anchored at
+        // range.end (`asOf`). The engine's windows measure back from asOf, so only windows ⊆ the range
+        // contribute; the HonestyGate (confidence floor, min-sample, non-causal) is reused verbatim.
+        let insights = engine(inRange, asOf)
+
+        // SECTION 1 — Header.
+        let header = HeaderSection(range: range, generatedOn: generatedOn(asOf: asOf, range: range))
+
+        // SECTION 4 — Cycle (NO phantom cycle): feed the RANGE-FILTERED flow days + isSuppressed() into
+        // the PURE CycleMath (never re-derive), then map the CycleSummary onto the three-state enum
+        // EXACTLY as CycleSummaryView does (suppressed / !hasEnoughData → notEnoughData / else derived).
+        let suppressed = try repository.isSuppressed()
+        let bleedingInRange = try repository.bleedingDays()
+            .filter { $0.hadFlow && Self.dayInRange($0.day, range: range, calendar: cal) }
+            .map(\.day)
+        let cycleSummary = CycleMath.summarize(
+            bleedingDays: bleedingInRange, isSuppressed: suppressed, today: range.end, calendar: cal)
+        let cycle = cycleSection(from: cycleSummary)
+
+        // Per-section PROVENANCE (RPRT-02, Pitfall 1): collect the relevant `ValueSource?` from
+        // daySnapshotSources(on:) across the in-range days, then aggregate via SectionSource.aggregate.
+        // NEVER recompute provenance from values — the merge gate is the single source of truth.
+        let sourcesByDay = try inRange.map { try repository.daySnapshotSources(on: $0.day) }
+
+        // SECTION 3 — Symptoms (descriptive trend table; absolute, never cycle-relative). One row per
+        // symptom logged in range; min/max severity nil-honest (a present-without-severity stays nil).
+        let symptoms = symptomsSection(inRange: inRange, sources: sourcesByDay)
+
+        // SECTION 5 — Lifestyle (absence ≠ 0): each field is the latest logged value in range or nil
+        // ("Not logged"). Read package-typed fields straight off the snapshots — no enum re-bridging.
+        let lifestyle = lifestyleSection(inRange: inRange, sources: sourcesByDay)
+
+        // SECTION 2 — Summary / coverage: count of distinct in-range logged days + the aggregate source.
+        let allFieldSources = sourcesByDay.flatMap { [$0.flow, $0.sleep, $0.activity, $0.food] }
+        let summary = SummarySection(
+            daysLogged: inRange.count,
+            source: SectionSource.aggregate(allFieldSources))
+
+        // SECTION 7 — Legend: surface only the labels actually in use across the report.
+        let presentSources = allFieldSources.compactMap { $0 }
+        let legend = SourceLegend(
+            hasSelfReported: presentSources.contains(.manual),
+            hasAppleHealth: presentSources.contains(.appleHealth))
+
+        return ReportModel(
+            range: range,
+            generatedOn: header.generatedOn,
+            header: header,
+            summary: summary,
+            symptoms: symptoms,
+            cycle: cycle,
+            lifestyle: lifestyle,
+            insights: insights,
+            legend: legend)
+    }
+
+    // MARK: - Pure assembly helpers
+
+    /// A day is in range when it falls within `[start, end]` INCLUSIVE of `end`'s calendar day. The
+    /// half-open `DateInterval.contains` excludes the exact `end`, so the report explicitly admits the
+    /// final day (a report "through today" must include today's logs).
+    private static func dayInRange(_ day: Date, range: DateInterval, calendar: Calendar) -> Bool {
+        range.contains(day) || calendar.isDate(day, inSameDayAs: range.end)
+    }
+
+    /// The "Generated" stamp. `asOf` is the injected anchor (deterministic); a real call passes the
+    /// range's end so the stamp and the covered range are consistent.
+    private static func generatedOn(asOf: Date, range: DateInterval) -> Date { asOf }
+
+    /// Map a `CycleSummary` onto the three-state `CycleSection` EXACTLY as `CycleSummaryView` does — the
+    /// no-phantom-cycle contract (suppressed → off-state; !hasEnoughData → notEnoughData; else derived).
+    private static func cycleSection(from summary: CycleSummary) -> CycleSection {
+        if summary.isSuppressed { return .suppressed }
+        if !summary.hasEnoughData { return .notEnoughData }
+        return .derived(
+            cycleDay: summary.cycleDay,
+            nextWindow: summary.nextPeriod,
+            confidence: summary.confidence)
+    }
+
+    /// Build the descriptive symptoms section from the range-filtered snapshots. One row per symptom
+    /// type logged in range, with nil-honest min/max severity (present-without-severity stays nil). A
+    /// range with NO logged symptoms is honestly empty (`hasEnoughData == false`) → the renderer maps it
+    /// to "Not enough data in this range." (mirrors TrendsEngine — never a fabricated value).
+    private static func symptomsSection(
+        inRange: [DaySnapshot], sources: [DaySnapshotSource]
+    ) -> SymptomsSection {
+        // Group every logged symptom point by type across the in-range days.
+        var byType: [EndoInsights.SymptomType: (min: Int?, max: Int?, days: Int)] = [:]
+        for snap in inRange {
+            // A symptom type counts ONCE per day toward `daysLogged`, even if it appears multiple times.
+            var seenToday = Set<EndoInsights.SymptomType>()
+            for point in snap.symptoms {
+                var entry = byType[point.type] ?? (min: nil, max: nil, days: 0)
+                if let sev = point.severity {
+                    entry.min = entry.min.map { Swift.min($0, sev) } ?? sev
+                    entry.max = entry.max.map { Swift.max($0, sev) } ?? sev
+                }
+                if seenToday.insert(point.type).inserted { entry.days += 1 }
+                byType[point.type] = entry
+            }
+        }
+        let rows = byType
+            .map { SymptomRow(type: $0.key, minSeverity: $0.value.min,
+                              maxSeverity: $0.value.max, daysLogged: $0.value.days) }
+            .sorted { $0.type.rawValue < $1.type.rawValue }   // deterministic order for Equatable fixtures
+
+        // HONEST SPARSE GATE: a descriptive trend table is only meaningful with the SAME floor the LOCKED
+        // engine uses (`HonestyGate.minSample(.trend) == 3` distinct logged days). A range whose busiest
+        // symptom is logged on fewer than 3 days reads as the honest "not enough data in this range"
+        // state (`hasEnoughData == false`) — never a fabricated trend from one or two points (mirrors
+        // TrendsEngine; absence ≠ a fabricated value).
+        let busiestSymptomDays = rows.map(\.daysLogged).max() ?? 0
+        let hasEnoughData = busiestSymptomDays >= Self.minSymptomTrendDays
+
+        // Symptom provenance has no dedicated field in DaySnapshotSource (which tracks the imported-capable
+        // flow/sleep/activity/food fields). Symptoms are manual-only today, so a day with ANY logged
+        // symptom contributes `.manual`; aggregate honestly (empty → .none, no badge).
+        let symptomSources: [ValueSource?] = inRange.map { $0.symptoms.isEmpty ? nil : .manual }
+
+        return SymptomsSection(
+            rows: rows,
+            hasEnoughData: hasEnoughData,
+            source: SectionSource.aggregate(symptomSources))
+    }
+
+    /// The minimum distinct logged days a symptom needs for the descriptive trend section to read as
+    /// "enough data" — kept EQUAL to the LOCKED engine's `HonestyGate.minSample(.trend) == 3` so the
+    /// report's honesty floor and the engine's never drift (a sub-threshold range is honestly sparse).
+    private static let minSymptomTrendDays = 3
+
+    /// Build the lifestyle section (absence ≠ 0). Each field is the LATEST logged value across the
+    /// in-range days (snapshots are sorted ascending by day, so the last non-nil wins) or nil ("Not
+    /// logged"). A logged 0/level is a real value, distinct from a nil absence.
+    private static func lifestyleSection(
+        inRange: [DaySnapshot], sources: [DaySnapshotSource]
+    ) -> LifestyleSection {
+        var sleepHours: Double?
+        var sleepQuality: EndoInsights.SleepQuality?
+        var activityType: EndoInsights.ActivityType?
+        var activityMinutes: Double?
+        var loggedFood = false
+        var stress: Int?
+        var mood: Int?
+
+        // Ascending by day (Repository.daySnapshots() guarantees this): the last non-nil is the latest.
+        for snap in inRange {
+            if let v = snap.sleepHours { sleepHours = v }
+            if let v = snap.sleepQuality { sleepQuality = v }
+            if let v = snap.activityType { activityType = v }
+            if let v = snap.activityMinutes { activityMinutes = v }
+            if !snap.foodTags.isEmpty { loggedFood = true }
+            if let v = snap.stress { stress = v }           // a logged 0 sets a real 0 (absence ≠ 0)
+            if let v = snap.mood { mood = v }
+        }
+
+        // Aggregate the lifestyle provenance from the imported-capable fields (sleep/activity/food).
+        let lifestyleSources = sources.flatMap { [$0.sleep, $0.activity, $0.food] }
+
+        return LifestyleSection(
+            sleepHours: sleepHours,
+            sleepQuality: sleepQuality,
+            activityType: activityType,
+            activityMinutes: activityMinutes,
+            loggedFood: loggedFood,
+            stress: stress,
+            mood: mood,
+            source: SectionSource.aggregate(lifestyleSources))
     }
 }

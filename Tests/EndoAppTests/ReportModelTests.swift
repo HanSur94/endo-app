@@ -62,9 +62,9 @@ struct ReportModelTests {
         #expect(SectionSource.aggregate([.manual, .appleHealth]) == .mixed)
     }
 
-    // MARK: - DISABLED until Task 2: assemble-dependent honesty + scoping cases
+    // MARK: - Task 2 (GREEN): assemble-dependent honesty + scoping cases
 
-    @Test(.disabled("Task 2 — implements ReportModel.assemble"))
+    @Test
     func scopesToRange() throws {
         let (repo, _) = try makeRepo()
         let cal = Calendar.current
@@ -87,7 +87,7 @@ struct ReportModelTests {
         #expect(model.range == range, "The model honors the exact requested range.")
     }
 
-    @Test(.disabled("Task 2 — implements ReportModel.assemble"))
+    @Test
     func sparseRangeIsHonest() throws {
         let (repo, _) = try makeRepo()
         let cal = Calendar.current
@@ -104,12 +104,14 @@ struct ReportModelTests {
         // The cycle section is the honest not-enough-data state (one bleeding day can't form 2 cycles).
         #expect(model.cycle == .notEnoughData || model.cycle == .suppressed,
                 "A sparse range never fabricates a derived cycle.")
-        // The gated engine withholds below-floor insights for a 1-day range.
-        #expect(model.insights.allSatisfy { !$0.isInsufficiencyNotice } || model.insights.isEmpty,
-                "Sparse insights are withheld by the LOCKED gate, never fabricated.")
+        // The gated engine surfaces NO fabricated insight for a 1-day range — only the honest
+        // "not enough data yet" insufficiency notice may appear (that marker IS the honest sparse signal,
+        // not a fabrication). An empty array trivially satisfies this.
+        #expect(model.insights.allSatisfy { $0.isInsufficiencyNotice },
+                "A sub-threshold range fabricates no real insight — only the honest insufficiency notice.")
     }
 
-    @Test(.disabled("Task 2 — implements ReportModel.assemble"))
+    @Test
     func suppressedNoPhantomCycle() throws {
         let (repo, _) = try makeRepo()
         let cal = Calendar.current
@@ -127,7 +129,7 @@ struct ReportModelTests {
                 "A suppressed user shows the off-state — NO phantom cycle/day/window/phase.")
     }
 
-    @Test(.disabled("Task 2 — implements ReportModel.assemble"))
+    @Test
     func absenceIsNotZero() throws {
         let (repo, _) = try makeRepo()
         let cal = Calendar.current
@@ -147,7 +149,7 @@ struct ReportModelTests {
         #expect(model.lifestyle.mood == nil, "Unlogged mood is nil — never a neutral fabricated value.")
     }
 
-    @Test(.disabled("Task 2 — implements ReportModel.assemble"))
+    @Test
     func sourceLabelsMatchProvenance() throws {
         let (repo, _) = try makeRepo()
         let cal = Calendar.current
