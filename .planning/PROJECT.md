@@ -17,6 +17,8 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 <!-- Shipped and confirmed valuable. -->
 
 - ✓ Insights: trend & cycle-phase mapping with charts — Phase 8 (live Swift Charts dashboard via `tab.insights`; honest absolute-date axes + gap breaks; cycle-phase section omitted for suppressed/no-cycle users. UAT-verified on iOS Simulator + threat-secured.)
+- ✓ Apple HealthKit integration (read-only import of cycle/sleep/workouts/nutrition) — Phase 9 (additive `ImportedSample`, manual-wins/nil-honest merge, contextual rationale-before-sheet permission, graceful denial, "from Apple Health" labels; verified + threat-secured. Real-device read deferred to release.)
+- ✓ Doctor-ready report export (shareable PDF summary) — Phase 10 (on-device vector PDF for a date range, per-source labels, prominent "self-tracked, not diagnostic" framing, system share sheet with no silent upload; verified + code-reviewed.)
 
 ### Active
 
@@ -29,9 +31,7 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - [ ] Insights: correlations & triggers across logged factors (symptoms ↔ food, sleep, activity, cycle) — engine shipped (Phase 7) + rendered in dashboard (Phase 8); pending confirmation with real multi-factor data
 - [ ] Insights: flare prediction / early warnings from personal history
 - [ ] Insights: personalized, data-driven recommendations
-- [ ] Doctor-ready report export (shareable PDF summary)
 - [ ] Private iCloud (CloudKit) sync across the user's own devices — no account/login
-- [ ] Apple HealthKit integration (import cycle, sleep, workouts, nutrition to reduce double-logging)
 
 ### Out of Scope
 
@@ -93,4 +93,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-09 after Phase 8 (Insights Integration — dashboard shipped, verified & secured)*
+*Last updated: 2026-06-09 after Phase 10 (HealthKit import + Doctor-ready PDF report shipped, verified & reviewed)*

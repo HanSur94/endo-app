@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 10-02-PLAN.md (@MainActor ReportPDFRenderer — 8-section CoreText vector PDF + auto-pagination + footer/page-numbers + prominent disclaimer band + embedded vector chart via the A3 transform + temp-file URL; additive InsightTrendChart.inkColor; ReportRenderTests 3/3 GREEN)
-last_updated: "2026-06-09T20:03:00.000Z"
+stopped_at: Completed 09-01-PLAN.md (HealthKit seam + value contracts + mapping tables + ImportedSample SchemaV6 migration + boundary lint)
+last_updated: "2026-06-09T21:13:29.381Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 12
-  completed_phases: 9
-  total_plans: 30
-  completed_plans: 30
-  percent: 75
+  completed_phases: 10
+  total_plans: 33
+  completed_plans: 33
+  percent: 83
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-03)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 9 — HealthKit Import
+**Current focus:** Phase 11 — Personalized Recommendations
 
 ## Current Position
 
-Phase: 10
-Plan: ALL 3 PLANS COMPLETE (10-01 pure core / 10-02 renderer / 10-03 builder+preview+share) — awaiting phase verification
+Phase: 11
+Plan: Not started
 Status: Plan 10-03 (Wave 3 — payoff UI) COMPLETE (3/3 tasks): Settings "Export report" entry → ReportBuilderView (preset 30/90/custom + invalid-range guard) → on-device assemble→render → ReportPreviewView (PDFKit preview + ShareLink, the ONLY egress, no auto-upload). ReportNoNetworkTests locks RPRT-03 (no URLSession/URLRequest/dataTask in Features/Report/). ReportFlowUITests 2/2 E2E GREEN (full flow + invalid-range guard via the -uitest-report-invalid-range seam). RPRT-01/02/03 all marked COMPLETE. NOTE: 10-03 spanned a platform Bash-classifier outage — Tasks 1-2 committed before it; a continuation (on a healthy classifier) ran xcodegen generate + full build + both suites green, fixed one brittle DatePicker-driving E2E (→ deterministic launch-arg seam), and committed Task 3. DEFERRED end-of-phase human-verify: PDF visual credibility + system share-sheet (screenshots in /tmp/e2e). Prior: Plan 10-02 (Wave 2 — @MainActor renderer) COMPLETE (3/3 tasks). Shipped ReportPDFRenderer.render(model:) -> Data + renderToTempFile(model:) -> URL: 8 D-04 sections as selectable CoreText vector text on auto-paginated US-Letter pages (56pt margins, 22/14/10/8 type scale, near-monochrome #F2F2F7/#D1D1D6 palette), a PROMINENT boxed Disclaimer.text band atop page 1, a per-page footer + "Page n of m" (two-pass page-count), no-orphan section headings, the three-state CycleSection rendered verbatim (suppressed off-state / not-enough-data / derived cycle-day + next-window DATE RANGE + plain confidence word — NO phantom cycle), nil-honest lifestyle ("Not logged" ≠ 0), gated insights (sparse → honest line), and the embedded InsightTrendChart drawn as single-ink-BLACK VECTOR via ImageRenderer.render using Plan 01's A3 transform (translate-only, no y-flip). Every fixed PDF string from ReportCopy/Disclaimer.text (Pitfall 3); package-enum data labels from the app's audited plainLabel via the shared-raw-value bridge; logs only error TYPE; no networking. Added the additive InsightTrendChart.inkColor (default .accentColor keeps the live dashboard byte-identical). ReportRenderTests 3/3 GREEN (non-empty ≥2-page PDF + temp URL; extracted PDFDocument.string has Disclaimer.text + legend + BOTH source labels; suppressed off-state, no phantom). Report+chart regression 21/4 GREEN; CopyAuditTests + DisclaimerTests 18/18 GREEN (new reportCopy_* scans pass). One auto-fix (Rule 3 blocking): both new files were missing from the gitignored EndoApp.xcodeproj — wired them into the target Sources phases (the renderer had not actually been compiled), then resolved a SymptomType ambiguity by qualifying the fixture as [EndoApp.SymptomType]. Prior: Plan 10-01 (Wave 1 — pure core + A1/A3 de-risk) COMPLETE (3/3 tasks). Shipped the PURE, Equatable/Sendable ReportModel.assemble(range:repository:engine:asOf:) — range-scoped descriptive sections (honor the exact DateInterval inclusive of range.end), three-state CycleSection via CycleMath.summarize (no phantom cycle, never re-derived), nil-honest lifestyle (absence≠0; logged 0 stays 0), symptoms hasEnoughData gated at HonestyGate.minSample(.trend)==3, per-section provenance aggregated from daySnapshotSources only (Pitfall 1). Plus ReportCopy (every fixed report string routed through the ClaimsPolicy choke-point; CopyAuditTests Phase-10 section GREEN) and ReportRangeMapping (RangePreset + DST-safe interval + A1 enginewindowsInRange + isValid guard). RESOLVED both research unknowns: A1 (descriptive sections honor the exact range; insights surface only engine windows ⊆ range, anchored at range.end) and A3 (ImageRenderer→PDF CGContext needs ONLY a translate, no y-flip — proven by ReportRenderSpikeTests, documented for Plan 02). ReportModelTests 9/9 GREEN; full Swift Testing suites 200+96 GREEN; no-network invariant (T-10-04) grep-verified. Two auto-fixes: symptoms sparse floor was too lenient (Rule 1 — gated at minSample==3) + an inverted sparse-insights test assertion. Out-of-scope deferred: a pre-existing flaky medication-toggle XCUITest (deferred-items.md). Prior: Phase 9 (HealthKit Import) COMPLETE (3/3 plans). 09-03 (Wave 3) shipped the payoff slice: read-only HealthKit entitlement (com.apple.developer.healthkit + empty .access, NO write key) + NSHealthShareUsageDescription Info.plist string (update key absent, grep-gated) + the real SystemHealthDataReading (HKHealthStore behind a @globalActor; toShare:[] auth; HKAnchoredObjectQuery 365-day backfill / incremental pull mapping HKSample->Sendable inside the continuation) + HealthRationaleView (rationale BEFORE the system sheet, D-06) + HealthConnectSection (passive affordance; previously-decided users deep-link to Settings, no read-status probe, D-08) + HealthSourceBadge ("from Apple Health", D-03) + Settings "Refresh from Health" (D-10) + \\.healthImportService injection + -uitest-health-seed/-denied/-empty fixture selection (paired with -uitest-reset) + HealthConnectUITests (4 E2E GREEN) + HealthConnectCopyAuditTests (ClaimsPolicy GREEN). Full EndoAppTests suite GREEN (183/183). Two auto-fixed bugs: MainActor.assumeIsolated trap in the actor-executor persist/recompute closures (fixed), and the health.connect.decided @AppStorage flag leaking across -uitest-reset runs (now cleared). DEFERRED (auto-approved under AUTO_MODE, surfaced to the phase gate): the real-device HealthKit read + the OS authorization sheet (Task 4 human-verify), same posture as Phase 4 HUMAN-UAT.
 Status_was: Phase 9 (HealthKit Import) ready to plan. Phase 8 closed 2026-06-09 — UAT-verified (08-UAT.md: 9/9 testable on iOS Simulator passed, 0 issues; chart-VISUAL-quality human-verify done live) and threat-secured (08-SECURITY.md: 16/16 closed, threats_open:0). Carried to RELEASE (not blockers): on-device CachedInsight cross-device sync (needs 2 iCloud devices) + CloudKit Console deploy of the CachedInsight record type (Dev→Prod). Minor polish backlog: dismiss optimistic-vs-recompute scope (signal-level dismissal drops all same-signal windows on re-entry — by-design, cosmetic).
 Last activity: 2026-06-09
 
-Progress: [██████████████░░░░░░] 9/12 phases complete (75%) — Phase 10 ALL 3 PLANS COMPLETE (ready for verification)
+Progress: [████████████████░░░░] 10/12 phases complete (83%) — Phase 11 (Personalized Recommendations) next
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 10 (Phase 6: 06-01, 06-02, 06-03)
+- Total plans completed: 13 (Phase 6: 06-01, 06-02, 06-03)
 - Average duration: ~14 min
 - Total execution time: ~0.7 hours
 
@@ -48,6 +48,7 @@ Progress: [██████████████░░░░░░] 9/12 ph
 | 1 | 2 | ~32 min | ~16 min |
 | 8 | 4 | - | - |
 | 9 | 3 | - | - |
+| 10 | 3 | - | - |
 
 **Recent Trend:**
 
