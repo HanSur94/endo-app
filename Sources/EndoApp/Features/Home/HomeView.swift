@@ -148,7 +148,23 @@ struct HomeView: View {
             Text(summaryLine(for: day.date))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            // Provenance (D-03): when ANY field for this day was filled from an imported sample, show the
+            // "from Apple Health" badge so the user knows the value came from Apple Health, not their own
+            // logging. Manual-wins means a day with only manual data shows NO badge; a denied/empty import
+            // contributes no `.appleHealth` source, so no badge is fabricated (SC3 honesty for provenance).
+            if hasAppleHealthSource(for: day.date) {
+                HealthSourceBadge()
+            }
         }
+    }
+
+    /// Whether any merged field for `date` was sourced from Apple Health (D-03). Reads the SEPARATE
+    /// app-side `daySnapshotSources(on:)` provenance (09-02) — NOT a HealthKit read-status probe. A store
+    /// error degrades to `false` (no badge) rather than crashing or fabricating provenance.
+    private func hasAppleHealthSource(for date: Date) -> Bool {
+        guard let sources = try? SwiftDataRepository(context: modelContext).daySnapshotSources(on: date)
+        else { return false }
+        return [sources.flow, sources.sleep, sources.activity, sources.food].contains(.appleHealth)
     }
 
     /// A brief, neutral summary of the day's logged data (copy via `Terminology`).

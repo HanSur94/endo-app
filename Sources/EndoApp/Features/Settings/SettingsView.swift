@@ -21,6 +21,10 @@ struct SettingsView: View {
     // The account-availability seam (DATA-02, injected by 04-01). Read-only — drives the subtle,
     // non-blocking "iCloud sync: On/Off" line below (D-12). Never surfaces the token/account id.
     @Environment(\.accountAvailability) private var accountAvailability
+    // The HealthKit import service (DATA-05, injected by 09-03). Drives the "Refresh from Health" action
+    // (D-10): pulls new/changed samples across granted domains then relies on the service's dataChanged()
+    // recompute (D-12). The connect/rationale UX is owned by HealthConnectSection below.
+    @Environment(\.healthImportService) private var healthImportService
 
     @State private var showingWithdrawConfirmation = false
 
@@ -80,6 +84,26 @@ struct SettingsView: View {
                         + "treatment. Endo-App stops showing any cycle estimate, and you can still log "
                         + "symptoms and bleeding as usual."
                     )
+                }
+
+                // Connect Apple Health (D-07): a passive connect affordance + a "Refresh from Health"
+                // action. No launch mega-prompt (D-05 anti-pattern) — the contextual affordance lives here
+                // and the rationale (D-06) precedes any system sheet. Health import data is read-only and
+                // optional; the section footer states that plainly (D-08).
+                Section {
+                    HealthConnectSection()
+
+                    Button {
+                        refreshFromHealth()
+                    } label: {
+                        Label(HealthConnectCopy.refreshButton, systemImage: "arrow.clockwise")
+                    }
+                    .accessibilityIdentifier("settings.health.refresh")
+                } header: {
+                    Text(HealthConnectCopy.sectionTitle)
+                } footer: {
+                    Text(HealthConnectCopy.sectionFooter)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 // iCloud sync status (D-12). A subtle, NON-blocking read of the account seam —
@@ -522,5 +546,19 @@ struct SettingsView: View {
         try? SwiftDataRepository(context: modelContext).archiveMedication(med.id)
         medPendingRemoval = nil
         reloadMeds()
+    }
+
+    // MARK: - Refresh from Health (DATA-05, D-10)
+
+    /// "Refresh from Health" (D-10): pull new/changed samples across every domain, then the service fires
+    /// the Phase-8 recompute (D-12) so insights reflect any imported data. A denied/empty domain
+    /// contributes nothing (SC3) — the action is always safe to tap and never nags. No read-status probe.
+    private func refreshFromHealth() {
+        let service = healthImportService
+        Task {
+            for domain in HealthDomain.allCases {
+                await service.importNew(for: domain)
+            }
+        }
     }
 }
