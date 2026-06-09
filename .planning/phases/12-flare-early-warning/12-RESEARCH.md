@@ -447,7 +447,12 @@ static func violation(in text: String) -> String? {
 
 **If this table is empty:** it is not — but every entry is LOW/MEDIUM and confined to Claude's-discretion calibration, not to any locked decision. The discuss-phase or planner should confirm A4 (the alarmist word list).
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three resolved during planning; the Phase 12 plans commit to these answers.
+> **Q1 (alarmist list) → RESOLVED:** locked in Plan 12-01 Task 1 — `attack/alarm/alert/emergency/urgent/danger/diagnos/predict/imminent/certain/definitely/episode/will flare/guarantee`; "warning" deliberately EXCLUDED (the section header uses it); positive + negative controls dodge the substring trap.
+> **Q2 (insufficiency notice vs silence) → RESOLVED:** Plan 12-02 emits the calm "not enough data yet" notice ONLY on the cusp (a real recent signal but evidence < 21); silent otherwise.
+> **Q3 (contributing note) → RESOLVED:** Plan 12-02 includes a curated, scan-clean generic "what's contributing" line.
 
 1. **Final alarmist/diagnostic word list (A4).**
    - What we know: the categories to forbid (alarm/urgency/diagnostic/prediction/certainty) and the substring-trap discipline.
