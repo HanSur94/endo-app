@@ -301,7 +301,7 @@ Plans:
 
 **Wave 2** *(blocked on 10-01)*
 
-- [ ] 10-02-PLAN.md — @MainActor ReportPDFRenderer: 8-section CoreText vector PDF + auto-pagination + page footer/numbers + InsightTrendChart embedded as vector (additive inkColor: black) + temp-file write; verified by page-count smoke + PDFDocument.string substring asserts (RPRT-01/02)
+- [x] 10-02-PLAN.md — @MainActor ReportPDFRenderer: 8-section CoreText vector PDF + auto-pagination + page footer/numbers + InsightTrendChart embedded as vector (additive inkColor: black) + temp-file write; verified by page-count smoke + PDFDocument.string substring asserts (RPRT-01/02) ✅ 2026-06-09
 
 **Wave 3** *(blocked on 10-01 + 10-02)*
 
