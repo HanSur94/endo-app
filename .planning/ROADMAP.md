@@ -228,8 +228,26 @@ Plans:
   2. Insights recompute off the main thread after new data is logged without UI jank, and cached results load instantly on app open.
   3. Charts handle gaps, sparse data, and suppressed periods gracefully (absolute-date axis, accessible labels), and cached insights survive across devices via sync.
 
-**Plans**: TBD
+**Plans**: 4 plans, 4 waves (dependency-driven: persistence → coordinator → chart/card → dashboard)
 **UI hint**: yes
+
+Plans:
+
+**Wave 1**
+
+- [ ] 08-01-PLAN.md — Insight: Codable (additive, package) + CloudKit-safe CachedInsight @Model + SchemaV5 + lightweight V4→V5 migration + consent-gated Repository CRUD (round-trip + migration-survival)
+
+**Wave 2** *(blocked on 08-01)*
+
+- [ ] 08-02-PLAN.md — InsightFingerprint (pure, launch-stable) + @Observable @MainActor InsightsCoordinator (debounced off-main recompute, cache hit/miss, instant load, dismiss feed-through) + AppDependencies injection + -uitest-seed-insights arg
+
+**Wave 3** *(blocked on 08-01)*
+
+- [ ] 08-03-PLAN.md — ChartSeriesGrouping pure gap helper + InsightTrendChart (Swift Charts, absolute-date axis, honest gaps via series-grouped runs, a11y) + kind-agnostic InsightCardView + auditable InsightsCopy + CopyAuditTests
+
+**Wave 4** *(blocked on 08-02 + 08-03)*
+
+- [ ] 08-04-PLAN.md — InsightsView dashboard (sections + honest states + disclaimer + instant-load/recompute + dismiss) + tab.insights entry + scenePhase/save recompute triggers + InsightsDashboardUITests E2E + human-verify chart-quality checkpoint
 
 ### Phase 9: HealthKit Import
 
@@ -303,8 +321,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Private CloudKit Sync | 3/3 | Complete   | 2026-06-08 |
 | 5. Snapshot Contract + Descriptive Trends Engine | 3/3 | Complete   | 2026-06-08 |
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
-| 7. Correlation & Trigger Discovery | 3/3 | Complete | 07-01 ✓, 07-02 ✓, 07-03 ✓ |
-| 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/TBD | Not started | - |
+| 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
+| 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 0/4 | Not started | - |
 | 9. HealthKit Import | 0/TBD | Not started | - |
 | 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
