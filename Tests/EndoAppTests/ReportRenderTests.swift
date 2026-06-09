@@ -98,8 +98,9 @@ struct ReportRenderTests {
         #expect(doc.pageCount >= 2,
                 "The populated fixture overflows onto a second page (multi-page pagination).")
 
-        // renderToTempFile writes a real file URL Plan 03 can bind to.
-        let url = ReportPDFRenderer.renderToTempFile(model: model)
+        // renderToTempFile writes a real file URL Plan 03 can bind to (WR-05: nil only on write failure).
+        let url = try #require(ReportPDFRenderer.renderToTempFile(model: model),
+                               "A successful render writes a temp file and returns its URL (never nil).")
         #expect(url.pathExtension == "pdf", "The temp file is a .pdf URL.")
         #expect(FileManager.default.fileExists(atPath: url.path), "The PDF is written to disk.")
         try? FileManager.default.removeItem(at: url)

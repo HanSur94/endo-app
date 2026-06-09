@@ -83,16 +83,20 @@ enum ReportPDFRenderer {
     }
 
     /// Render the model and write it to a temp-file URL (Plan 03's preview + ShareLink bind to this URL;
-    /// Plan 03 owns deletion). Logs only the error TYPE on a write failure (never health content).
-    static func renderToTempFile(model: ReportModel) -> URL {
+    /// the builder owns deletion). Returns `nil` on a write failure (WR-05) so the caller routes to its
+    /// honest `.failed` error state instead of pushing a blank preview / sharing a missing file. Logs only
+    /// the error TYPE on a write failure (never health content).
+    static func renderToTempFile(model: ReportModel) -> URL? {
         let data = render(model: model)
         let name = "EndoReport-\(fileStamp(model.range)).pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try data.write(to: url, options: .atomic)
         } catch {
-            // Privacy (T-10-07): never log the data/content — only the error TYPE.
+            // Privacy (T-10-07): never log the data/content — only the error TYPE. WR-05: surface the
+            // failure as nil so the builder shows its honest error state, not a blank/zero-byte preview.
             logger.error("PDF temp-file write failed: \(type(of: error))")
+            return nil
         }
         return url
     }

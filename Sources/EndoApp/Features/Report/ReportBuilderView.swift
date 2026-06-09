@@ -13,11 +13,13 @@
 // model's per-section "Not enough data" lines), never a fake full report. A Custom range with To < From
 // keeps Generate DISABLED with an inline guard message (`ReportRangeMapping.isValid`).
 //
-// PRIVACY (T-10-09 / V8): before each fresh generation we DELETE any prior temp PDF (the consumer
-// `ReportPreviewView` also deletes on dismiss — both ends clean up the Art.9 throwaway file).
+// PRIVACY (T-10-09 / V8): the PRODUCER owns cleanup of the Art.9 throwaway file — before each fresh
+// generation we DELETE any prior temp PDF here. The preview no longer deletes on dismiss (CR-01: that
+// raced the system share sheet, which reads the URL lazily after the preview disappears).
 //
 // NO networking anywhere in this module (RPRT-03) — asserted by ReportNoNetworkTests.
 import SwiftUI
+import SwiftData   // WR-04: ModelContext/ModelContainer for the off-main dedicated-context assemble hop.
 import EndoInsights
 
 /// The on-screen report builder (Surface 1). Pure-SwiftUI `Form`; all fixed copy comes from `ReportCopy`;
@@ -65,7 +67,8 @@ struct ReportBuilderView: View {
         .navigationTitle(ReportCopy.builderTitle)
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("report.builder")
-        // Push the preview when a URL is ready; clearing it (pop) lets the preview's onDisappear delete it.
+        // Push the preview when a URL is ready. The temp file is cleaned up by the next generation's
+        // pre-delete (CR-01) — the preview no longer deletes on dismiss.
         .navigationDestination(item: $previewURL) { url in
             ReportPreviewView(url: url)
         }
@@ -147,40 +150,55 @@ struct ReportBuilderView: View {
 
     // MARK: - Generation
 
-    /// Generate the PDF on-device (RPRT-01): resolve the range → assemble the pure model → render to a
-    /// temp file → push the preview. Heavy assemble work runs first; only the brief render touches the main
-    /// actor (RESEARCH Pitfall 4). Deletes any prior temp file first (T-10-09 / V8). Honest failure state.
+    /// Generate the PDF on-device (RPRT-01): resolve the range → assemble the pure model OFF-MAIN → render
+    /// to a temp file on the main actor → push the preview. Deletes any prior temp file first (T-10-09 / V8).
+    /// Honest failure state on assemble OR write failure (never a fabricated/blank preview).
     private func generate() {
         guard isRangeValid else { return }
-        // Delete any prior temp PDF before a fresh generation (belt + braces with the preview's cleanup).
+        // Delete any prior temp PDF before a fresh generation (the producer owns cleanup — CR-01).
         if let prior = previewURL {
             try? FileManager.default.removeItem(at: prior)
             previewURL = nil
         }
         phase = .generating
 
-        // The repository + interval are captured on the main actor (modelContext is main-actor-bound).
-        let repo = SwiftDataRepository(context: modelContext)
+        // WR-04: the assemble does a full daySnapshots() fetch + one daySnapshotSources(on:) round-trip
+        // PER in-range day — ~90 SwiftData reads for a 90-day range. Running that on the main actor freezes
+        // the UI while the "Generating…" caption claims non-blocking progress. So we move it OFF-MAIN.
+        //
+        // SwiftData's `ModelContext`/`SwiftDataRepository` is NOT `Sendable`, so we cannot share the view's
+        // main-actor `modelContext` across the actor hop. We instead build a DEDICATED context (off the same
+        // container) confined to a `@unchecked Sendable` box that is touched ONLY inside the detached task —
+        // the same dedicated-context/box pattern AppDependencies uses for the import service. The container
+        // itself is Sendable.
+        let container = modelContext.container
         let range = ReportRangeMapping.interval(
             for: preset, from: customFrom, to: customTo, asOf: .now)
 
         Task {
             do {
-                // Assemble the PURE model (range-filtered reads + the LOCKED engine reused verbatim as a
-                // closure; `dismissed` comes from the store). `assemble` is pure value-in/value-out.
-                let model = try ReportModel.assemble(
-                    range: range,
-                    repository: repo,
-                    engine: { snapshots, asOf in
-                        InsightsEngine.insights(
-                            from: snapshots,
-                            asOf: asOf,
-                            dismissed: (try? repo.dismissedSignalKeys()) ?? [])
-                    },
-                    asOf: range.end)
+                // Assemble the PURE model OFF-MAIN on a detached task with a dedicated, confined context.
+                let model = try await Task.detached(priority: .userInitiated) { () throws -> ReportModel in
+                    let repo = RepoBox(SwiftDataRepository(context: ModelContext(container)))
+                    return try ReportModel.assemble(
+                        range: range,
+                        repository: repo.repo,
+                        engine: { snapshots, asOf in
+                            InsightsEngine.insights(
+                                from: snapshots,
+                                asOf: asOf,
+                                dismissed: (try? repo.repo.dismissedSignalKeys()) ?? [])
+                        },
+                        asOf: range.end)
+                }.value
 
                 // The render is @MainActor (ImageRenderer requirement) — hop for the brief draw only.
+                // WR-05: renderToTempFile returns nil on a write failure → route to the honest error state.
                 let url = await MainActor.run { ReportPDFRenderer.renderToTempFile(model: model) }
+                guard let url else {
+                    phase = .failed   // honest failure — never push a blank/missing-file preview (WR-05)
+                    return
+                }
                 previewURL = url
                 phase = .idle   // reset the CTA; the preview is now pushed via navigationDestination
             } catch {
@@ -188,5 +206,13 @@ struct ReportBuilderView: View {
                 phase = .failed
             }
         }
+    }
+
+    /// A box that lets a non-`Sendable` `SwiftDataRepository` (a dedicated, off-main-confined context)
+    /// cross into the detached assemble task. Safe because the boxed `ModelContext` is created INSIDE the
+    /// task and touched ONLY there — no concurrent access (mirrors AppDependencies' import-service box).
+    private final class RepoBox: @unchecked Sendable {
+        let repo: SwiftDataRepository
+        init(_ repo: SwiftDataRepository) { self.repo = repo }
     }
 }
