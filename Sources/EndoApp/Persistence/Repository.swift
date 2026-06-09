@@ -609,10 +609,16 @@ struct SwiftDataRepository: Repository {
         let manualFlow = manualBleeding.contains { EndoInsights.FlowIntensity(raw: $0.flowRaw) != nil }
 
         let imported = ImportedSignals(rows: try importedSamples(on: day))
+        // ACTIVITY PROVENANCE (WR-01): mirror the SINGLE merge gate (`useImportedActivity` in
+        // makeDaySnapshot) exactly — imported activity wins ONLY when there is no manual activity AND an
+        // imported activity TYPE is present. Imported MINUTES alone never win in the merge (they ride on
+        // the imported type), so the badge must not claim `.appleHealth` from minutes-only. This keeps
+        // value and provenance from drifting (the merge is the source of truth for both).
+        let importedActivityWins = !manualActivity && imported.activityType != nil
         return DaySnapshotSource(
             flow: Self.source(manual: manualFlow, imported: imported.flow != nil),
             sleep: Self.source(manual: manualSleep, imported: imported.sleepHours != nil || imported.sleepQuality != nil),
-            activity: Self.source(manual: manualActivity, imported: imported.activityType != nil || imported.activityMinutes != nil),
+            activity: Self.source(manual: manualActivity, imported: importedActivityWins),
             food: Self.source(manual: manualFood, imported: imported.ateThatDay == true))
     }
 
