@@ -242,7 +242,14 @@ struct ReportModel: Equatable, Sendable {
         let lifestyle = lifestyleSection(inRange: inRange, sources: sourcesByDay)
 
         // SECTION 2 — Summary / coverage: count of distinct in-range logged days + the aggregate source.
+        // WR-02: include symptom provenance so the legend explains the "Self-reported" badge the symptoms
+        // section draws. Symptoms have no dedicated DaySnapshotSource field (manual-only today), so a day
+        // with ANY logged symptom contributes `.manual` — mirroring symptomsSection's own aggregation.
+        // Without this, a symptoms-only range gets a Self-reported badge on section 3 that the legend
+        // never defines (the clinician sees an undefined badge).
+        let symptomFieldSources: [ValueSource?] = inRange.map { $0.symptoms.isEmpty ? nil : .manual }
         let allFieldSources = sourcesByDay.flatMap { [$0.flow, $0.sleep, $0.activity, $0.food] }
+            + symptomFieldSources
         let summary = SummarySection(
             daysLogged: inRange.count,
             source: SectionSource.aggregate(allFieldSources))
