@@ -1,9 +1,9 @@
 ---
 phase: 10
 slug: doctor-ready-pdf-report
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: planned
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-09
 ---
 
@@ -40,7 +40,15 @@ created: 2026-06-09
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| (planner-filled) | — | — | RPRT-01/02/03 | — | — | — | — | — | ⬜ pending |
+| 10-01-T1 | 10-01 | 1 | RPRT-01/02 | T-10-01..03 | Wave-0 scaffold; A3 render-spike transform resolved; RED honesty/source-label suite | unit (smoke) | `-only-testing:EndoAppTests/ReportRenderSpikeTests` | ❌ Wave 0 | ⬜ pending |
+| 10-01-T2 | 10-01 | 1 | RPRT-01/02 | T-10-01/02 | Pure assemble: range scoping, sparse/suppressed honesty, absence≠0, source labels from daySnapshotSources | unit | `-only-testing:EndoAppTests/ReportModelTests` | ❌ Wave 0 | ⬜ pending |
+| 10-01-T3 | 10-01 | 1 | RPRT-02 | T-10-03 | ReportCopy through ClaimsPolicy (no forbidden verb/gendered/numeric); A1 window helper + invalid-range guard | unit | `-only-testing:EndoAppTests/CopyAuditTests` | ⚠️ extend | ⬜ pending |
+| 10-02-T1 | 10-02 | 2 | RPRT-02 | — | Additive inkColor on InsightTrendChart (print black; live dashboard unchanged) | build | `xcodebuild build` | ✅ exists | ⬜ pending |
+| 10-02-T2 | 10-02 | 2 | RPRT-01/02 | T-10-05..07 | 8-section CoreText vector PDF + auto-pagination + footer/page-nums + vector chart embed + temp-file write; no inline literals | build | `xcodebuild build` | ❌ Wave 0 | ⬜ pending |
+| 10-02-T3 | 10-02 | 2 | RPRT-01/02 | T-10-05/06 | Page-count smoke + PDFDocument.string asserts (Disclaimer.text + legend + both source labels); suppressed off-state not phantom | unit (text-extraction) | `-only-testing:EndoAppTests/ReportRenderTests` | ❌ Wave 0 | ⬜ pending |
+| 10-03-T1 | 10-03 | 3 | RPRT-01/03 | T-10-09/11 | Settings entry -> builder -> Generate -> PDFView preview -> ShareLink; invalid-range guard; temp-file cleanup | build | `xcodebuild build` | ❌ Wave 0 | ⬜ pending |
+| 10-03-T2 | 10-03 | 3 | RPRT-03 | T-10-10 | Source-scan: Features/Report/ imports no URLSession/URLRequest/dataTask (no-upload invariant) | unit (source scan) | `-only-testing:EndoAppTests/ReportNoNetworkTests` | ❌ Wave 0 | ⬜ pending |
+| 10-03-T3 | 10-03 | 3 | RPRT-01/03 | T-10-13 | E2E: Settings -> Export report -> preset -> Generate -> preview -> Share present; invalid custom range keeps Generate disabled | E2E (XCUITest) | `-only-testing:EndoAppUITests/ReportFlowUITests` | ❌ Wave 0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

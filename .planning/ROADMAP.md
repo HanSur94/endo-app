@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Cycle-Phase Mapping + Insight-Honesty Layer** - Symptom-to-cycle-phase mapping plus the cross-cutting honesty layer (confidence, non-causal copy, dismiss, min-sample gate)
 - [x] **Phase 7: Correlation & Trigger Discovery** - The differentiator: statistically gated correlation/trigger discovery across logged factors ✓
 - [x] **Phase 8: Insights Integration — Coordinator, Cached Insights & Dashboard** - Wire persistence to the engine off-main, cache insights, and surface a live Swift Charts insights dashboard (completed 2026-06-09)
-- [ ] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage
+- [x] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage (completed 2026-06-09)
 - [ ] **Phase 10: Doctor-Ready PDF Report** - Date-ranged, source-labeled, on-device vector PDF report shared via the system share sheet
 - [ ] **Phase 11: Personalized Recommendations** - Data-driven, non-prescriptive recommendations derived from the user's own patterns
 - [ ] **Phase 12: Flare Early-Warning** - Built last and gated by the honesty layer: a heuristic, non-diagnostic flare early-warning with confidence
@@ -290,8 +290,22 @@ Plans:
   2. The report labels each data point's source (self-reported vs Apple Health) and carries a clear "self-tracked, not diagnostic" note.
   3. User can share/export the PDF via the system share sheet with no automatic cloud upload.
 
-**Plans**: TBD
+**Plans**: 3 plans, 3 waves (dependency-driven: pure model + render spike -> renderer -> builder/preview/share)
 **UI hint**: yes
+
+Plans:
+
+**Wave 1**
+
+- [ ] 10-01-PLAN.md — Pure ReportModel (range-scoped assembly, honesty, three-state cycle, per-section source labels) + ReportCopy (ClaimsPolicy choke-point) + ReportRangeMapping (A1) + the A3 ImageRenderer->PDF render spike (RPRT-01/02 testable core)
+
+**Wave 2** *(blocked on 10-01)*
+
+- [ ] 10-02-PLAN.md — @MainActor ReportPDFRenderer: 8-section CoreText vector PDF + auto-pagination + page footer/numbers + InsightTrendChart embedded as vector (additive inkColor: black) + temp-file write; verified by page-count smoke + PDFDocument.string substring asserts (RPRT-01/02)
+
+**Wave 3** *(blocked on 10-01 + 10-02)*
+
+- [ ] 10-03-PLAN.md — Payoff slice: Settings "Export report" entry -> ReportBuilderView (presets + custom DatePickers + Generate) -> ReportPreviewView (PDFView + ShareLink local file URL, no upload) + temp-file cleanup + ReportNoNetworkTests (RPRT-03 grep invariant) + ReportFlowUITests E2E (RPRT-01/03)
 
 ### Phase 11: Personalized Recommendations
 
@@ -338,7 +352,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Cycle-Phase Mapping + Insight-Honesty Layer | 3/3 | Complete   | 2026-06-08 |
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
-| 9. HealthKit Import | 3/3 | Verifying  |  |
-| 10. Doctor-Ready PDF Report | 0/TBD | Not started | - |
+| 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
+| 10. Doctor-Ready PDF Report | 0/3 | Not started | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |
