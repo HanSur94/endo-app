@@ -297,7 +297,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 10-01-PLAN.md — Pure ReportModel (range-scoped assembly, honesty, three-state cycle, per-section source labels) + ReportCopy (ClaimsPolicy choke-point) + ReportRangeMapping (A1) + the A3 ImageRenderer->PDF render spike (RPRT-01/02 testable core)
+- [x] 10-01-PLAN.md — Pure ReportModel (range-scoped assembly, honesty, three-state cycle, per-section source labels) + ReportCopy (ClaimsPolicy choke-point) + ReportRangeMapping (A1) + the A3 ImageRenderer->PDF render spike (RPRT-01/02 testable core) ✅ 2026-06-09
 
 **Wave 2** *(blocked on 10-01)*
 
@@ -353,6 +353,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Correlation & Trigger Discovery | 3/3 | Complete   | 2026-06-09 |
 | 8. Insights Integration — Coordinator, Cached Insights & Dashboard | 4/4 | Complete    | 2026-06-09 |
 | 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
-| 10. Doctor-Ready PDF Report | 0/3 | Not started | - |
+| 10. Doctor-Ready PDF Report | 1/3 | In progress | - |
 | 11. Personalized Recommendations | 0/TBD | Not started | - |
 | 12. Flare Early-Warning | 0/TBD | Not started | - |

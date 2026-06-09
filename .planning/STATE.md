@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 09-03-PLAN.md (read-only HealthKit entitlement + usage string + SystemHealthDataReading + rationale-before-sheet UX + denial deep-link + provenance badge + Refresh from Health + -uitest-health-* fixture wiring + HealthConnectUITests; real-device read = deferred human-verify, auto-approved)
-last_updated: "2026-06-09T19:10:00.000Z"
-last_activity: "2026-06-09 — Executed Phase 9 Wave 3 (09-03): the HealthKit payoff slice — permission UX + provenance + entitlement, E2E-proven via the fixture seam."
+stopped_at: Completed 09-01-PLAN.md (HealthKit seam + value contracts + mapping tables + ImportedSample SchemaV6 migration + boundary lint)
+last_updated: "2026-06-09T19:40:00.000Z"
+last_activity: 2026-06-09
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 30
-  completed_plans: 31
-  percent: 71
+  completed_plans: 30
+  percent: 75
 ---
 
 # Project State
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 
 ## Current Position
 
-Phase: 9
-Plan: 09-03 COMPLETE (Wave 3 of 3) — Phase 9 ALL PLANS DONE; ready for /gsd-verify-work
-Status: Phase 9 (HealthKit Import) COMPLETE (3/3 plans). 09-03 (Wave 3) shipped the payoff slice: read-only HealthKit entitlement (com.apple.developer.healthkit + empty .access, NO write key) + NSHealthShareUsageDescription Info.plist string (update key absent, grep-gated) + the real SystemHealthDataReading (HKHealthStore behind a @globalActor; toShare:[] auth; HKAnchoredObjectQuery 365-day backfill / incremental pull mapping HKSample->Sendable inside the continuation) + HealthRationaleView (rationale BEFORE the system sheet, D-06) + HealthConnectSection (passive affordance; previously-decided users deep-link to Settings, no read-status probe, D-08) + HealthSourceBadge ("from Apple Health", D-03) + Settings "Refresh from Health" (D-10) + \\.healthImportService injection + -uitest-health-seed/-denied/-empty fixture selection (paired with -uitest-reset) + HealthConnectUITests (4 E2E GREEN) + HealthConnectCopyAuditTests (ClaimsPolicy GREEN). Full EndoAppTests suite GREEN (183/183). Two auto-fixed bugs: MainActor.assumeIsolated trap in the actor-executor persist/recompute closures (fixed), and the health.connect.decided @AppStorage flag leaking across -uitest-reset runs (now cleared). DEFERRED (auto-approved under AUTO_MODE, surfaced to the phase gate): the real-device HealthKit read + the OS authorization sheet (Task 4 human-verify), same posture as Phase 4 HUMAN-UAT.
+Phase: 10
+Plan: 10-02 (Wave 2 — renderer) next
+Status: Plan 10-01 (Wave 1 — pure core + A1/A3 de-risk) COMPLETE (3/3 tasks). Shipped the PURE, Equatable/Sendable ReportModel.assemble(range:repository:engine:asOf:) — range-scoped descriptive sections (honor the exact DateInterval inclusive of range.end), three-state CycleSection via CycleMath.summarize (no phantom cycle, never re-derived), nil-honest lifestyle (absence≠0; logged 0 stays 0), symptoms hasEnoughData gated at HonestyGate.minSample(.trend)==3, per-section provenance aggregated from daySnapshotSources only (Pitfall 1). Plus ReportCopy (every fixed report string routed through the ClaimsPolicy choke-point; CopyAuditTests Phase-10 section GREEN) and ReportRangeMapping (RangePreset + DST-safe interval + A1 enginewindowsInRange + isValid guard). RESOLVED both research unknowns: A1 (descriptive sections honor the exact range; insights surface only engine windows ⊆ range, anchored at range.end) and A3 (ImageRenderer→PDF CGContext needs ONLY a translate, no y-flip — proven by ReportRenderSpikeTests, documented for Plan 02). ReportModelTests 9/9 GREEN; full Swift Testing suites 200+96 GREEN; no-network invariant (T-10-04) grep-verified. Two auto-fixes: symptoms sparse floor was too lenient (Rule 1 — gated at minSample==3) + an inverted sparse-insights test assertion. Out-of-scope deferred: a pre-existing flaky medication-toggle XCUITest (deferred-items.md). Prior: Phase 9 (HealthKit Import) COMPLETE (3/3 plans). 09-03 (Wave 3) shipped the payoff slice: read-only HealthKit entitlement (com.apple.developer.healthkit + empty .access, NO write key) + NSHealthShareUsageDescription Info.plist string (update key absent, grep-gated) + the real SystemHealthDataReading (HKHealthStore behind a @globalActor; toShare:[] auth; HKAnchoredObjectQuery 365-day backfill / incremental pull mapping HKSample->Sendable inside the continuation) + HealthRationaleView (rationale BEFORE the system sheet, D-06) + HealthConnectSection (passive affordance; previously-decided users deep-link to Settings, no read-status probe, D-08) + HealthSourceBadge ("from Apple Health", D-03) + Settings "Refresh from Health" (D-10) + \\.healthImportService injection + -uitest-health-seed/-denied/-empty fixture selection (paired with -uitest-reset) + HealthConnectUITests (4 E2E GREEN) + HealthConnectCopyAuditTests (ClaimsPolicy GREEN). Full EndoAppTests suite GREEN (183/183). Two auto-fixed bugs: MainActor.assumeIsolated trap in the actor-executor persist/recompute closures (fixed), and the health.connect.decided @AppStorage flag leaking across -uitest-reset runs (now cleared). DEFERRED (auto-approved under AUTO_MODE, surfaced to the phase gate): the real-device HealthKit read + the OS authorization sheet (Task 4 human-verify), same posture as Phase 4 HUMAN-UAT.
 Status_was: Phase 9 (HealthKit Import) ready to plan. Phase 8 closed 2026-06-09 — UAT-verified (08-UAT.md: 9/9 testable on iOS Simulator passed, 0 issues; chart-VISUAL-quality human-verify done live) and threat-secured (08-SECURITY.md: 16/16 closed, threats_open:0). Carried to RELEASE (not blockers): on-device CachedInsight cross-device sync (needs 2 iCloud devices) + CloudKit Console deploy of the CachedInsight record type (Dev→Prod). Minor polish backlog: dismiss optimistic-vs-recompute scope (signal-level dismissal drops all same-signal windows on re-entry — by-design, cosmetic).
-Last activity: 2026-06-09 — Executed Phase 9 Wave 3 (09-03): the HealthKit payoff slice — permission UX + provenance + entitlement, E2E-proven via the fixture seam.
+Last activity: 2026-06-09
 
-Progress: [██████████████░░░░░░] 8/12 phases complete (70%) — Phase 9 ALL 3 PLANS COMPLETE (ready for verification)
+Progress: [██████████████░░░░░░] 9/12 phases complete (75%) — Phase 10 IN PROGRESS (Plan 10-01 of 3 complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7 (Phase 6: 06-01, 06-02, 06-03)
+- Total plans completed: 10 (Phase 6: 06-01, 06-02, 06-03)
 - Average duration: ~14 min
 - Total execution time: ~0.7 hours
 
@@ -47,6 +47,7 @@ Progress: [██████████████░░░░░░] 8/12 ph
 |-------|-------|-------|----------|
 | 1 | 2 | ~32 min | ~16 min |
 | 8 | 4 | - | - |
+| 9 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -79,6 +80,7 @@ Progress: [██████████████░░░░░░] 8/12 ph
 | Phase 08 P03 | ~40min | 3 tasks | 6 files |
 | Phase 09 P01 | ~9min | 3 tasks | 11 files |
 | Phase 09 P02 | ~27 min | 2 tasks | 8 files |
+| Phase 10 P01 | ~24min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
