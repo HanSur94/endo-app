@@ -23,11 +23,9 @@
 //
 // Pure value type: Foundation only — NO `import SwiftData`, NO `import SwiftUI`, NO networking. The
 // engine is INJECTED as a closure so `assemble` stays pure and off any actor, and the package's
-// window-based gate (HonestyGate) is reused verbatim rather than re-implemented.
-//
-// NOTE (Task 1 — Nyquist Wave-0): this file defines ONLY the CONTRACT (types + a stubbed `assemble`
-// that throws). Task 2 implements `assemble` and turns the RED `ReportModelTests` green. Fixed copy
-// (the renderer's strings) lives in `ReportCopy` (Task 3), never inline here.
+// window-based gate (HonestyGate) is reused verbatim rather than re-implemented. `assemble` is fully
+// implemented here (it only rethrows the injected repository's errors); fixed copy (the renderer's
+// strings) lives in `ReportCopy`, never inline here.
 import Foundation
 import EndoInsights
 
@@ -182,14 +180,6 @@ struct ReportModel: Equatable, Sendable {
     /// Section 7 — Source legend.
     let legend: SourceLegend
 
-    /// An error the stubbed `assemble` throws until Task 2 implements the assembly. Keeps Task 1's
-    /// contract compilable + the RED tests honest (an assemble-dependent test stays disabled or expects
-    /// the throw) without faking a result.
-    enum AssemblyError: Error, Equatable {
-        /// `assemble` is not implemented yet (Task 2 owns the body).
-        case notImplemented
-    }
-
     /// Assemble the pure report for a date interval (Pattern 1). PURE: reads the injected `repository`
     /// and calls the injected `engine` closure ONLY — no actor, no clock, no I/O, no networking.
     ///
@@ -202,8 +192,7 @@ struct ReportModel: Equatable, Sendable {
     ///   - asOf: the anchor the engine's windows measure back from (the call site passes `range.end`).
     /// - Returns: the assembled, honest `ReportModel`.
     ///
-    /// - Note: STUBBED in Task 1 — throws `AssemblyError.notImplemented`. Task 2 implements the body and
-    ///   flips the RED `ReportModelTests` green.
+    /// - Throws: rethrows any error from the injected `repository`'s reads — `assemble` itself never throws.
     static func assemble(
         range: DateInterval,
         repository: Repository,
