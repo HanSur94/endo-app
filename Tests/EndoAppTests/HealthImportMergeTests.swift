@@ -149,6 +149,46 @@ struct HealthImportMergeTests {
         #expect(snap.sleepQuality == .good)    // band of the 7.5h TOTAL (>= 7.0 ceiling), not a fragment's .poor
     }
 
+    // MARK: - replaceOrInsertImported batch (CR-02, atomic delete+upsert)
+
+    @Test func sameUUIDDeleteThenReAddNetsToPresent() throws {
+        let repo = try makeRepo()
+        // Seed a sleep row with a known UUID.
+        let uuid = UUID()
+        let seed = ImportedSampleValue(hkUUID: uuid, day: day0, domain: .sleep,
+                                       payload: .sleep(hours: 7.5, quality: .good))
+        try repo.upsertImportedSample(seed)
+
+        // A pull that reports the SAME UUID as both deleted AND re-added (the degenerate same-UUID case).
+        // The single atomic transaction must net to "present" — the upsert re-creates the row.
+        let readd = ImportedSampleValue(hkUUID: uuid, day: day0, domain: .sleep,
+                                        payload: .sleep(hours: 8.0, quality: .good))
+        try repo.replaceOrInsertImported(values: [readd], deletedUUIDs: [uuid])
+
+        let snap = try #require(try repo.daySnapshots().first)
+        #expect(snap.sleepHours == 8.0)   // present, with the re-added value (not dropped by delete-first)
+    }
+
+    @Test func batchAppliesDeletionsAndUpsertsAsOneUnit() throws {
+        let repo = try makeRepo()
+        // Two existing rows; one will be deleted in the next pull, one will survive, plus a new insert.
+        let keep = UUID(), drop = UUID(), add = UUID()
+        try repo.upsertImportedSample(
+            ImportedSampleValue(hkUUID: keep, day: day0, domain: .nutrition, payload: .nutrition(ateThatDay: true)))
+        try repo.upsertImportedSample(
+            ImportedSampleValue(hkUUID: drop, day: day0, domain: .workouts, payload: .workout(type: .cardio, minutes: 30)))
+
+        try repo.replaceOrInsertImported(
+            values: [ImportedSampleValue(hkUUID: add, day: day0, domain: .sleep, payload: .sleep(hours: 7, quality: .good))],
+            deletedUUIDs: [drop])
+
+        let rows = try repo.importedSamples(on: day0)
+        let uuids = Set(rows.compactMap(\.hkSampleUUID))
+        #expect(uuids.contains(keep.uuidString))     // untouched survivor
+        #expect(!uuids.contains(drop.uuidString))    // honored deletion
+        #expect(uuids.contains(add.uuidString))      // new insert — all in one atomic save
+    }
+
     // MARK: - multiWorkoutCollapse (WR-04, deterministic)
 
     @Test func multiWorkoutSumsMinutesAndKeepsLongestType() throws {

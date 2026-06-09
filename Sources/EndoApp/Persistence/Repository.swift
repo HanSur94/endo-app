@@ -683,10 +683,19 @@ struct SwiftDataRepository: Repository {
 
     func upsertImportedSample(_ value: ImportedSampleValue) throws {
         assertConsented()   // ONBD-01 / V4 — first statement, like every sibling write.
+        // Single-value public entry: stage the upsert, then save. The batch path
+        // (`replaceOrInsertImported`) reuses `applyUpsert` WITHOUT saving so the whole pull is one
+        // atomic transaction (CR-02).
+        try applyUpsert(value)
+        try context.save()
+    }
+
+    /// Stage one dedupe-by-uuid upsert against the context WITHOUT saving (CR-02). An existing row with
+    /// the same `hkSampleUUID` is updated in place (Pitfall 5) so a re-pull / cross-device mirror
+    /// collapses harmlessly; accidental duplicate rows are folded onto a single survivor. The caller is
+    /// responsible for exactly one `context.save()` so a batch is all-or-nothing.
+    private func applyUpsert(_ value: ImportedSampleValue) throws {
         let uuidString = value.hkUUID.uuidString
-        // Dedupe-by-uuid (Pitfall 5): an existing row with the same hkSampleUUID is updated in place,
-        // mirroring `setMedicationMarker`'s exists-guard, so a re-pull / cross-device mirror of the same
-        // sample collapses harmlessly instead of inserting a duplicate.
         let existing = try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
             .filter { $0.hkSampleUUID == uuidString }
         let row = existing.first ?? {
@@ -697,7 +706,6 @@ struct SwiftDataRepository: Repository {
         // Collapse any accidental duplicate rows for this UUID onto the single survivor.
         for extra in existing.dropFirst() { context.delete(extra) }
         Self.apply(value, to: row)
-        try context.save()
     }
 
     func deleteImportedSamples(uuids: [String]) throws {
@@ -713,18 +721,34 @@ struct SwiftDataRepository: Repository {
 
     func replaceOrInsertImported(values: [ImportedSampleValue], deletedUUIDs: [UUID]) throws {
         assertConsented()
-        // Apply deletions first so a same-pull delete-then-reinsert of the same UUID nets correctly.
-        for uuid in deletedUUIDs {
-            let key = uuid.uuidString
-            for row in try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
-            where row.hkSampleUUID == key {
-                context.delete(row)
+        // ATOMIC BATCH (CR-02): stage ALL deletions and ALL upserts against the context, then call
+        // `context.save()` EXACTLY ONCE. If any value throws mid-batch, we `rollback()` the staged-but-
+        // unsaved changes so the store is left UNCHANGED — never partially applied (the import service
+        // treats the throw as "contributed nothing" and does NOT advance the cursor, so the next pull
+        // re-delivers the whole set). The single-value `upsertImportedSample` path is unaffected.
+        //
+        // Apply deletions before upserts so a same-pull delete-then-reinsert of the same UUID nets to
+        // "present": the upsert re-creates the row. (Anchored queries normally report a CHANGED sample as
+        // delete-old-UUID + new-UUID, so the two lists rarely share a UUID; the ordering only matters for
+        // the degenerate same-UUID case and is now applied within one transaction.)
+        do {
+            let deleteKeys = Set(deletedUUIDs.map(\.uuidString))
+            if !deleteKeys.isEmpty {
+                for row in try context.fetch(FetchDescriptor<SchemaV1.ImportedSample>())
+                where row.hkSampleUUID.map(deleteKeys.contains) == true {
+                    context.delete(row)
+                }
             }
+            for value in values {
+                try applyUpsert(value)   // stage only — no per-value save (CR-02 atomicity).
+            }
+            try context.save()           // ONE save for the whole pull.
+        } catch {
+            // All-or-nothing: discard every staged delete/upsert so a mid-batch failure cannot leave the
+            // store partially applied. `rollback()` reverts the context to its last-saved state.
+            context.rollback()
+            throw error
         }
-        for value in values {
-            try upsertImportedSample(value)   // dedupe-by-uuid upsert (saves per value).
-        }
-        try context.save()
     }
 
     /// Map an `ImportedSampleValue` (its day, domain, and one-of-four payload) onto the flat
