@@ -198,6 +198,122 @@ enum Fixtures {
         return days
     }
 
+    // MARK: Phase-7 correlation fixtures (INST-03 — surfaced/withheld/suppressed/deterministic).
+
+    /// A STRONG, well-sampled severity association: ~40 days. On ~20 dairy days `pelvicPain` severity is
+    /// ~7; on ~20 non-dairy (but logged) days `pelvicPain` severity is ~2 → a large Cliff's δ over n=40 →
+    /// ONE `.correlation` should surface at `.medium`/`.high`, `sampleSize ≥ 20`, signalKey
+    /// `correlation.food.dairy.symptom.pelvicPain`, with non-causal copy. Dairy days log a food tag so the
+    /// non-dairy days are honestly `.absent` for `food.dairy` (a day-with-any-log, A7), not unobserved.
+    static func strongAssociationFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for i in 0..<20 {   // dairy days, high pelvic-pain severity
+            days.append(snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: 7)],
+                foodTags: [.dairy]
+            ))
+        }
+        for i in 20..<40 {  // non-dairy days (a DIFFERENT food logged so the day exists), low severity
+            days.append(snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: 2)],
+                foodTags: [.caffeine]
+            ))
+        }
+        return days
+    }
+
+    /// An UNDER-SAMPLED association: the SAME strong shape but only 9 paired days total (< minSample) →
+    /// ZERO correlations. 5 dairy + 4 non-dairy days = 9 paired days, dropped by the sample floor.
+    static func underSampledAssociationFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for i in 0..<5 {
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 7)], foodTags: [.dairy]))
+        }
+        for i in 5..<9 {
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 2)], foodTags: [.caffeine]))
+        }
+        return days
+    }
+
+    /// A SPURIOUS association: ~30 days where dairy and `pelvicPain` severity are assigned INDEPENDENTLY —
+    /// dairy on EVEN offsets, a high-vs-low severity keyed off a DIFFERENT period (offset % 3) → near-zero
+    /// Cliff's δ → fails the medium-effect floor → ZERO correlations. Deterministic (no RNG).
+    static func spuriousAssociationFixture() -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+        for i in 0..<30 {
+            let hasDairy = (i % 2 == 0)                 // dairy on even offsets
+            let severity = (i % 3 == 0) ? 6 : 3         // severity keyed off an INDEPENDENT period
+            days.append(snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: severity)],
+                foodTags: hasDairy ? [.dairy] : [.caffeine]
+            ))
+        }
+        return days
+    }
+
+    /// A MULTIPLE-COMPARISON FLOOD: ~60 days where every factor and symptom is present at a deterministic
+    /// ~50% rate, each driven by an INDEPENDENT per-(signal, day) hash so no two signals are correlated by
+    /// construction (small modular toggles like `i%2` vs `i%3` are NOT independent — they overlap on a
+    /// fixed lattice and manufacture spurious associations). This yields ≥100 tested pairs of pure noise →
+    /// BH-FDR (q=0.10) MUST crush ALL of them → ZERO correlations surfaced (the load-bearing test). Fully
+    /// deterministic (a fixed splitmix-style integer hash, NO RNG) so the output stays `Equatable`-stable.
+    static func multipleComparisonFloodFixture() -> [DaySnapshot] {
+        // A deterministic, well-mixed bit for signal `salt` on day `i` — ~50% on, independent across salts.
+        func bit(_ salt: UInt64, _ i: Int) -> Bool {
+            var x = UInt64(bitPattern: Int64(i)) &+ salt &* 0x9E37_79B9_7F4A_7C15
+            x = (x ^ (x >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            x = (x ^ (x >> 27)) &* 0x94D0_49BB_1331_11EB
+            x = x ^ (x >> 31)
+            return (x & 1) == 1
+        }
+
+        return (0..<60).map { i in
+            var foods: [FoodTag] = []
+            if bit(1, i) { foods.append(.dairy) }
+            if bit(2, i) { foods.append(.glutenWheat) }
+            if bit(3, i) { foods.append(.caffeine) }
+            if foods.isEmpty { foods = [.largeMeal] }   // keep the day a logged food day (honest absent)
+
+            var symptoms: [SymptomPoint] = []
+            if bit(11, i) { symptoms.append(SymptomPoint(type: .pelvicPain, severity: bit(21, i) ? 5 : 2)) }
+            if bit(12, i) { symptoms.append(SymptomPoint(type: .fatigue, severity: bit(22, i) ? 5 : 2)) }
+            if bit(13, i) { symptoms.append(SymptomPoint(type: .headache, severity: bit(23, i) ? 5 : 2)) }
+            if symptoms.isEmpty { symptoms = [SymptomPoint(type: .other, severity: 1)] }
+
+            return snapshot(
+                offset: -i,
+                symptoms: symptoms,
+                foodTags: foods,
+                sleepQuality: bit(31, i) ? .poor : .good,
+                tookPRN: bit(32, i),
+                stress: bit(33, i) ? 8 : 3,
+                mood: bit(34, i) ? 1 : 4
+            )
+        }
+    }
+
+    /// A SUPPRESSED user with a real non-cyclic co-occurrence: the `suppressedNoBleedingFixture` days, but
+    /// extended so ~half log dairy + high pelvic-pain severity and ~half log a different food + low
+    /// severity. Because every day is `suppressed`, `CyclePhaseMapper` yields NO windows → NO
+    /// `factor.cyclePhase.*` pair is ever tested (D-04 by construction). Non-phase correlations (dairy ↔
+    /// pelvic pain) MAY still surface — suppression only kills the cycle-phase factor.
+    static func suppressedUserCorrelationFixture(monthsBack: Int = 2) -> [DaySnapshot] {
+        let totalDays = monthsBack * 30
+        return (0..<totalDays).map { i in
+            let hasDairy = (i % 2 == 0)
+            let severity = hasDairy ? 7 : 2
+            return snapshot(
+                offset: -i,
+                symptoms: [SymptomPoint(type: .pelvicPain, severity: severity)],
+                foodTags: hasDairy ? [.dairy] : [.caffeine],
+                suppressed: true
+            )
+        }
+    }
+
     /// WR-05: a SHORT but REGULAR cycle whose estimated phase windows OVERLAP. Starts at offsets
     /// -48, -32, -16, 0 → gaps 16/16/16 (spread 0, count 3 → `phaseConfidence == .medium`, so it clears
     /// the confidence/regularity gates). With median 16 and a 5-day current bleed (offsets 0…4): band = 2,
