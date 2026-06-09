@@ -148,6 +148,11 @@ struct HonestyGateTests {
             ("strongAssociation", Fixtures.strongAssociationFixture()),
             ("multipleComparisonFlood", Fixtures.multipleComparisonFloodFixture()),
             ("suppressedUserCorrelation", Fixtures.suppressedUserCorrelationFixture()),
+            // Phase 11 (.recommendation) — MANDATORY per the file's contract (Pitfall 4). The
+            // recommendation streams are scanned through the public `InsightsEngine` here; the
+            // recommendation-specific emitted copy is additionally proven clean by the DIRECT engine scan
+            // (`recommendationEngine_emitsZeroForbiddenTerms`) below, independent of the Plan-03 composition.
+            ("beneficialAssociation", Fixtures.beneficialAssociationFixture()),
         ]
 
         for (name, snapshots) in streams {
@@ -162,6 +167,36 @@ struct HonestyGateTests {
                 #expect(
                     ForbiddenTerms.violation(in: insight.detail) == nil,
                     "Forbidden term in detail (\(name)): \(insight.detail)"
+                )
+            }
+        }
+    }
+
+    // MARK: (d'') Phase 11 — the `.recommendation` emitted copy is clean DIRECTLY out of the producer.
+
+    /// `RecommendationsEngine` is not composed into the public `InsightsEngine` until Plan 03, so the
+    /// stream scan above cannot exercise its emitted copy yet. Prove the package-emitted recommendation
+    /// copy contains ZERO forbidden terms (causal AND imperative, D-04) by scanning the engine output
+    /// DIRECTLY over the recommendation fixtures — independent of the Plan-03 composition.
+    @Test func recommendationEngine_emitsZeroForbiddenTerms() async throws {
+        let streams: [(String, [DaySnapshot])] = [
+            ("beneficialAssociation", Fixtures.beneficialAssociationFixture()),
+            ("strongAssociation", Fixtures.strongAssociationFixture()),          // aggravating
+            ("suppressedUserCorrelation", Fixtures.suppressedUserCorrelationFixture()),
+            ("multipleComparisonFlood", Fixtures.multipleComparisonFloodFixture()),
+        ]
+        for (name, snapshots) in streams {
+            let recs = RecommendationsEngine.recommendations(
+                from: snapshots, asOf: Fixtures.day(0), calendar: Fixtures.calendar
+            )
+            for rec in recs {
+                #expect(
+                    ForbiddenTerms.violation(in: rec.headline) == nil,
+                    "Forbidden term in recommendation headline (\(name)): \(rec.headline)"
+                )
+                #expect(
+                    ForbiddenTerms.violation(in: rec.detail) == nil,
+                    "Forbidden term in recommendation detail (\(name)): \(rec.detail)"
                 )
             }
         }

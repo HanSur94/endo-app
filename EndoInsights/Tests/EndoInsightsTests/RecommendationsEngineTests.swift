@@ -16,24 +16,13 @@ import Testing
 import Foundation
 @testable import EndoInsights
 
-// ──────────────────────────────────────────────────────────────────────────────────────────────────
-// RED PLACEHOLDER — DELETE THIS SHIM IN PLAN 11-02.
-//
-// The real `RecommendationsEngine` (the re-framing producer) and `RecommendationsCopy` ship in Plan 02.
-// This file-local stub lets the RED honesty spec COMPILE today (so the rest of the `EndoInsightsTests`
-// target — and the whole `EndoApp` scheme — still builds) while keeping the suite RED at RUNTIME: the
-// stub returns `[]`, so every "surfaces a recommendation" / direction assertion FAILS until Plan 02
-// replaces it with the real producer. Plan 02 MUST delete this shim and provide the real symbol; a
-// compile error there ("invalid redeclaration") is the intended signal to remove the placeholder.
-private enum RecommendationsEngine {
-    static func recommendations(from snapshots: [DaySnapshot], asOf today: Date, calendar: Calendar) -> [Insight] {
-        []   // RED: no recommendations yet — Plan 02 implements the real re-framing producer.
-    }
-}
-// ──────────────────────────────────────────────────────────────────────────────────────────────────
+// Plan 11-02 deleted the RED placeholder shim that previously lived here — the real
+// `RecommendationsEngine` re-framing producer now ships in
+// `EndoInsights/Sources/EndoInsights/RecommendationsEngine.swift`, and this suite is GREEN against it.
 
 @Suite("INST-05 RecommendationsEngine — surfaced/withheld/suppressed/direction/top-N/deterministic")
 struct RecommendationsEngineTests {
+
 
     /// The future producer entry point (Plan 02). Mirrors `CorrelationEngine.insights` signature exactly.
     private func recommendations(_ snapshots: [DaySnapshot], todayOffset: Int = 0) -> [Insight] {
