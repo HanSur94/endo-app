@@ -7,7 +7,8 @@
 // with the insights (D-12), a11y id `insights.disclaimer`.
 //
 // SECTIONS (in order, UI-SPEC §A): Trends (`.trend`) → Cycle phase (`.cyclePhase`) → Possible
-// associations (`.correlation`). A section with ZERO gated insights is OMITTED entirely — NOT an empty
+// associations (`.correlation`) → Recommendations (`.recommendation`, after the associations they derive
+// from — D-06). A section with ZERO gated insights is OMITTED entirely — NOT an empty
 // shell. So a suppressed/no-cycle user (the engine emits zero `.cyclePhase`) has NO cycle-phase section
 // at all (D-07; mirrors `home.cycleSummary.suppressed`'s no-phantom posture). The E2E asserts this by
 // the ABSENCE of `insights.section.cyclePhase`.
@@ -67,6 +68,13 @@ struct InsightsView: View {
                         title: InsightsCopy.sectionCorrelations,
                         identifier: "insights.section.correlations",
                         kind: .correlation)
+                    // Recommendations read AFTER the associations they derive from (D-06). Omit-when-empty
+                    // is inherited from the helper, so a suppressed/sparse user has NO recommendations
+                    // section (D-06/D-08/SC3). Reuses the kind-agnostic InsightCardView + dismiss path.
+                    section(
+                        title: RecommendationsCopy.sectionRecommendations,
+                        identifier: "insights.section.recommendations",
+                        kind: .recommendation)
                 }
             }
             .navigationTitle("Insights")

@@ -210,9 +210,20 @@ final class InsightsDashboardUITests: XCTestCase {
         XCTAssertTrue(firstInsightCard(in: app).waitForExistence(timeout: 15),
                       "The seeded dashboard must render at least one card before asserting the recommendations section.")
 
-        // The Recommendations section appears once a strong correlation re-frames into a recommendation.
+        // The Recommendations section is the LAST section (after Trends + Possible associations), so on a
+        // populated dashboard it renders below the fold. SwiftUI's `List` lazily realizes off-screen rows,
+        // so scroll the section into view before asserting (the section exists in the model the moment the
+        // recompute lands — this scroll merely realizes its lazy cell in the accessibility tree).
         let recommendationsSection = app.descendants(matching: .any)["insights.section.recommendations"]
-        XCTAssertTrue(recommendationsSection.waitForExistence(timeout: 15),
+        let dashboard = app.descendants(matching: .any)["insights.screen"].firstMatch
+        var revealed = recommendationsSection.waitForExistence(timeout: 15)
+        var scrollAttempts = 0
+        while !revealed && scrollAttempts < 6 {
+            if dashboard.exists { dashboard.swipeUp() } else { app.swipeUp() }
+            revealed = recommendationsSection.waitForExistence(timeout: 3)
+            scrollAttempts += 1
+        }
+        XCTAssertTrue(revealed,
                       "A strong seeded correlation must eventually render the Recommendations section "
                       + "(insights.section.recommendations) — the INST-05 MVP happy path.")
         saveScreenshot(app, named: "insights-06-recommendations")
