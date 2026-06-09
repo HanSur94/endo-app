@@ -45,6 +45,37 @@ enum CorrelationEngine {
         asOf today: Date,
         calendar: Calendar = .current
     ) -> [Insight] {
+        // Phase 11 (D-01 "compose, never re-derive"): `insights(...)` and `scoredCandidates(...)` share
+        // ONE private survivor pipeline (`scoredSurvivors`). This entry maps the survivors to the public
+        // `.correlation` `[Insight]` via `makeInsight()`; `scoredCandidates(...)` maps the SAME survivors
+        // to typed `[CorrelationFinding]`. A finding exists iff the correlation insight exists, with
+        // identical signalKey/confidence/pairedDays — the math runs once.
+        scoredSurvivors(from: rawSnapshots, asOf: today, calendar: calendar).map { $0.makeInsight() }
+    }
+
+    /// PACKAGE-INTERNAL (NOT public) typed accessor for `RecommendationsEngine` (Phase 11, INST-05, D-01;
+    /// RESEARCH Pattern 2 Option A). Returns EXACTLY the same survivors `insights(...)` emits, in the SAME
+    /// deterministic order, but as typed `CorrelationFinding`s carrying a `direction` recovered from the
+    /// SIGNED effect (`meanDiff`/`riskRatio`) — NEVER by parsing the audited public `.correlation` copy
+    /// (RESEARCH Anti-Patterns; the one real engineering decision, Pitfall 1). No public symbol is added,
+    /// so the package boundary (BoundaryLintTests) stays Foundation-only with zero new egress.
+    static func scoredCandidates(
+        from rawSnapshots: [DaySnapshot],
+        asOf today: Date,
+        calendar: Calendar = .current
+    ) -> [CorrelationFinding] {
+        scoredSurvivors(from: rawSnapshots, asOf: today, calendar: calendar).map { $0.makeFinding() }
+    }
+
+    /// The SINGLE shared survivor pipeline (steps 0–6) feeding BOTH `insights(...)` and
+    /// `scoredCandidates(...)`. Returns the sorted, gate-filtered (`confidence >= .low`), top-N
+    /// `ScoredCandidate` list. Extracted from the former `insights(...)` body VERBATIM so the public
+    /// `.correlation` behavior stays byte-identical (CorrelationEngineTests/InsightsEngineTests stay GREEN).
+    private static func scoredSurvivors(
+        from rawSnapshots: [DaySnapshot],
+        asOf today: Date,
+        calendar: Calendar
+    ) -> [ScoredCandidate] {
         // (0) DEFEND THE PACKAGE BOUNDARY (CR-01/WR-04): the `DaySnapshot` header documents "one per
         //     calendar day," but nothing upstream enforces it. A caller that supplies two snapshots with
         //     the same `day` (un-normalized dates, a repository mapping bug, a fixture) must NOT crash the
@@ -132,7 +163,7 @@ enum CorrelationEngine {
         return scored
             .filter { $0.confidence >= .low }
             .prefix(topN)
-            .map { $0.makeInsight() }
+            .map { $0 }
     }
 
     // MARK: - (1) Cycle-phase labelling — reuse CyclePhaseMapper's windows VERBATIM (D-04/D-17).
@@ -313,12 +344,57 @@ enum CorrelationEngine {
             && absent >= Factor.perGroupMinimum
     }
 
+    // MARK: - Phase 11 direction recovery (INST-05, D-03; RESEARCH Pattern 2 "Direction semantics").
+
+    /// PACKAGE-INTERNAL typed association direction for a surviving correlation candidate, recovered from
+    /// the SIGNED effect (RESEARCH Pattern 2 Option A). `RecommendationsEngine` (Plan 02) re-frames this
+    /// typed value into direction-aware discussion-prompt copy — it is NEVER inferred from the audited
+    /// public correlation copy (the fragile-substring anti-pattern).
+    enum RecommendationDirection: Equatable {
+        /// The factor's present-group fares BETTER (lower symptom severity, or the symptom logged LESS often).
+        case beneficial
+        /// The factor's present-group fares WORSE (higher symptom severity, or the symptom logged MORE often).
+        case aggravating
+    }
+
+    /// PACKAGE-INTERNAL typed survivor the recommendation engine consumes (RESEARCH Pattern 2 Option A).
+    /// Carries the same identity/evidence fields the emitted `.correlation` Insight does, PLUS the typed
+    /// `direction`. A `CorrelationFinding` exists iff the matching `.correlation` Insight exists (same
+    /// shared `scoredSurvivors` pipeline), with identical `signalKey`/`confidence`/`pairedDays`.
+    struct CorrelationFinding: Equatable {
+        let signalKey: String
+        let factorLabel: String
+        let targetLabel: String
+        let confidence: InsightConfidence
+        let pairedDays: Int
+        let effectMagnitude: Double
+        let direction: RecommendationDirection
+    }
+
     // MARK: - Candidate value types.
 
     /// Which arm produced a candidate (carries the human-readable effect for the copy).
     private enum Arm {
         case severity(meanDiff: Double)
         case presence(riskRatio: Double?)
+
+        /// The typed association direction (RESEARCH Pattern 2 "Direction semantics"):
+        /// - SEVERITY arm: `beneficial` when `meanDiff < 0` (the factor's present-group has LOWER symptom
+        ///   severity), `aggravating` when `meanDiff > 0` (higher). A `0`/non-finite diff defaults to
+        ///   `aggravating` (a surviving severity finding with a sign-less effect is the conservative read).
+        /// - PRESENCE arm: `aggravating` when the risk-ratio implies the target is logged MORE often on
+        ///   factor-present days (`riskRatio > 1`); `beneficial` when logged LESS often (`riskRatio < 1`).
+        ///   A `nil`/non-finite risk ratio defaults to `aggravating` — the conservative reading, since a
+        ///   presence finding that surfaced AT ALL is an elevated co-occurrence.
+        var direction: RecommendationDirection {
+            switch self {
+            case .severity(let meanDiff):
+                return (meanDiff.isFinite && meanDiff < 0) ? .beneficial : .aggravating
+            case .presence(let riskRatio):
+                guard let rr = riskRatio, rr.isFinite else { return .aggravating }
+                return rr < 1 ? .beneficial : .aggravating
+            }
+        }
     }
 
     /// A tested pair that cleared the sample floor, awaiting FDR + confidence. `effectMagnitude` is |δ|
@@ -379,6 +455,21 @@ enum CorrelationEngine {
                 confidence: confidence,
                 points: [],
                 sampleSize: candidate.pairedDays
+            )
+        }
+
+        /// Phase 11 (INST-05, D-01): map this survivor to the typed `CorrelationFinding` the recommendation
+        /// engine consumes. The `direction` is recovered from the candidate's `arm` (the SIGNED effect),
+        /// NOT from the emitted copy. Identity/evidence fields are the SAME values `makeInsight()` emits.
+        func makeFinding() -> CorrelationEngine.CorrelationFinding {
+            CorrelationEngine.CorrelationFinding(
+                signalKey: candidate.signalKey,
+                factorLabel: candidate.factorLabel,
+                targetLabel: candidate.targetLabel,
+                confidence: confidence,
+                pairedDays: candidate.pairedDays,
+                effectMagnitude: candidate.effectMagnitude,
+                direction: candidate.arm.direction
             )
         }
 
