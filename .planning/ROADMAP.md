@@ -235,7 +235,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 08-01-PLAN.md — Insight: Codable (additive, package) + CloudKit-safe CachedInsight @Model + SchemaV5 + lightweight V4→V5 migration + consent-gated Repository CRUD (round-trip + migration-survival)
+- [x] 08-01-PLAN.md — Insight: Codable (additive, package) + CloudKit-safe CachedInsight @Model + SchemaV5 + lightweight V4→V5 migration + consent-gated Repository CRUD (round-trip + migration-survival) ✓
 
 **Wave 2** *(blocked on 08-01)*
 
