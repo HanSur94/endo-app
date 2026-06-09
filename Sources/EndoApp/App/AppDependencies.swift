@@ -53,6 +53,10 @@ final class AppDependencies {
         let uiTestReset = ProcessInfo.processInfo.arguments.contains("-uitest-reset")
         if uiTestReset {
             UserDefaults.standard.removeObject(forKey: "consent.grantedAt")
+            // Also clear the device-local "has decided on Health connect" flag (09-03) so every UI run
+            // starts with the FRESH passive connect affordance (`health.connect.button`), not the
+            // previously-decided deep-link state — otherwise the flag leaks across same-simulator runs.
+            UserDefaults.standard.removeObject(forKey: "health.connect.decided")
         }
         // Test-only, launch-arg-guarded insights seed (used by the dashboard E2E). When present we insert
         // a deterministic threshold-crossing fixture (≥14 consecutive days of one symptom severity, well
@@ -175,11 +179,13 @@ final class AppDependencies {
             healthReader = SystemHealthDataReading()
         }
 
-        // The persist closure wraps the Repository imported CRUD. The service's `persist` is `@Sendable`,
-        // but `SwiftDataRepository` holds a non-`Sendable` `ModelContext`; we box it `@unchecked Sendable`
-        // and hop every persist onto the main actor (where the context is valid). The import service
-        // single-threads its pulls, so there is no concurrent access — only the main-actor hop is needed.
-        // A DEDICATED context (not the insights one) keeps the import write isolated from the cache writes.
+        // The persist closure wraps the Repository imported CRUD. The service's `persist` is `@Sendable`
+        // and runs SYNCHRONOUSLY on the `HealthImportService` actor's executor (NOT the main actor), so we
+        // must NOT `MainActor.assumeIsolated` here — that would trap. Instead the DEDICATED `ModelContext`
+        // is confined to this box and only ever touched through the single-threaded import service, so it
+        // is effectively actor-isolated. The box is `@unchecked Sendable` to cross into the `@Sendable`
+        // closure (mirrors the 09-02 test seam). A dedicated context keeps the import write isolated from
+        // the cache writes.
         let healthRepoBox = RepoBox(SwiftDataRepository(context: ModelContext(self.modelContainer)))
         let coordinator = self.insightsCoordinator
 
@@ -187,26 +193,21 @@ final class AppDependencies {
             reader: healthReader,
             anchorStore: HealthAnchorStore(),
             persist: { values, deletedUUIDs in
-                // Hop to the main actor (the ModelContext's domain) and run the consent-gated upsert+delete
-                // as one unit. `MainActor.assumeIsolated` is safe: the service awaits this closure and the
-                // import path is driven from the main actor in production (the connect/refresh UI).
-                try MainActor.assumeIsolated {
-                    try healthRepoBox.repo.replaceOrInsertImported(values: values, deletedUUIDs: deletedUUIDs)
-                }
+                // Runs on the import-service actor's executor (single-threaded). The box's context is only
+                // ever touched here, so the upsert+delete are a confined, race-free unit.
+                try healthRepoBox.repo.replaceOrInsertImported(values: values, deletedUUIDs: deletedUUIDs)
             },
             recompute: {
-                // D-12: fire the EXISTING Phase-8 recompute seam on the main actor (the coordinator is
-                // `@MainActor`-isolated). One recompute per successful import; the fingerprint coalesces.
-                MainActor.assumeIsolated {
-                    coordinator.dataChanged()
-                }
+                // D-12: fire the EXISTING Phase-8 recompute seam. The coordinator is `@MainActor`-isolated
+                // and `dataChanged()` itself debounces off-main, so we hop to the main actor with a
+                // fire-and-forget Task (the recompute is async by contract — no synchronous wait needed).
+                Task { @MainActor in coordinator.dataChanged() }
             })
     }
 
     /// A box that lets a non-`Sendable` `SwiftDataRepository` cross into the import service's `@Sendable`
-    /// persist closure. Safe because every access hops to the main actor first (the ModelContext's domain)
-    /// and the import service single-threads its pulls — there is no concurrent access. Mirrors the
-    /// 09-02 test seam shape.
+    /// persist closure. Safe because the boxed `ModelContext` is touched ONLY by the single-threaded
+    /// import service actor — no concurrent access. Mirrors the 09-02 test seam shape.
     private final class RepoBox: @unchecked Sendable {
         let repo: SwiftDataRepository
         init(_ repo: SwiftDataRepository) { self.repo = repo }

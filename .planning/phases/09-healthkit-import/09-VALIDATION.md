@@ -45,10 +45,10 @@ created: 2026-06-09
 | 09-01-T3 | 09-01 | 1 (Wave 0) | DATA-05 | T-09-01/03/05 | CloudKit-safe ImportedSample; additive V5->V6 lightweight migration survives; package boundary lint | unit | `-only-testing:EndoAppTests/SchemaMigrationTests -only-testing:EndoInsights/EndoInsightsTests/BoundaryLintTests` | ❌ Wave 0 | ⬜ pending |
 | 09-02-T1 | 09-02 | 2 | DATA-05 | T-09-06/07/08/09 | Anchored pull dedupe+deletions; recompute-once (D-12); consent-guarded; corrupt anchor degrades safely | unit | `-only-testing:EndoAppTests/HealthAnchorPullTests -only-testing:EndoAppTests/HealthImportServiceTests` | ❌ Wave 0 | ⬜ pending |
 | 09-02-T2 | 09-02 | 2 | DATA-05 | T-09-10/11 | Manual-wins + nil-honest merge (empty/denied never reads as "no symptoms", SC3); imported-only days reach engine; source flag for D-03 | unit | `-only-testing:EndoAppTests/HealthImportMergeTests` | ❌ Wave 0 | ⬜ pending |
-| 09-03-T1 | 09-03 | 3 | DATA-05 | T-09-14 | Read-only entitlement + NSHealthShareUsageDescription (NO update key); isolated real reader | build/grep | `grep NSHealthShareUsageDescription Info.plist` + `xcodebuild build` | ❌ Wave 0 | ⬜ pending |
-| 09-03-T2 | 09-03 | 3 | DATA-05 | T-09-12/13 | Rationale-before-sheet; passive denial deep-link; provenance badge; Refresh action; health UI consent-gated | build | `xcodebuild build -scheme EndoApp` | ❌ Wave 0 | ⬜ pending |
-| 09-03-T3 | 09-03 | 3 | DATA-05 (SC2/SC3) | T-09-06/15 | Copy ClaimsPolicy-audited; E2E rationale-before-sheet / denied-usable / badge / refresh via fixture seam | unit+E2E | `-only-testing:EndoAppTests/HealthConnectCopyAuditTests -only-testing:EndoAppUITests/HealthConnectUITests` | ❌ Wave 0 | ⬜ pending |
-| 09-03-T4 | 09-03 | 3 | DATA-05 (SC2/SC3) | — | Real-device read + system auth sheet (deferred human-verify, like Phase 4 HUMAN-UAT) | manual | (human-verify checkpoint) | n/a | ⬜ manual |
+| 09-03-T1 | 09-03 | 3 | DATA-05 | T-09-14 | Read-only entitlement + NSHealthShareUsageDescription (NO update key); isolated real reader | build/grep | `grep NSHealthShareUsageDescription Info.plist` + `xcodebuild build` | ✅ | ✅ green |
+| 09-03-T2 | 09-03 | 3 | DATA-05 | T-09-12/13 | Rationale-before-sheet; passive denial deep-link; provenance badge; Refresh action; health UI consent-gated | build | `xcodebuild build -scheme EndoApp` | ✅ | ✅ green |
+| 09-03-T3 | 09-03 | 3 | DATA-05 (SC2/SC3) | T-09-06/15 | Copy ClaimsPolicy-audited; E2E rationale-before-sheet / denied-usable / badge / refresh via fixture seam | unit+E2E | `-only-testing:EndoAppTests/HealthConnectCopyAuditTests -only-testing:EndoAppUITests/HealthConnectUITests` | ✅ | ✅ green |
+| 09-03-T4 | 09-03 | 3 | DATA-05 (SC2/SC3) | — | Real-device read + system auth sheet (deferred human-verify, like Phase 4 HUMAN-UAT) | manual | (human-verify checkpoint) | n/a | ⬜ manual (deferred, auto-approved) |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
