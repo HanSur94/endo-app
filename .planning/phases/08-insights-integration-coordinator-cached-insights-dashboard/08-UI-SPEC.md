@@ -1,7 +1,8 @@
 ---
 phase: 8
 slug: insights-integration-coordinator-cached-insights-dashboard
-status: draft
+status: approved
+reviewed_at: 2026-06-09
 shadcn_initialized: false
 preset: none
 platform: ios-swiftui
