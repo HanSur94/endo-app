@@ -209,4 +209,66 @@ struct CopyAuditTests {
         // The sparse line is the honest "not enough data" framing, never a fabricated value.
         #expect(InsightsCopy.sparseTitle.lowercased().contains("not enough data"))
     }
+
+    // MARK: - Phase-10 report copy (Plan 10-01): ReportCopy (the doctor-ready report surface)
+    //
+    // ReportCopy centralizes EVERY fixed string the report renders (Surface 1 on-screen builder/preview
+    // AND Surface 2 PDF) so a causal/diagnostic/gendered/numeric-over-claim string FAILS THE BUILD before
+    // it can reach a clinician-facing PDF (T-10-03). Clones the insightsCopy_* scans. The "self-tracked,
+    // not diagnostic" disclaimer prose is NOT here — Plan 02 reuses Disclaimer.text (audited by
+    // DisclaimerTests); the report footer's "Self-tracked, not diagnostic" framing IS scanned below.
+
+    /// Every fixed string `ReportCopy` can render, the surface CopyAuditTests scans.
+    private var allReportCopy: [String] { ReportCopy.auditableStrings }
+
+    // No report string contains a forbidden medical-purpose / causal verb (incl. "will"/"trigger"/"detect").
+    @Test func reportCopy_containsNoForbiddenVerb() {
+        for copy in allReportCopy {
+            let lower = copy.lowercased()
+            for verb in ClaimsPolicy.forbiddenVerbs {
+                #expect(!lower.contains(verb.lowercased()),
+                        "Report copy \"\(copy)\" must not contain forbidden verb \"\(verb)\".")
+            }
+        }
+    }
+
+    // No report string contains a gendered token (incl. the "her" substring trap in there/other/higher).
+    @Test func reportCopy_containsNoGenderedToken() {
+        for copy in allReportCopy {
+            let lower = copy.lowercased()
+            for token in ClaimsPolicy.forbiddenGenderedTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Report copy \"\(copy)\" must not contain gendered token \"\(token)\".")
+            }
+        }
+    }
+
+    // The report carries NO numeric confidence/false-precision token (D-11 posture — words only).
+    @Test func reportCopy_hasNoNumericConfidence() {
+        let forbiddenPrecisionTokens = ["%", "p =", "p=", "r =", "r=", "p-value", "p value"]
+        for copy in allReportCopy {
+            let lower = copy.lowercased()
+            for token in forbiddenPrecisionTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Report copy \"\(copy)\" must not contain false-precision token \"\(token)\".")
+            }
+        }
+    }
+
+    // The audited surface is non-empty and every string is a non-empty string.
+    @Test func reportCopy_isNonEmpty() {
+        #expect(!allReportCopy.isEmpty)
+        for copy in allReportCopy {
+            #expect(!copy.trimmingCharacters(in: .whitespaces).isEmpty,
+                    "Every ReportCopy string must be non-empty.")
+        }
+        // The suppressed-cycle line reads as an off-state (mirror CycleSummaryCopy.suppressed), never a value.
+        #expect(ReportCopy.cycleSuppressed.lowercased().contains("off"),
+                "The suppressed-cycle line must read as an off-state.")
+        // The per-section sparse line is the honest "not enough data" framing.
+        #expect(ReportCopy.notEnoughDataInRange.lowercased().contains("not enough data"))
+        // The footer carries the "self-tracked, not diagnostic" framing (RPRT-02 honesty).
+        #expect(ReportCopy.footer.lowercased().contains("self-tracked"))
+        #expect(ReportCopy.footer.lowercased().contains("not diagnostic"))
+    }
 }
