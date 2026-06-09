@@ -41,10 +41,22 @@ enum CorrelationEngine {
     ///   - today: injected reference date (never read from the clock inside) → deterministic.
     ///   - calendar: injected calendar for day-bucketing (defaults to `.current`).
     static func insights(
-        from snapshots: [DaySnapshot],
+        from rawSnapshots: [DaySnapshot],
         asOf today: Date,
         calendar: Calendar = .current
     ) -> [Insight] {
+        // (0) DEFEND THE PACKAGE BOUNDARY (CR-01/WR-04): the `DaySnapshot` header documents "one per
+        //     calendar day," but nothing upstream enforces it. A caller that supplies two snapshots with
+        //     the same `day` (un-normalized dates, a repository mapping bug, a fixture) must NOT crash the
+        //     public insights pipeline — that contradicts the package's honesty/robustness posture.
+        //     Collapse to ONE snapshot per `day` deterministically: keep the LAST by input order
+        //     (matches `cyclePhaseLabels`' last-write-wins idiom so both maps agree on duplicates), then
+        //     sort by day so the whole engine — including the severity/presence loops that iterate
+        //     `snapshots` directly — sees a clean, de-duplicated, ordered stream.
+        let snapshots = Dictionary(rawSnapshots.map { ($0.day, $0) }, uniquingKeysWith: { _, last in last })
+            .values
+            .sorted { $0.day < $1.day }
+
         // (1) Label every day with its estimated CyclePhase via CyclePhaseMapper (reused VERBATIM, D-04/D-17).
         //     A suppressed/irregular/under-sampled stream → [] windows → every label is nil → no phase
         //     factor is ever present → no cyclePhase pair is tested (D-04 by construction, no extra code).
@@ -57,10 +69,15 @@ enum CorrelationEngine {
 
         for factor in factors {
             // The per-day observed state for this factor (nil = unobserved → excluded from both groups).
+            // `snapshots` is already de-duplicated to one entry per `day` (step 0), so no collision can
+            // occur here; use `uniquingKeysWith:` (last-wins) rather than `uniqueKeysWithValues:` so the
+            // construction is duplicate-TOLERANT by idiom — both engine maps now agree (WR-04), and the
+            // duplicate-day trap can never reappear if a future edit touches only one path.
             let stateByDay: [Date: FactorState] = Dictionary(
-                uniqueKeysWithValues: snapshots.map { snap in
+                snapshots.map { snap in
                     (snap.day, Factor.state(of: factor, on: snap, phase: phaseByDay[snap.day] ?? nil))
-                }
+                },
+                uniquingKeysWith: { _, last in last }
             )
 
             // Severity arm + presence arm, per symptom; bleeding presence arm (OQ3). Sorted for determinism.
