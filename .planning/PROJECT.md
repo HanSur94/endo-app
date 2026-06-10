@@ -6,6 +6,17 @@
 
 **v1.0 — feature-complete (shipped 2026-06-10).** All 12 phases built, goal-verified, and code-reviewed; cross-phase integration intact (7/7 seams); the full insights engine (trends · cycle-phase · correlations · honesty layer · recommendations · flare) ships behind a single honesty gate, with HealthKit import, a doctor-ready PDF report, and private-CloudKit sync wired. 28/31 requirements are automatable-complete. Remaining before App Store submission = a documented **release/device-gated checklist** (CloudKit Dev→Prod deploy + a real Developer team; 6 on-device/multi-device human verifications incl. DATA-02/03/04 sync survival) — see [ROADMAP.md](ROADMAP.md) and [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md). Next milestone: run `/gsd-new-milestone`.
 
+## Current Milestone: v1.1 Interactive Charts & Explore
+
+**Goal:** Turn the static insight charts into interactive surfaces and add an Explore area where users combine any logged data series into one plot.
+
+**Target features:**
+- Scrub/tap on the dashboard trend charts to read the exact day + value (tooltip/lollipop)
+- A new Explore screen: pick multiple logged series (symptoms, sleep, activity, stress, mood, bleeding, food tags) and view them as an overlay on a shared time axis
+- A scatter view: one factor against another, each point = one logged day (the classic correlation look)
+
+**Key context:** All v1.0 honesty invariants carry over — unlogged days stay gaps (absence ≠ 0), mixed scales (0–10 severity vs. hours vs. binary tags) need honest axis treatment, and combined plots must stay descriptive (never causal framing; ClaimsPolicy scans apply to all new chrome copy). Deliberately scoped to the chart features only — the v1.0 polish backlog stays parked.
+
 ## What This Is
 
 A free, privacy-first **iOS app for people with endometriosis** to track their symptoms, menstrual cycle, nutrition, and physical activity — and turn that data into genuinely useful insights. It is inspired by the official German **Endo-App** (a prescription-only DiGA) but is **free, open to everyone worldwide, and goes deeper on data insights**.
@@ -36,6 +47,9 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - [ ] Physical activity / sport tracking
 - [ ] Insights: correlations & triggers across logged factors (symptoms ↔ food, sleep, activity, cycle) — engine shipped (Phase 7) + rendered in dashboard (Phase 8); pending confirmation with real multi-factor data
 - [ ] Private iCloud (CloudKit) sync across the user's own devices — no account/login
+- [ ] v1.1: Interactive trend charts — scrub/tap a chart to read the exact day + value
+- [ ] v1.1: Explore screen — combine multiple logged series in one overlay plot on a shared time axis
+- [ ] v1.1: Scatter view — plot one logged factor against another (each point = one day)
 
 ### Out of Scope
 
@@ -97,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-10 after Phase 12 (Flare Early-Warning shipped, verified & reviewed) — v1.0 milestone feature-complete*
+*Last updated: 2026-06-10 — milestone v1.1 (Interactive Charts & Explore) started*
