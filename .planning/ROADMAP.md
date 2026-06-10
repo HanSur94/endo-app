@@ -57,7 +57,13 @@ All v1.0 honesty invariants carry over: unlogged days stay gaps (absence ≠ 0),
   3. Day changes during a scrub give a selection haptic; the tooltip lives while touching and dismisses on release
   4. A VoiceOver user can read per-day values without the drag gesture (non-gesture accessibility alternative)
   5. The exported PDF report renders visually unchanged — interactivity never reaches the `ReportPDFRenderer` → `InsightTrendChart` path (additive defaulted `allowsSelection` param; PDF passes `false`)
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — Pure `ChartScrubSelection` resolver in EndoInsights + invariant tests + audited tooltip copy (`scrubNotLogged`/`scrubSeverity` registered in `auditableStrings`)
+- [ ] 13-02-PLAN.md — Additive `allowsSelection` layer on `InsightTrendChart` (lollipop chrome, day-change haptic, `AXChartDescriptor`) + `InsightCardView` switch-on
+- [ ] 13-03-PLAN.md — `-uitest-select-day` seam + `-uitest-seed-scrub` fixture + `ChartScrubUITests` E2E + PDF zero-diff/regression gates
+
 **UI hint**: yes
 **Notes**: Selection resolves through a pure `ChartScrubSelection` mapper requiring an exact logged-day match — the reusable resolver Phases 15–16 consume (research Pitfall 1: position-based selection APIs interpolate by default). Tooltip/"not logged" copy registers in `CopyAuditTests` before it is written. Ships the DEBUG-gated `-uitest-select-day` E2E seam (deterministic, no gesture flake). Tap-to-select on the in-List dashboard (scrub-vs-scroll arbitration; free scrub is reserved for Explore's fixed-chart layout). `xcodegen generate` after file adds. Manual checkpoint: exported PDF visually re-verified; reference Apple Health scrub interaction verified on device during UAT.
 
@@ -106,10 +112,10 @@ All v1.0 honesty invariants carry over: unlogged days stay gaps (absence ≠ 0),
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Trend-Chart Scrubbing | 0/TBD | Not started | - |
+| 13. Trend-Chart Scrubbing | 0/3 | Planned | - |
 | 14. Series Catalog & Pure Extraction Layer | 0/TBD | Not started | - |
 | 15. Explore Tab & Overlay Lanes | 0/TBD | Not started | - |
 | 16. Scatter View & Correlation Deep-Link | 0/TBD | Not started | - |
 
 ---
-*Roadmap updated: 2026-06-10 — v1.1 phase structure created (Phases 13–16)*
+*Roadmap updated: 2026-06-10 — Phase 13 planned (3 plans, 3 waves)*
