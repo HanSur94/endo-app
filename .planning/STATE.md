@@ -1,16 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: Interactive Charts & Explore
-status: ready-to-plan
-last_updated: "2026-06-10T16:06:46.000Z"
-last_activity: 2026-06-10
+milestone_name: — Interactive Charts & Explore
+status: executing
+stopped_at: Completed 13-01-PLAN.md (scrub resolver + audited tooltip copy)
+last_updated: "2026-06-10T17:54:29.000Z"
+last_activity: 2026-06-10 -- Phase 13 plan 01 complete (ChartScrubSelection resolver + audited tooltip copy)
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -20,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 13 — Trend-Chart Scrubbing (v1.1 Interactive Charts & Explore)
+**Current focus:** Phase 13 — Trend-Chart Scrubbing
 
 ## Current Position
 
-Phase: 13 of 16 — Trend-Chart Scrubbing (pending)
-Plan: — (not yet planned)
-Status: Ready to plan — v1.1 roadmap created (Phases 13–16, 15/15 requirements mapped)
-Progress: [ ] 13 [ ] 14 [ ] 15 [ ] 16 — 0%
-Last activity: 2026-06-10 — v1.1 roadmap created
+Phase: 13 (Trend-Chart Scrubbing) — EXECUTING
+Plan: 2 of 3 (13-01 complete)
+Status: Executing Phase 13
+Progress: [ ] 13 [ ] 14 [ ] 15 [ ] 16 — 0% (13: 1/3 plans)
+Last activity: 2026-06-10 -- Phase 13 plan 01 complete (ChartScrubSelection resolver + audited tooltip copy)
 
 ## Performance Metrics
 
@@ -85,6 +86,7 @@ Last activity: 2026-06-10 — v1.1 roadmap created
 | Phase 12 P01 | ~7min | 3 tasks | 8 files |
 | Phase 12 P02 | ~33min | 2 tasks | 6 files |
 | Phase 12 P03 | ~28min | 2 tasks | 6 files |
+| Phase 13 P01 | ~5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -93,6 +95,7 @@ Last activity: 2026-06-10 — v1.1 roadmap created
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [13-01]: Scrub foundations landed (CHART-01/02 honesty core, unit-proven before any pixel). `ChartScrubSelection.resolve(_:in:calendar:)` lives in the EndoInsights PACKAGE (RESEARCH Pitfall 7 correction — `InsightPoint` is a package type, Phases 15–16 reuse it, no xcodegen, BoundaryLintTests enforces Foundation-only): exact-day match ONLY via `calendar.startOfDay` + `isDate(_:inSameDayAs:)` — gap day → `Resolution(day:, point: nil)` (never nearest-neighbor, never interpolation; grep-gated against `min(by`/`timeIntervalSince`), logged severity-0 → a REAL point with value 0 (absence ≠ 0). `Resolution` is public/Sendable/Equatable with an explicit public init (cross-module construction). 7 invariants pinned incl. 23:59 boundary + Europe/Berlin 2026-03-29 DST spring-forward + unsorted input; package 124/124 green. The two LOCKED tooltip strings (`scrubNotLogged = "Not logged"`, `scrubSeverity(_:) = "Severity {n} of 10"`) registered in `auditableStrings` in the SAME edit (Pitfall 5) + verbatim-pinned in CopyAuditTests (32/32, incl. `scrubSeverity(0)` ≠ gap). Plan 02 MUST route every displayed value through this resolver — it is the only legal raw-date→value path.
 - [Roadmap v1.1]: Research-driven 4-phase order (13 scrub → 14 pure catalog → 15 Explore lanes → 16 scatter): Phase 13 builds the reusable selected-date→logged-day-or-nil resolver (`ChartScrubSelection`), the selection-a11y pattern, and the `-uitest-select-day` E2E seam both later surfaces reuse; Phase 14 locks the honesty invariants in pure Foundation helpers BEFORE any pixel exists (the v1.0 `ChartSeriesGrouping` playbook). Phase 14 carries no REQ-IDs — it is the foundational keystone consumed by Phases 15–16.
 - [Roadmap v1.1]: Mixed scales = aligned per-scale lanes sharing ONE time axis and one scrub state, each series in its real unit; binary tags/bleeding = event-marker lanes. NEVER dual y-axis (confirmed Swift Charts limitation + dataviz consensus), never silent normalization, never 0/1 lines, no fitted line/r-value on the scatter, no jitter (count-encoded stacking instead).
 - [Roadmap v1.1]: Explore reads `Repository.daySnapshots()` directly and deliberately bypasses InsightsEngine/HonestyGate (they gate claims, not raw data); Explore/scatter chrome stays descriptive-only and ALL new copy registers in `CopyAuditTests` before it is written (an unregistered copy enum silently escapes the scans). Plain Swift Charts on the iOS 18 stack — zero new dependencies, zero schema changes, zero engine changes; `InsightsEngine`/`HonestyGate`/`InsightsCoordinator`/SchemaV1/PDF report content stay untouched.
@@ -153,9 +156,9 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T16:06:46.000Z
-Stopped at: v1.1 roadmap created (Phases 13–16, 15/15 requirements mapped) — awaiting user approval
-Resume file: .planning/ROADMAP.md
+Last session: 2026-06-10T17:54:29.000Z
+Stopped at: Completed 13-01-PLAN.md (scrub resolver + audited tooltip copy)
+Resume file: None
 
 ## Operator Next Steps
 

@@ -60,7 +60,7 @@ All v1.0 honesty invariants carry over: unlogged days stay gaps (absence ≠ 0),
 **Plans**: 3 plans
 
 Plans:
-- [ ] 13-01-PLAN.md — Pure `ChartScrubSelection` resolver in EndoInsights + invariant tests + audited tooltip copy (`scrubNotLogged`/`scrubSeverity` registered in `auditableStrings`)
+- [x] 13-01-PLAN.md — Pure `ChartScrubSelection` resolver in EndoInsights + invariant tests + audited tooltip copy (`scrubNotLogged`/`scrubSeverity` registered in `auditableStrings`)
 - [ ] 13-02-PLAN.md — Additive `allowsSelection` layer on `InsightTrendChart` (lollipop chrome, day-change haptic, `AXChartDescriptor`) + `InsightCardView` switch-on
 - [ ] 13-03-PLAN.md — `-uitest-select-day` seam + `-uitest-seed-scrub` fixture + `ChartScrubUITests` E2E + PDF zero-diff/regression gates
 
@@ -112,7 +112,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Trend-Chart Scrubbing | 0/3 | Planned | - |
+| 13. Trend-Chart Scrubbing | 1/3 | In progress | - |
 | 14. Series Catalog & Pure Extraction Layer | 0/TBD | Not started | - |
 | 15. Explore Tab & Overlay Lanes | 0/TBD | Not started | - |
 | 16. Scatter View & Correlation Deep-Link | 0/TBD | Not started | - |

@@ -11,8 +11,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Chart Interactivity
 
-- [ ] **CHART-01**: User can touch-and-hold/drag (scrub) on any dashboard trend chart and read the exact date + logged value via a rule-mark + lollipop tooltip
-- [ ] **CHART-02**: Scrubbing onto an unlogged day shows an explicit "not logged" state — never a zero, never an interpolated value
+- [x] **CHART-01**: User can touch-and-hold/drag (scrub) on any dashboard trend chart and read the exact date + logged value via a rule-mark + lollipop tooltip
+- [x] **CHART-02**: Scrubbing onto an unlogged day shows an explicit "not logged" state — never a zero, never an interpolated value
 - [ ] **CHART-03**: Scrubbing gives a selection haptic on day change; the tooltip lives while touching and dismisses on release
 - [ ] **CHART-04**: VoiceOver users can read per-day values without the drag gesture (accessibility alternative to scrubbing)
 
@@ -73,8 +73,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CHART-01 | Phase 13 | Pending |
-| CHART-02 | Phase 13 | Pending |
+| CHART-01 | Phase 13 | Complete (13-01 resolver + copy foundations; UI renders in 13-02) |
+| CHART-02 | Phase 13 | Complete (13-01 unit-pinned gap→nil / severity-0→0 invariants) |
 | CHART-03 | Phase 13 | Pending |
 | CHART-04 | Phase 13 | Pending |
 | EXPL-01 | Phase 15 | Pending |
