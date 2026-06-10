@@ -38,6 +38,14 @@ enum InsightsCopy {
         }
     }
 
+    // MARK: Confidence explainer (the ⓘ popover on the pill — in-app transparency for the levels)
+
+    // NB: curated against the SUBSTRING audits — no "her" host words (other/clearer/whether…), no
+    // "causes"/"will"/"treat…", no %/p=/r= tokens. Deliberately QUALITATIVE (no threshold numbers),
+    // so the copy can never drift from the engine's gate constants.
+    static let confidenceInfoTitle = "What does this label mean?"
+    static let confidenceInfoBody = "Low, Medium, and High describe how much of your own logged data supports a pattern. More logged days — and, for possible associations, a bigger difference between days — move a label from Low toward High. When your data is too sparse, a pattern is not shown at all. The label is descriptive only: it points to a possible association in your logs. It is not proof of a cause, and it is not medical advice."
+
     // MARK: Section headers (UI-SPEC Component Inventory A / Copywriting Contract)
 
     static let sectionTrends = "Trends"
@@ -100,6 +108,7 @@ enum InsightsCopy {
     static var auditableStrings: [String] {
         var strings: [String] = [
             confidenceLow, confidenceMedium, confidenceHigh,
+            confidenceInfoTitle, confidenceInfoBody,
             sectionTrends, sectionCyclePhase, sectionCorrelations,
             emptyHeading, emptyBody, sparseTitle, sparseSubtitle,
             basisNote,

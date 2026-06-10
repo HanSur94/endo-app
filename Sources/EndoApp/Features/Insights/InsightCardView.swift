@@ -32,6 +32,10 @@ struct InsightCardView: View {
     /// The stable, value-INDEPENDENT a11y id root — the dismissal key (survives recomputation, D-09).
     private var idRoot: String { "insights.card.\(insight.signalKey)" }
 
+    /// Drives the confidence-explainer popover (the ⓘ next to the pill — in-app transparency for
+    /// what Low/Medium/High mean; copy from the audited `InsightsCopy` surface).
+    @State private var showsConfidenceInfo = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             if insight.isInsufficiencyNotice {
@@ -94,20 +98,52 @@ struct InsightCardView: View {
     }
 
     private var confidencePill: some View {
-        Label {
-            Text(InsightsCopy.confidenceWord(insight.confidence))
-                .font(.subheadline)
-        } icon: {
-            Image(systemName: confidenceSymbol(insight.confidence))
+        HStack(spacing: 6) {
+            Label {
+                Text(InsightsCopy.confidenceWord(insight.confidence))
+                    .font(.subheadline)
+            } icon: {
+                Image(systemName: confidenceSymbol(insight.confidence))
+            }
+            .foregroundStyle(.secondary)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .background(.quaternary.opacity(0.5), in: Capsule())
+            // The symbol is part of the pill's meaning — do NOT hide it from VoiceOver wholesale; the
+            // pill's text already reads the level, so mark just the icon decorative to avoid a double-read.
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("\(idRoot).confidence")
+
+            // The ⓘ explainer — what Low/Medium/High mean, explained IN the app (transparency, D-11
+            // posture). `.borderless` keeps the tap target isolated inside the List row (the row tap /
+            // swipe-to-dismiss must not fire it). Secondary tint — accent stays reserved (UI-SPEC §Color).
+            Button {
+                showsConfidenceInfo = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.subheadline)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel(Text(InsightsCopy.confidenceInfoTitle))
+            .accessibilityIdentifier("\(idRoot).confidence.info")
+            .popover(isPresented: $showsConfidenceInfo, arrowEdge: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(InsightsCopy.confidenceInfoTitle)
+                        .font(.headline)
+                    Text(InsightsCopy.confidenceInfoBody)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding()
+                .frame(idealWidth: 320)
+                // Stay a compact anchored bubble on iPhone (not a full sheet) — the explainer is a
+                // glanceable aside, not a destination.
+                .presentationCompactAdaptation(.popover)
+                .accessibilityIdentifier("insights.confidence.info.popover")
+            }
         }
-        .foregroundStyle(.secondary)
-        .padding(.vertical, 4)
-        .padding(.horizontal, 8)
-        .background(.quaternary.opacity(0.5), in: Capsule())
-        // The symbol is part of the pill's meaning — do NOT hide it from VoiceOver wholesale; the
-        // pill's text already reads the level, so mark just the icon decorative to avoid a double-read.
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("\(idRoot).confidence")
     }
 
     // MARK: - 4. Supporting data (kind-appropriate; never a coefficient/percentage)
