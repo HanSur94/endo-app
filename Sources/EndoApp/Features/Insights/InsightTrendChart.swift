@@ -36,12 +36,33 @@ struct InsightTrendChart: View {
     /// `inkColor: .black` so the embedded vector chart prints in a single print-ink color (UI-SPEC §Color
     /// "chart renders in a single ink color for print"). NOTHING else about the chart changes.
     var inkColor: Color = .accentColor
+    /// Whether the scrub-selection gesture + chrome are attached. Additive (Phase 13, CHART-01..03 —
+    /// the `inkColor` precedent): the dashboard card passes `true`; the PDF renderer constructs a
+    /// FRESH chart and keeps this default `false`, so the `chartXSelection` modifier is NEVER even
+    /// attached on the PDF path (protected by construction — `ReportPDFRenderer` is NOT edited).
+    var allowsSelection: Bool = false
+    /// Root for the selection-tooltip a11y identifiers (the card passes
+    /// "insights.card.<signalKey>.chart"). `nil` (default) skips the ids entirely — with
+    /// `allowsSelection == false` the chrome can never render anyway.
+    var selectionA11yIDRoot: String? = nil
 
     /// Calendar for day-boundary math + the window start. `.current` is correct for display (the
     /// user's local dates); the pure grouping helper is unit-tested with a fixed UTC calendar.
     private var calendar: Calendar { .current }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The raw selection date from `chartXSelection` — per-card, view-local, EPHEMERAL (never
+    /// persisted, never in any shared Observable; a scrub frame must not invalidate the List).
+    @State private var rawSelectedDate: Date?
+
+    /// The ONLY raw-date → value path: the pure exact-day resolver (CHART-02 honesty choke-point).
+    /// No `proxy.value(atX:)`, no nearest-point math anywhere — a gap day resolves to `point == nil`
+    /// ("Not logged"), a logged severity-0 day to a REAL point with value 0. Uses the SAME calendar
+    /// the runs/grouping computation uses.
+    private var resolvedSelection: ChartScrubSelection.Resolution? {
+        ChartScrubSelection.resolve(rawSelectedDate, in: points, calendar: calendar)
+    }
 
     /// Contiguous logged-day runs — DISTINCT `series` per run so the line breaks at every gap.
     private var runs: [ChartSeriesGrouping.Run] {
@@ -77,9 +98,20 @@ struct InsightTrendChart: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            chart
-                .frame(height: 200)
-                .accessibilityLabel(Text(summaryText))
+            // Conditional gesture attachment (PDF-Schutz): when `allowsSelection == false` the
+            // `chartXSelection` modifier is NOT attached at all (not merely inert) — the rendered
+            // output and modifier set stay IDENTICAL to v1.0. `allowsSelection` is immutable per
+            // instance, so the branch has stable view identity.
+            Group {
+                if allowsSelection {
+                    chart
+                        .chartXSelection(value: $rawSelectedDate)
+                } else {
+                    chart
+                }
+            }
+            .frame(height: 200)
+            .accessibilityLabel(Text(summaryText))
         }
     }
 
@@ -109,6 +141,12 @@ struct InsightTrendChart: View {
                 .accessibilityLabel(Text(point.date, format: .dateTime.month().day()))
                 .accessibilityValue(Text("severity \(Int(point.value.rounded())) of 10"))
             }
+            // Selection chrome (CHART-01/02) — renders iff the resolver returned non-nil. With
+            // `allowsSelection == false` the binding can never become non-nil, so this is unreachable
+            // on the PDF path by construction.
+            if let sel = resolvedSelection {
+                selectionMarks(sel)
+            }
         }
         .chartXScale(domain: xDomain)          // absolute-date window range, even when sparse
         .chartYScale(domain: 0...10)           // fixed severity domain (matches SeverityControl)
@@ -125,6 +163,93 @@ struct InsightTrendChart: View {
             AxisMarks(values: [0, 5, 10])
         }
         // Reduce Motion: render the final state directly (no animated chart transition).
+        // Selection state is deliberately NOT an input here — scrubbing never re-animates the
+        // series, and the chrome moves un-animated by construction (no Reduce-Motion gate needed).
         .animation(reduceMotion ? nil : .default, value: points)
+    }
+
+    // MARK: - Selection chrome (CHART-01/02 — the Health-pattern lollipop, UI-SPEC stack order)
+
+    /// The rule mark + pinned-top tooltip + (logged days only) the highlight point. Selection marks
+    /// carry NO per-mark accessibilityLabel/Value — the tooltip is the single new a11y element.
+    @ChartContentBuilder
+    private func selectionMarks(_ sel: ChartScrubSelection.Resolution) -> some ChartContent {
+        // Vertical scan line — secondary gray, NEVER accent (it would compete with the data line),
+        // drawn BEHIND the data via zIndex. The annotation pins the tooltip at the chart top so it
+        // never clips at window edges and the finger never occludes it (the Health pattern).
+        RuleMark(x: .value("Selected", sel.day))
+            .foregroundStyle(Color.secondary.opacity(0.5))
+            .zIndex(-1)
+            .annotation(
+                position: .top, spacing: 0,
+                overflowResolution: .init(x: .fit(to: .chart), y: .disabled)
+            ) {
+                tooltip(sel)
+            }
+        // Highlight point — logged day ONLY (drawing one on a gap would fabricate data); on a
+        // logged severity-0 day it draws AT the zero line (honest absence ≠ 0).
+        if let point = sel.point {
+            PointMark(
+                x: .value("Selected", sel.day),
+                y: .value("Severity", point.value)
+            )
+            .foregroundStyle(inkColor)
+            .symbolSize(100)
+        }
+    }
+
+    // MARK: - Tooltip (UI-SPEC card layout — audited copy only, no string literals)
+
+    private func tooltip(_ sel: ChartScrubSelection.Resolution) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // Line 1: the absolute date — the SAME format vocabulary as the axis labels.
+            Text(sel.day, format: .dateTime.month().day())
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            if let point = sel.point {
+                // Logged day (incl. literal severity-0): the payload, semibold primary.
+                Text(InsightsCopy.scrubSeverity(Int(point.value.rounded())))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+            } else {
+                // Gap day: de-emphasized — the gap is information, not an error (never bold/red).
+                Text(InsightsCopy.scrubNotLogged)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip.notLogged" })
+            }
+        }
+        .padding(8)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+        // ONE quiet a11y element: the full readout via accessibilityValue, NO UIAccessibility.post.
+        .accessibilityElement(children: .ignore)
+        .accessibilityValue(Text(selectionReadout(sel)))
+        .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip" })
+    }
+
+    /// "{date} — Severity {n} of 10" / "{date} — Not logged" — composed from the audited strings
+    /// plus the same date format the axis uses (a format, not a copy string).
+    private func selectionReadout(_ sel: ChartScrubSelection.Resolution) -> String {
+        let date = sel.day.formatted(.dateTime.month().day())
+        if let point = sel.point {
+            return "\(date) — \(InsightsCopy.scrubSeverity(Int(point.value.rounded())))"
+        }
+        return "\(date) — \(InsightsCopy.scrubNotLogged)"
+    }
+}
+
+// MARK: - Conditional a11y-id helper (skip ids ENTIRELY when no root is provided)
+
+private extension View {
+    /// Applies `.accessibilityIdentifier` only when an id is provided — when
+    /// `selectionA11yIDRoot == nil` (PDF/previews) no identifier is attached at all.
+    @ViewBuilder
+    func scrubAccessibilityID(_ id: String?) -> some View {
+        if let id {
+            accessibilityIdentifier(id)
+        } else {
+            self
+        }
     }
 }
