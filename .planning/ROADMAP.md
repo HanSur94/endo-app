@@ -359,7 +359,7 @@ Plans:
 
 **Wave 2** *(blocked on 12-01)*
 
-- [ ] 12-02-PLAN.md — The FlareEngine producer (compose rising-severity spine + active triggers + cycle-phase proximity into a bounded <=.medium confidence, withhold-by-default) + byte-identical FlareCopy/FlareCopyText + FlareDriftGuard + the FlareCopy alarmist scan; turns the Plan-01 RED suites GREEN
+- [x] 12-02-PLAN.md — The FlareEngine producer (compose rising-severity spine + active triggers + cycle-phase proximity into a bounded <=.medium confidence, withhold-by-default) + byte-identical FlareCopy/FlareCopyText + FlareDriftGuard + the FlareCopy alarmist scan; turns the Plan-01 RED suites GREEN — DONE 2026-06-10
 
 **Wave 3** *(blocked on 12-02)*
 
