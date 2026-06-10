@@ -246,9 +246,13 @@ final class InsightsDashboardUITests: XCTestCase {
 
         // The flare section is the FIRST section, so it is at/near the top of the dashboard. SwiftUI's
         // `List` lazily realizes rows, so the (top-of-list) flare section should be realized immediately;
-        // the Trends section follows below. Resolve both, scrolling up first to be safe.
-        let flareSection = app.descendants(matching: .any)["insights.section.flare"]
-        let trendsSection = app.descendants(matching: .any)["insights.section.trends"]
+        // the Trends section follows below. A SwiftUI `Section`'s `.accessibilityIdentifier` BLEEDS onto its
+        // header StaticText AND each descendant card cell (the same masking documented for `firstInsightCard`),
+        // so the section id resolves to MULTIPLE elements — read `.firstMatch` before touching `.frame` (a
+        // multi-match `.frame` throws "Multiple matching elements found"). The first match is the topmost
+        // (header) element, which is exactly the vertical origin we compare for ordering.
+        let flareSection = app.descendants(matching: .any).matching(identifier: "insights.section.flare").firstMatch
+        let trendsSection = app.descendants(matching: .any).matching(identifier: "insights.section.trends").firstMatch
 
         XCTAssertTrue(flareSection.waitForExistence(timeout: 15),
                       "A seeded rising-severity history must render the calm Flare early-warning section "
@@ -257,7 +261,7 @@ final class InsightsDashboardUITests: XCTestCase {
                       "The Trends section must also render (the seed crosses the trend threshold too).")
 
         // ORDER (D-07): the flare section renders BEFORE (above) the Trends section. Compare the vertical
-        // origins of the two realized section elements — the flare section's top must be above Trends'.
+        // origins of the two realized (firstMatch) section elements — the flare section's top must be above Trends'.
         XCTAssertLessThan(flareSection.frame.minY, trendsSection.frame.minY,
                           "The Flare early-warning section must render FIRST — above the Trends section (D-07).")
         saveScreenshot(app, named: "insights-07-flare-first")

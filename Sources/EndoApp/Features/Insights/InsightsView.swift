@@ -6,9 +6,10 @@
 // `Disclaimer.text` verbatim) is PINNED at the top so the not-medical-advice framing is always visible
 // with the insights (D-12), a11y id `insights.disclaimer`.
 //
-// SECTIONS (in order, UI-SPEC §A): Trends (`.trend`) → Cycle phase (`.cyclePhase`) → Possible
-// associations (`.correlation`) → Recommendations (`.recommendation`, after the associations they derive
-// from — D-06). A section with ZERO gated insights is OMITTED entirely — NOT an empty
+// SECTIONS (in order, UI-SPEC §A): Flare early-warning (`.flare`, placed FIRST — most time-sensitive, but
+// CALMLY styled, D-07) → Trends (`.trend`) → Cycle phase (`.cyclePhase`) → Possible associations
+// (`.correlation`) → Recommendations (`.recommendation`, after the associations they derive from — D-06).
+// A section with ZERO gated insights is OMITTED entirely — NOT an empty
 // shell. So a suppressed/no-cycle user (the engine emits zero `.cyclePhase`) has NO cycle-phase section
 // at all (D-07; mirrors `home.cycleSummary.suppressed`'s no-phantom posture). The E2E asserts this by
 // the ABSENCE of `insights.section.cyclePhase`.
@@ -54,8 +55,19 @@ struct InsightsView: View {
                     // Warm empty state (NOT empty sections) — nothing gated yet.
                     emptyState
                 } else {
-                    // The three kind-sections, in order. Each is omitted entirely when it has zero
+                    // The kind-sections, in order. Each is omitted entirely when it has zero
                     // insights (so suppressed → NO cycle-phase section — D-07).
+                    // Flare early-warning is placed FIRST (D-07 / UI-SPEC §A): the most time-sensitive
+                    // section sits at the top so it is the most discoverable — BUT it is rendered with the
+                    // IDENTICAL calm `section(...)` helper + reused InsightCardView (NO alarm color, NO
+                    // badge, NO exclamation): time-sensitivity is conveyed by POSITION only, never by
+                    // alarm visuals (the "warning that must not alarm" contract). Omit-when-empty is
+                    // inherited from the helper, so a suppressed/sparse/insufficient user has NO flare
+                    // section at all (absence-by-omission honesty — proven by the E2E + the package gate).
+                    section(
+                        title: FlareCopy.sectionFlare,
+                        identifier: "insights.section.flare",
+                        kind: .flare)
                     section(
                         title: InsightsCopy.sectionTrends,
                         identifier: "insights.section.trends",
