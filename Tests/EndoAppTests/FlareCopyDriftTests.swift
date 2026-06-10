@@ -44,6 +44,44 @@ struct FlareCopyDriftTests {
                 "Flare section header drifted between app and package: app=\"\(FlareCopy.sectionFlare)\" package=\"\(FlareDriftGuard.packageSectionFlare)\".")
     }
 
+    // MARK: - WR-01: the sanctioned section header must contain NO alarmist term other than the
+    //         deliberately-allowed "warning"/"early-warning" framing.
+    //
+    // `sectionFlare` ("Flare early-warning") is the ONE place the word "warning" is sanctioned — it is
+    // deliberately EXCLUDED from the alarmist list (ClaimsPolicy.forbiddenAlarmist / ForbiddenTerms.alarmist)
+    // so this header is legal, and it is NEVER routed through the HonestyGate (it is a SwiftUI Section title,
+    // not an Insight.headline/detail), so the runtime alarmist scan never sees it. The byte-identity tests
+    // above only prove the app and package headers MATCH each other — they would stay green if BOTH sides
+    // drifted together to an alarmist header like "Flare alert". This test closes that gap: it scans the
+    // header copy against the alarmist list directly, so a header that smuggles in "alert"/"attack"/
+    // "emergency"/"urgent"/"danger"/etc. fails HERE even when the two sides remain byte-identical.
+    //
+    // The sanctioned "warning"/"early-warning" framing is NOT in the alarmist list, so the current header
+    // passes; "Flare alert", "Flare attack", "Flare emergency" all fail.
+    @Test func sectionFlare_containsNoAlarmistTermOtherThanSanctionedWarning() {
+        let header = FlareCopy.sectionFlare.lowercased()
+        // Scan against the alarmist list MINUS the sanctioned "warning"/"early-warning" framing. The
+        // alarmist list already excludes "warning" by design, so this is just the full list — but we filter
+        // explicitly so the intent is legible even if a future maintainer (wrongly) adds "warning" to the
+        // alarmist list: the sanctioned header framing must always remain permitted.
+        let sanctioned = ["warning", "early-warning"]
+        let alarmistForHeader = ClaimsPolicy.forbiddenAlarmist.filter { !sanctioned.contains($0) }
+        let offending = alarmistForHeader.filter { header.contains($0) }
+        #expect(offending.isEmpty,
+                "Flare section header \"\(FlareCopy.sectionFlare)\" contains alarmist term(s) \(offending) — the header is the ONE sanctioned use of \"warning\"/\"early-warning\" and must contain no other alarmist/diagnostic word, even if app and package drift together.")
+    }
+
+    // Same backstop against the PACKAGE mirror, so a both-sides-drift to an alarmist header that stays
+    // byte-identical is caught regardless of which surface is read.
+    @Test func packageSectionFlare_containsNoAlarmistTermOtherThanSanctionedWarning() {
+        let header = FlareDriftGuard.packageSectionFlare.lowercased()
+        let sanctioned = ["warning", "early-warning"]
+        let alarmistForHeader = FlareDriftGuard.packageForbiddenAlarmist.filter { !sanctioned.contains($0) }
+        let offending = alarmistForHeader.filter { header.contains($0) }
+        #expect(offending.isEmpty,
+                "Package flare section header \"\(FlareDriftGuard.packageSectionFlare)\" contains alarmist term(s) \(offending) — must contain no alarmist/diagnostic word other than the sanctioned \"warning\"/\"early-warning\" framing.")
+    }
+
     @Test func insufficientTitle_isByteIdenticalAcrossBoundary() {
         #expect(FlareCopy.insufficientTitle == FlareDriftGuard.packageInsufficientTitle,
                 "Flare insufficiency title drifted between app and package: app=\"\(FlareCopy.insufficientTitle)\" package=\"\(FlareDriftGuard.packageInsufficientTitle)\".")
