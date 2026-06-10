@@ -210,6 +210,25 @@ struct CopyAuditTests {
         #expect(InsightsCopy.sparseTitle.lowercased().contains("not enough data"))
     }
 
+    // Phase-13 (CHART-02): the two scrub-tooltip strings are LOCKED verbatim (UI-SPEC Copywriting
+    // Contract) — this pin stops a later reword from dodging the substring curation above. Both are
+    // registered in `InsightsCopy.auditableStrings`, so the forbidden-verb / gendered-token /
+    // numeric-confidence scans cover them automatically; the pins below lock the exact wording:
+    // the gap reads "Not logged" (never "0", never "No data"), the logged value reads
+    // "Severity {n} of 10" (a severity-0 day reads "Severity 0 of 10" — absence != 0).
+    @Test func insightsCopy_scrubTooltipStrings_areLockedVerbatim() {
+        #expect(InsightsCopy.scrubNotLogged == "Not logged",
+                "The gap-day tooltip wording is LOCKED (UI-SPEC Copywriting Contract).")
+        #expect(InsightsCopy.scrubSeverity(6) == "Severity 6 of 10",
+                "The logged-day tooltip value wording is LOCKED (UI-SPEC Copywriting Contract).")
+        #expect(InsightsCopy.scrubSeverity(0) == "Severity 0 of 10",
+                "A logged severity-0 day reads a REAL zero, provably distinct from the gap wording.")
+        // Both strings are registered in the audited surface (RESEARCH Pitfall 5 — an unregistered
+        // string silently escapes the scans).
+        #expect(InsightsCopy.auditableStrings.contains(InsightsCopy.scrubNotLogged))
+        #expect(InsightsCopy.auditableStrings.contains(InsightsCopy.scrubSeverity(6)))
+    }
+
     // MARK: - Phase-10 report copy (Plan 10-01): ReportCopy (the doctor-ready report surface)
     //
     // ReportCopy centralizes EVERY fixed string the report renders (Surface 1 on-screen builder/preview

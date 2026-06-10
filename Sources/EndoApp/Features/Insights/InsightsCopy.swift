@@ -103,6 +103,21 @@ enum InsightsCopy {
         "\(headline), \(windowLabel(window)) — \(direction)."
     }
 
+    // MARK: Chart-scrub tooltip (Phase 13, CHART-02 — LOCKED wording, UI-SPEC Copywriting Contract)
+
+    /// The gap-day tooltip line — the explicit honest absence (CONTEXT "Gap-Ehrlichkeit"):
+    /// never "0", never "No data", never an error tone. The gap is information, not an error.
+    static let scrubNotLogged = "Not logged"
+
+    /// The logged-day tooltip value line (e.g. "Severity 6 of 10") — matches the shipped per-mark
+    /// accessibilityValue vocabulary ("severity n of 10"). A literal severity-0 day reads
+    /// "Severity 0 of 10" — textually distinct from `scrubNotLogged` (absence ≠ 0).
+    /// NB: digits in a factual readout are legal — the bare-digit audit scan is scoped to the
+    /// three confidence words (D-11); "Severity" hosts no forbidden substring.
+    static func scrubSeverity(_ value: Int) -> String {
+        "Severity \(value) of 10"
+    }
+
     /// Every fixed string this surface can show — the array `CopyAuditTests` scans. (Engine
     /// headline/detail are NOT here; they are gate-audited in Phase 6 and rendered verbatim.)
     static var auditableStrings: [String] {
@@ -115,11 +130,15 @@ enum InsightsCopy {
             directionUp, directionDown, directionSteady,
             dismissAction, dismissConfirmation,
             loadError, updating,
+            scrubNotLogged,
         ]
         strings += InsightConfidence.allCases.map(confidenceWord)
         strings += TrendWindow.allCases.map(windowLabel)
         // A representative supporting-evidence line (the static prefix/suffix is what we audit).
         strings.append(supportingEvidence(loggedDays: 12))
+        // A representative scrub-tooltip value line (the static prefix/suffix is what we audit;
+        // registered in the SAME change that introduces the string — RESEARCH Pitfall 5).
+        strings.append(scrubSeverity(6))
         return strings
     }
 }
