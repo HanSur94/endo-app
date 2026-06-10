@@ -62,7 +62,7 @@ All v1.0 honesty invariants carry over: unlogged days stay gaps (absence ≠ 0),
 Plans:
 - [x] 13-01-PLAN.md — Pure `ChartScrubSelection` resolver in EndoInsights + invariant tests + audited tooltip copy (`scrubNotLogged`/`scrubSeverity` registered in `auditableStrings`)
 - [x] 13-02-PLAN.md — Additive `allowsSelection` layer on `InsightTrendChart` (lollipop chrome, day-change haptic, `AXChartDescriptor`) + `InsightCardView` switch-on
-- [ ] 13-03-PLAN.md — `-uitest-select-day` seam + `-uitest-seed-scrub` fixture + `ChartScrubUITests` E2E + PDF zero-diff/regression gates
+- [x] 13-03-PLAN.md — `-uitest-select-day` seam + `-uitest-seed-scrub` fixture + `ChartScrubUITests` E2E + PDF zero-diff/regression gates
 
 **UI hint**: yes
 **Notes**: Selection resolves through a pure `ChartScrubSelection` mapper requiring an exact logged-day match — the reusable resolver Phases 15–16 consume (research Pitfall 1: position-based selection APIs interpolate by default). Tooltip/"not logged" copy registers in `CopyAuditTests` before it is written. Ships the DEBUG-gated `-uitest-select-day` E2E seam (deterministic, no gesture flake). Tap-to-select on the in-List dashboard (scrub-vs-scroll arbitration; free scrub is reserved for Explore's fixed-chart layout). `xcodegen generate` after file adds. Manual checkpoint: exported PDF visually re-verified; reference Apple Health scrub interaction verified on device during UAT.

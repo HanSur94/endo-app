@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
-status: executing
-stopped_at: Completed 13-02-PLAN.md (trend-chart selection layer live on the dashboard)
-last_updated: "2026-06-10T18:06:57.000Z"
-last_activity: 2026-06-10 -- Phase 13 plan 02 complete (allowsSelection layer + lollipop chrome + haptic + Audio Graph; dashboard switch-on)
+status: phase-13-executed-pending-verification
+stopped_at: Completed 13-03-PLAN.md (test seam + scrub E2E + regression gates — Phase 13 3/3 plans complete)
+last_updated: "2026-06-10T18:42:00.000Z"
+last_activity: 2026-06-10 -- Phase 13 plan 03 complete (-uitest-select-day seam + ChartScrubUITests 3/3 green + PDF zero-diff/regression gates all green)
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 2
-  percent: 67
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: 13 (Trend-Chart Scrubbing) — EXECUTING
-Plan: 3 of 3 (13-01, 13-02 complete)
-Status: Executing Phase 13
-Progress: [ ] 13 [ ] 14 [ ] 15 [ ] 16 — 0% (13: 2/3 plans)
-Last activity: 2026-06-10 -- Phase 13 plan 02 complete (allowsSelection layer + lollipop chrome + haptic + Audio Graph; dashboard switch-on)
+Phase: 13 (Trend-Chart Scrubbing) — EXECUTED (3/3 plans), pending /gsd-verify-work
+Plan: 3 of 3 (13-01, 13-02, 13-03 complete)
+Status: Phase 13 execution complete — four manual checkpoints surfaced to the verification gate (13-03-SUMMARY)
+Progress: [ ] 13 [ ] 14 [ ] 15 [ ] 16 — 0% (13: 3/3 plans, pending verify)
+Last activity: 2026-06-10 -- Phase 13 plan 03 complete (-uitest-select-day seam + ChartScrubUITests 3/3 green + PDF zero-diff/regression gates all green)
 
 ## Performance Metrics
 
@@ -88,6 +88,7 @@ Last activity: 2026-06-10 -- Phase 13 plan 02 complete (allowsSelection layer + 
 | Phase 12 P03 | ~28min | 2 tasks | 6 files |
 | Phase 13 P01 | ~5min | 2 tasks | 4 files |
 | Phase 13 P02 | ~9min | 2 tasks | 2 files |
+| Phase 13 P03 | ~30min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,7 @@ Last activity: 2026-06-10 -- Phase 13 plan 02 complete (allowsSelection layer + 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [13-03]: Phase 13 EXECUTION COMPLETE — the deterministic E2E seam + the closing gates. `-uitest-select-day <yyyy-MM-dd>` is TRIPLE-gated (runtime `-uitest-reset` pairing → in-memory store, `#if DEBUG` compile-out, nil `\.uiTestScrubDay` EnvironmentKey default) with a defensive en_US_POSIX parse (garbage → nil, never a crash, T-13-02b); `-uitest-seed-scrub` = dense severity-6 spine, offset-3 gap, offset-2 severity-0, all assertion days inside last-7 (Pitfall 6); the chart reads the seam in `.onAppear` behind `allowsSelection` + `xDomain.contains`. ChartScrubUITests 3/3 green (logged "Severity 6 of 10" / explicit `.notLogged` gap / "Severity 0 of 10" with `.notLogged` ABSENT — absence ≠ 0 end-to-end), zero coordinates/sleeps. TWO load-bearing a11y discoveries (Rule-1 fixes, carried to Phases 15–16): (1) Swift Charts does NOT expose `.annotation` content in the AX tree — the 13-02 in-annotation tooltip a11y was unreachable by VoiceOver/XCUITest; the readout + `.tooltip`/`.tooltip.notLogged` ids now ride a transparent overlay proxy inside the allowsSelection branch, the visual annotation is `.accessibilityHidden(true)`; (2) a parent `.accessibilityIdentifier` masks bare descendant element ids — shield proxy ids with `.accessibilityElement(children: .contain)` (the Section→cell→.confidence precedent generalized). E2E queries are signalKey-SCOPED (`.severity.chart.tooltip`) — the seed also emits a 0/1 FREQUENCY trend card rendered first whose tooltip reads "Severity 1 of 10" (a generic firstMatch would lie). Closing gates ALL GREEN: ReportPDFRenderer.swift zero commits since v1.0 + clean working tree, ReportFlowUITests 2/2, InsightsDashboardUITests 6/6, EndoInsights 124/124. Four manual checkpoints surfaced to /gsd-verify-work: device haptic, scroll-vs-scrub + release lifecycle, PDF visual compare vs v1.0 export, VoiceOver/Audio Graph.
 - [13-02]: Trend-chart selection LIVE on the dashboard (CHART-01..04 rendered). `InsightTrendChart` gained the additive `allowsSelection: Bool = false` + `selectionA11yIDRoot: String?` params (the `inkColor` precedent): when false, the `chartXSelection` modifier AND the haptic `.onChange` are NOT attached at all (conditional `Group` branch, stable identity) — the PDF path's modifier set is identical to v1.0 and `ReportPDFRenderer.swift` is zero-diff. Every displayed value routes through `ChartScrubSelection.resolve` (grep-gated: no DragGesture/proxy.value(atX:)/nearest-point math). Chrome = secondary-gray RuleMark (zIndex -1) + pinned-top annotation tooltip (overflow .fit) + inkColor symbolSize(100) highlight on LOGGED days only (gap = no point + de-emphasized "Not logged"; severity-0 = point at the zero line + "Severity 0 of 10"); tooltip strings via audited InsightsCopy only; ONE quiet a11y element with "{date} — {value}" accessibilityValue + ids `<root>.tooltip`/`.tooltip.notLogged` (skip-entirely when root nil); zero UIAccessibility.post. Haptic: one UISelectionFeedbackGenerator per view identity, fires on resolved-DAY change only (nil→day/day→nil silent; logged↔gap ticks). CHART-04 dual path: per-mark labels KEPT + `@preconcurrency AXChartDescriptorRepresentable` (Swift 6: View is implicitly MainActor vs the nonisolated protocol — the compiler-suggested fix) building a categorical-day/0…10 descriptor with ONE isContinuous:false series of LOGGED points only (gaps omitted, never zeros), attached in BOTH modes (render-inert; in-source escape hatch for Plan 03's PDF check). InsightsDashboardUITests 6/6 green with selection live. Plan 03 asserts the tooltip ids via the `-uitest-select-day` seam; device haptic/scroll-arbitration/VoiceOver remain phase-gate manual checkpoints.
 - [13-01]: Scrub foundations landed (CHART-01/02 honesty core, unit-proven before any pixel). `ChartScrubSelection.resolve(_:in:calendar:)` lives in the EndoInsights PACKAGE (RESEARCH Pitfall 7 correction — `InsightPoint` is a package type, Phases 15–16 reuse it, no xcodegen, BoundaryLintTests enforces Foundation-only): exact-day match ONLY via `calendar.startOfDay` + `isDate(_:inSameDayAs:)` — gap day → `Resolution(day:, point: nil)` (never nearest-neighbor, never interpolation; grep-gated against `min(by`/`timeIntervalSince`), logged severity-0 → a REAL point with value 0 (absence ≠ 0). `Resolution` is public/Sendable/Equatable with an explicit public init (cross-module construction). 7 invariants pinned incl. 23:59 boundary + Europe/Berlin 2026-03-29 DST spring-forward + unsorted input; package 124/124 green. The two LOCKED tooltip strings (`scrubNotLogged = "Not logged"`, `scrubSeverity(_:) = "Severity {n} of 10"`) registered in `auditableStrings` in the SAME edit (Pitfall 5) + verbatim-pinned in CopyAuditTests (32/32, incl. `scrubSeverity(0)` ≠ gap). Plan 02 MUST route every displayed value through this resolver — it is the only legal raw-date→value path.
 - [Roadmap v1.1]: Research-driven 4-phase order (13 scrub → 14 pure catalog → 15 Explore lanes → 16 scatter): Phase 13 builds the reusable selected-date→logged-day-or-nil resolver (`ChartScrubSelection`), the selection-a11y pattern, and the `-uitest-select-day` E2E seam both later surfaces reuse; Phase 14 locks the honesty invariants in pure Foundation helpers BEFORE any pixel exists (the v1.0 `ChartSeriesGrouping` playbook). Phase 14 carries no REQ-IDs — it is the foundational keystone consumed by Phases 15–16.
@@ -158,11 +160,11 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T18:06:57.000Z
-Stopped at: Completed 13-02-PLAN.md (trend-chart selection layer live on the dashboard)
+Last session: 2026-06-10T18:42:00.000Z
+Stopped at: Completed 13-03-PLAN.md (test seam + scrub E2E + regression gates — Phase 13 3/3 plans complete)
 Resume file: None
 
 ## Operator Next Steps
 
-- Review the v1.1 roadmap (Phases 13–16) in .planning/ROADMAP.md
-- Then plan the first phase: /gsd-plan-phase 13
+- Verify Phase 13: /gsd-verify-work (four manual checkpoints listed in 13-03-SUMMARY.md — device haptic, scroll-vs-scrub feel, PDF visual compare, VoiceOver/Audio Graph)
+- Then plan the next phase: /gsd-plan-phase 14
