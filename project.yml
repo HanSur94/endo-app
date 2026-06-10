@@ -38,6 +38,7 @@ targets:
       GENERATE_INFOPLIST_FILE: NO
       CODE_SIGN_ENTITLEMENTS: Sources/EndoApp/Resources/EndoApp.entitlements
       CODE_SIGN_STYLE: Automatic
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       # DEVELOPMENT_TEAM: ABCDE12345   # <-- USER: uncomment + set to activate real device sync (D-02)
     scheme:
       testTargets:
