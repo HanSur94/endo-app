@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+<linearGradient id="bg" x1="336.9" y1="30.7" x2="687.1" y2="993.3" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#EF6E8E"/><stop offset="1" stop-color="#6E2153"/>
+</linearGradient>
+<radialGradient id="vignette" cx="512" cy="512" r="768" gradientUnits="userSpaceOnUse">
+<stop offset="0.55" stop-color="#2B081F" stop-opacity="0"/><stop offset="1" stop-color="#2B081F" stop-opacity="0.35"/>
+</radialGradient>
+<radialGradient id="glow" cx="512" cy="480" r="360" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.14"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="petal" cx="512" cy="512" r="512" gradientUnits="userSpaceOnUse">
+<stop offset="0.1" stop-color="#E0C4D8" stop-opacity="0.95"/><stop offset="0.58" stop-color="#FFFFFF" stop-opacity="0.98"/>
+</radialGradient>
+<radialGradient id="backPetal" cx="512" cy="512" r="512" gradientUnits="userSpaceOnUse">
+<stop offset="0.15" stop-color="#FFFFFF" stop-opacity="0.22"/><stop offset="0.62" stop-color="#FFFFFF" stop-opacity="0.45"/>
+</radialGradient>
+<radialGradient id="core" cx="493" cy="483" r="105" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#FFE9AE"/><stop offset="0.62" stop-color="#F7B544"/><stop offset="1" stop-color="#E89A2B"/>
+</radialGradient>
+<linearGradient id="coreShade" x1="512" y1="432" x2="512" y2="592" gradientUnits="userSpaceOnUse">
+<stop offset="0.55" stop-color="#B96F1F" stop-opacity="0"/><stop offset="1" stop-color="#B96F1F" stop-opacity="0.55"/>
+</linearGradient>
+<filter id="petalShadow" x="-30%" y="-30%" width="160%" height="160%">
+<feDropShadow dx="0" dy="14" stdDeviation="15" flood-color="#43102E" flood-opacity="0.35"/>
+</filter>
+<filter id="backBlur" x="-20%" y="-20%" width="140%" height="140%">
+<feGaussianBlur stdDeviation="3.5"/>
+</filter>
+<filter id="coreShadow" x="-50%" y="-50%" width="200%" height="200%">
+<feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#3F0E2B" flood-opacity="0.4"/>
+</filter>
+</defs>
+<rect width="1024" height="1024" fill="url(#bg)"/>
+<rect width="1024" height="1024" fill="url(#vignette)"/>
+<circle cx="512" cy="480" r="360" fill="url(#glow)"/>
+<path d="M 546.6 464.4 C 497.9 356.2 560.7 254.0 691.5 264.9 C 742.3 385.9 664.6 477.3 546.6 464.4 Z" fill="url(#backPetal)" filter="url(#backBlur)"/><path d="M 568.0 530.2 C 655.8 450.4 772.4 478.6 802.5 606.4 C 703.1 692.1 592.2 646.4 568.0 530.2 Z" fill="url(#backPetal)" filter="url(#backBlur)"/><path d="M 512.0 570.9 C 615.0 629.8 624.2 749.4 512.0 817.4 C 399.8 749.4 409.0 629.8 512.0 570.9 Z" fill="url(#backPetal)" filter="url(#backBlur)"/><path d="M 456.0 530.2 C 431.8 646.4 320.9 692.1 221.5 606.4 C 251.6 478.6 368.2 450.4 456.0 530.2 Z" fill="url(#backPetal)" filter="url(#backBlur)"/><path d="M 477.4 464.4 C 359.4 477.3 281.7 385.9 332.5 264.9 C 463.3 254.0 526.1 356.2 477.4 464.4 Z" fill="url(#backPetal)" filter="url(#backBlur)"/>
+<path d="M 512.0 448.0 C 400.0 384.0 390.0 254.0 512.0 180.0 C 634.0 254.0 624.0 384.0 512.0 448.0 Z" fill="url(#petal)" filter="url(#petalShadow)"/><path d="M 572.9 492.2 C 599.1 365.9 719.7 316.2 827.8 409.4 C 795.1 548.3 668.3 579.0 572.9 492.2 Z" fill="url(#petal)" filter="url(#petalShadow)"/><path d="M 549.6 563.8 C 677.8 549.7 762.3 649.0 707.1 780.6 C 564.9 792.4 496.6 681.4 549.6 563.8 Z" fill="url(#petal)" filter="url(#petalShadow)"/><path d="M 474.4 563.8 C 527.4 681.4 459.1 792.4 316.9 780.6 C 261.7 649.0 346.2 549.7 474.4 563.8 Z" fill="url(#petal)" filter="url(#petalShadow)"/><path d="M 451.1 492.2 C 355.7 579.0 228.9 548.3 196.2 409.4 C 304.3 316.2 424.9 365.9 451.1 492.2 Z" fill="url(#petal)" filter="url(#petalShadow)"/>
+<g filter="url(#coreShadow)">
+<circle cx="512" cy="512" r="80" fill="url(#core)"/>
+<circle cx="512" cy="512" r="80" fill="url(#coreShade)"/>
+</g>
+</svg>
