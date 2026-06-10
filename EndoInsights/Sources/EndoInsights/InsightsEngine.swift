@@ -40,6 +40,13 @@ public enum InsightsEngine {
             // derive from (matches the dashboard section order, D-06) and routed through the SAME single
             // HonestyGate below — no separate gating path. The public signature stays LOCKED (D-16).
             + RecommendationsEngine.recommendations(from: snapshots, asOf: today, calendar: calendar)
+            // Phase 12 (INST-06): the composed flare warning, routed through the SAME single HonestyGate —
+            // no separate gating path; the public signature stays LOCKED. Concatenated LAST (additive — the
+            // candidate order does not affect gating; the dashboard places the .flare section FIRST as a
+            // pure UI concern, D-06/D-07). The gate's minSample(.flare)==21 + the confidence floor + the
+            // typed isInsufficiencyNotice carve-out + the fail-closed forbidden-term scan (now incl.
+            // alarmist) already handle the flare candidate — NO new withholding logic here (D-08).
+            + FlareEngine.flareWarning(from: snapshots, asOf: today, calendar: calendar)
         return HonestyGate.apply(candidates, dismissed: dismissed)
     }
 }

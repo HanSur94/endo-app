@@ -120,6 +120,31 @@ struct InsightsEngineTests {
                 "A dismissed recommendation STAYS dismissed across recompute (D-07).")
     }
 
+    // MARK: (a''') Phase-12 composition — a rising-with-≥21-evidence history surfaces ONE `.flare` through the gate.
+
+    @Test func composition_surfacesFlare_overRisingFixture() async throws {
+        // The rising flare fixture (30 days, a recent rising-severity spine over ≥21 days of evidence) is a
+        // real, well-sampled rise; the composed FlareEngine surfaces exactly one bounded ≤.medium `.flare`
+        // warning behind the SAME single gate. The producer is now reachable through the PUBLIC engine.
+        let flares = engine(Fixtures.risingFlareFixture()).filter { $0.kind == .flare && !$0.isInsufficiencyNotice }
+        #expect(flares.count == 1,
+                "InsightsEngine must compose FlareEngine — a rising-with-≥21-evidence history surfaces exactly one .flare warning.")
+        // Uncertainty-first (D-03): the composed flare warning is bounded at ≤ .medium (never .high).
+        #expect(flares.allSatisfy { $0.confidence != .high },
+                "A composed flare warning must be bounded at ≤ .medium (uncertainty-first, D-03).")
+    }
+
+    // MARK: (b''') Withholding — suppressed + flat users yield ZERO flare warnings through the public engine (SC3).
+
+    @Test func gate_withholdsFlare_forSuppressedAndFlat() async throws {
+        let suppressed = engine(Fixtures.suppressedNoBleedingFixture())
+        #expect(!suppressed.contains { $0.kind == .flare },
+                "A suppressed user must yield ZERO flare warnings through the public engine (SC3).")
+        let flat = engine(Fixtures.flatNoRiseFixture())
+        #expect(!flat.contains { $0.kind == .flare && !$0.isInsufficiencyNotice },
+                "A flat / no-rise history must surface NO non-notice flare warning through the public engine (SC3).")
+    }
+
     // MARK: (c) Dismissal-exclusion + idempotence (D-12: stays dismissed across recomputation).
 
     @Test func dismissal_excludesExactlyThatSignal_andStaysExcluded() async throws {

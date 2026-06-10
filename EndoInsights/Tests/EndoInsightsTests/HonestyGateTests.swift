@@ -176,6 +176,15 @@ struct HonestyGateTests {
             // recommendation-specific emitted copy is additionally proven clean by the DIRECT engine scan
             // (`recommendationEngine_emitsZeroForbiddenTerms`) below, independent of the Plan-03 composition.
             ("beneficialAssociation", Fixtures.beneficialAssociationFixture()),
+            // Phase 12 (.flare) — MANDATORY per the file's contract: the flare candidate is now composed into
+            // the public `InsightsEngine`, so these flare streams exercise its EMITTED copy (headline +
+            // detail + contributing + the insufficiency notice) against the FULL forbidden union — causal ∪
+            // imperative ∪ ALARMIST (ForbiddenTerms.violation now includes the alarmist clause). The
+            // rising-with-evidence stream emits a real warning, the under-evidence cusp emits the
+            // insufficiency notice, and the flat stream emits nothing — together covering every flare copy path.
+            ("risingFlare", Fixtures.risingFlareFixture()),
+            ("risingButUnderEvidence", Fixtures.risingButUnderEvidenceFixture()),
+            ("flatNoRise", Fixtures.flatNoRiseFixture()),
         ]
 
         for (name, snapshots) in streams {
