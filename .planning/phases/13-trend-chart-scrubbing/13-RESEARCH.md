@@ -492,7 +492,7 @@ XCTAssertTrue(notLogged.waitForExistence(timeout: 15),
 | A3 | `ChartContentBuilder` supports `if let` for the conditional selection marks [ASSUMED — standard result-builder behavior, widely used in Apple samples] | Pattern 3 | Trivial: if a builder limitation surfaced, wrap marks in `.opacity` gating — compile-time discovery |
 | A4 | Setting `rawSelectedDate` programmatically (the seam) renders the same chrome as a gesture-driven selection [ASSUMED — chrome derives purely from state, no gesture dependence in the design] | Pattern 6 | Low: it's plain `@State`-driven rendering; verified the moment the E2E first runs |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does tap (vs drag) leave a persistent selection on iOS 18?**
    - What we know: drag tracks continuously and clears on release (community consensus); Apple docs don't specify tap semantics.
