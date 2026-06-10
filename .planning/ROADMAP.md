@@ -363,7 +363,7 @@ Plans:
 
 **Wave 3** *(blocked on 12-02)*
 
-- [ ] 12-03-PLAN.md — Integration/payoff: compose FlareEngine into the LOCKED InsightsEngine behind the single gate + the calm .flare section placed FIRST (omit-when-empty, no alarm visual) in InsightsView + the package zero-forbidden-terms acceptance -> the flare dashboard E2E GREEN (INST-06 delivered)
+- [x] 12-03-PLAN.md — Integration/payoff: compose FlareEngine into the LOCKED InsightsEngine behind the single gate + the calm .flare section placed FIRST (omit-when-empty, no alarm visual) in InsightsView + the package zero-forbidden-terms acceptance + the FlareNoAlarmVisualTests no-alarm source-scan -> the flare dashboard E2E GREEN (INST-06 delivered) — DONE 2026-06-10
 
 ## Progress
 
@@ -383,4 +383,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
 | 10. Doctor-Ready PDF Report | 3/3 | Complete    | 2026-06-09 |
 | 11. Personalized Recommendations | 3/3 | Complete    | 2026-06-09 |
-| 12. Flare Early-Warning | 1/3 | In progress | - |
+| 12. Flare Early-Warning | 3/3 | Plans complete — pending end-of-phase human-verify | - |

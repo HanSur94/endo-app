@@ -46,7 +46,7 @@ Requirements for the initial release. Each maps to a roadmap phase.
 - [x] **INST-03**: User can discover correlations/triggers across logged factors, gated by minimum-sample size and confidence
 - [x] **INST-04**: Every insight carries an honesty layer — non-causal language, a confidence indicator, dismissal, and low-confidence insights are withheld
 - [x] **INST-05**: User receives personalized, data-driven recommendations derived from their own patterns
-- [ ] **INST-06**: User receives a heuristic, non-diagnostic flare early-warning with confidence (built last, gated by the honesty layer)
+- [x] **INST-06**: User receives a heuristic, non-diagnostic flare early-warning with confidence (built last, gated by the honesty layer)
 
 ### Reports
 
@@ -132,7 +132,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | RPRT-02 | Phase 10 — Doctor-Ready PDF Report | COMPLETE — per-section source labels (SectionSource.aggregate from daySnapshotSources, never recomputed) + a source legend + the prominent "self-tracked, not diagnostic" disclaimer band, all ClaimsPolicy-audited (ReportCopy). PDFDocument.string asserts the disclaimer + legend + both source labels render. |
 | RPRT-03 | Phase 10 — Doctor-Ready PDF Report | COMPLETE — ShareLink(item: localFileURL) is the ONLY egress (explicit-action, no auto-upload); ReportNoNetworkTests source-scans Features/Report/ for URLSession/URLRequest/dataTask (none) to lock the no-silent-upload invariant. |
 | INST-05 | Phase 11 — Personalized Recommendations | COMPLETE — RecommendationsEngine composed into the LOCKED InsightsEngine before the single HonestyGate (no separate gating path, D-08); minSample(.recommendation) lowered 14->10 (== minSample(.correlation)) so re-framed n=10-13 correlations are not silently dropped (Pitfall 3); the omit-when-empty .recommendation section ships in InsightsView after Possible associations (D-06), reusing InsightCardView + the existing dismiss path. testRecommendation_rendersAfterCorrelation is GREEN (seeded correlation -> a non-prescriptive recommendation card). |
-| INST-06 | Phase 12 — Flare Early-Warning | Pending |
+| INST-06 | Phase 12 — Flare Early-Warning | COMPLETE — FlareEngine.flareWarning composed into the LOCKED InsightsEngine behind the single HonestyGate (byte-identical signature D-16, no separate gating path D-08); the calm omit-when-empty .flare section ships FIRST in InsightsView (above Trends, time-sensitivity by POSITION only, no alarm color/badge/glyph, D-07), reusing InsightCardView + the existing dismiss path. The package zero-forbidden-terms acceptance now scans the flare fixtures (causal ∪ imperative ∪ alarmist); FlareNoAlarmVisualTests source-scans the rendering code for any alarm affordance; FlareNoNotificationTests proves no push (SC2). testFlare_rendersFirst is GREEN (seeded rising history -> one calm flare card rendered above Trends). |
 
 **Note:** Phase 8 (Insights Integration — Coordinator, Cached Insights & Dashboard) is a pure integration phase that wires the Phase 5–7 engine (INST-01..04) into the live app; it introduces no new requirement IDs of its own.
 
