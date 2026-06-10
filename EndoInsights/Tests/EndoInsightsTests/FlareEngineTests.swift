@@ -10,11 +10,10 @@
 //   2. A RISING-WITH-EVIDENCE user (≥21 days of personal history + a recent rising-severity spine) surfaces
 //      EXACTLY ONE bounded (≤ .medium), uncertainty-first, NON-alarmist flare warning.
 //
-// A flare composes already-gated signals (D-01: compose, NEVER re-derive). This suite references symbols
-// Plan 02 introduces — `FlareEngine.flareWarning(...)` — so to keep the SHARED EndoApp scheme compiling
-// TODAY (the Phase-11 precedent where a not-yet-existing symbol broke the scheme build), a FILE-LOCAL RED
-// PLACEHOLDER SHIM is added below (returns []). The assertions stay RED at runtime; Plan 02 DELETES the
-// shim when it ships the real producer.
+// A flare composes already-gated signals (D-01: compose, NEVER re-derive). Plan 02 ships the real
+// `FlareEngine.flareWarning(...)` in `EndoInsights/Sources/EndoInsights/FlareEngine.swift`, so the
+// file-local RED placeholder shim that kept the shared scheme compiling in Plan 01 is now DELETED — these
+// assertions exercise the REAL producer.
 //
 // Posture mirrors `RecommendationsEngineTests` EXACTLY: inject `Fixtures.day(0)` + `Fixtures.calendar`, no
 // clock, deterministic; a private `flareWarnings(_:)` filter on `.flare`; an `assertNoForbiddenTerms` over
@@ -22,24 +21,6 @@
 import Testing
 import Foundation
 @testable import EndoInsights
-
-// MARK: - RED placeholder shim (DELETED by Plan 02 when the real producer ships).
-//
-// The real `FlareEngine.flareWarning(from:asOf:calendar:)` does not exist yet. Without this stub the
-// reference below would not compile, which (per the Phase-11 precedent) breaks the SHARED EndoApp scheme
-// build — masking every other test. This file-local shim lets the package target COMPILE today while the
-// honesty assertions stay RED at runtime (returning `[]` fails the rising-with-evidence GREEN expectation).
-// Plan 02 removes this enum and ships the real producer in
-// `EndoInsights/Sources/EndoInsights/FlareEngine.swift`.
-enum FlareEngine {
-    static func flareWarning(
-        from snapshots: [DaySnapshot],
-        asOf today: Date,
-        calendar: Calendar = .current
-    ) -> [Insight] {
-        []   // RED placeholder — the honesty contract below specifies the real behavior Plan 02 implements.
-    }
-}
 
 @Suite("INST-06 FlareEngine — suppressed/flat/insufficient → ZERO; rising-with-evidence → one bounded warning")
 struct FlareEngineTests {
