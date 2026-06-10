@@ -54,6 +54,11 @@ struct InsightTrendChart: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Test-only deterministic selection day (Phase 13 E2E seam, Plan 13-03). `nil` on every
+    /// production launch (the env default; only a DEBUG `-uitest-reset`-paired launch injects a
+    /// value), so the `.onAppear` seam read below is a no-op outside UI tests by construction.
+    @Environment(\.uiTestScrubDay) private var uiTestScrubDay
+
     /// The raw selection date from `chartXSelection` — per-card, view-local, EPHEMERAL (never
     /// persisted, never in any shared Observable; a scrub frame must not invalidate the List).
     @State private var rawSelectedDate: Date?
@@ -124,6 +129,17 @@ struct InsightTrendChart: View {
                             }
                             if new != nil {
                                 haptics.prepare()
+                            }
+                        }
+                        // E2E seam (Plan 13-03): a DEBUG `-uitest-reset`-paired launch can inject a
+                        // deterministic selection day so XCUITests assert the chrome via a11y ids with
+                        // zero gesture coordinates. The `xDomain.contains` guard is LOAD-BEARING
+                        // (RESEARCH Pitfall 6): a day outside THIS card's window must not draw an
+                        // out-of-domain RuleMark. Production: the env value is nil (default), so this
+                        // branch never runs; the PDF path additionally never has allowsSelection==true.
+                        .onAppear {
+                            if let day = uiTestScrubDay, xDomain.contains(day) {
+                                rawSelectedDate = day
                             }
                         }
                 } else {

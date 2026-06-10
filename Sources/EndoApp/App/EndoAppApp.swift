@@ -40,6 +40,7 @@ struct EndoAppApp: App {
                 .environment(\.checkInRouter, dependencies.checkInRouter)
                 .environment(\.insightsCoordinator, dependencies.insightsCoordinator)
                 .environment(\.healthImportService, dependencies.healthImportService)
+                .environment(\.uiTestScrubDay, dependencies.uiTestScrubDay)
                 .modelContainer(dependencies.modelContainer)
         }
     }

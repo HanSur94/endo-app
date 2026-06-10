@@ -43,6 +43,13 @@ final class AppDependencies {
     /// (D-12). Consent UI is gated behind AppGate; the service is consent-guarded too (T-09-08). Injected
     /// via `\.healthImportService` so the connect/rationale/refresh UI (09-03) can drive it.
     let healthImportService: HealthImportService
+    /// Test-only deterministic chart-scrub selection day (Phase 13, CHART-01..04 E2E seam). Parsed
+    /// from `-uitest-select-day <yyyy-MM-dd>` ONLY when `-uitest-reset` is also present (the
+    /// established pairing — the in-memory store makes the seam unreachable in production) AND only
+    /// in DEBUG builds (`#if DEBUG` belt-and-suspenders; compiled out of release entirely). `nil` on
+    /// every normal launch — injected via `\.uiTestScrubDay` so `InsightTrendChart` can set a
+    /// deterministic selection without any gesture coordinates.
+    let uiTestScrubDay: Date?
 
     init() {
         // Test-only, launch-arg-guarded deterministic reset (used by EndoAppUITests). When the
@@ -98,6 +105,34 @@ final class AppDependencies {
         // `-uitest-reset` (mirrors `-uitest-seed-insights`): the seed only ever touches the in-memory
         // store, so it can NEVER write to the user's real local/CloudKit store. Unreachable in normal launches.
         let seedDemo = ProcessInfo.processInfo.arguments.contains("-uitest-seed-demo")
+
+        // Test-only, launch-arg-guarded SCRUB seed (used by ChartScrubUITests, Plan 13-03). When present
+        // we insert a dense severity spine with ONE in-window gap day and ONE logged severity-0 day so the
+        // chart-scrub E2E can assert all three selection states (logged / gap / zero) deterministically.
+        // PAIRED with `-uitest-reset` (mirrors `-uitest-seed-insights`): the seed only ever touches the
+        // in-memory store, so it can NEVER write to the user's real local/CloudKit store.
+        let seedScrub = ProcessInfo.processInfo.arguments.contains("-uitest-seed-scrub")
+
+        // Test-only, launch-arg-guarded deterministic SCRUB-SELECTION day (Phase 13 E2E seam, T-13-02).
+        // Parsed ONLY when `-uitest-reset` is present (in-memory store — the same unreachable-in-production
+        // pairing as every seed above) and ONLY in DEBUG builds (belt-and-suspenders compile-out). The
+        // parse is defensive (ASVS V5, T-13-02b): bounds-checked arg access + a strict en_US_POSIX
+        // `yyyy-MM-dd` parse in the CURRENT time zone (must match the chart's `Calendar.current`),
+        // normalized to start-of-day — garbage input yields nil, NEVER a crash.
+        var scrubDay: Date? = nil
+        #if DEBUG
+        if uiTestReset,
+           let argIndex = ProcessInfo.processInfo.arguments.firstIndex(of: "-uitest-select-day"),
+           ProcessInfo.processInfo.arguments.indices.contains(argIndex + 1) {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = .current
+            formatter.dateFormat = "yyyy-MM-dd"
+            scrubDay = formatter.date(from: ProcessInfo.processInfo.arguments[argIndex + 1])
+                .map { Calendar.current.startOfDay(for: $0) }
+        }
+        #endif
+        self.uiTestScrubDay = scrubDay
 
         // Test-only, launch-arg-guarded HealthKit fixture selection (used by HealthConnectUITests, 09-03).
         // Mirrors `-uitest-reset`/`-uitest-seed-insights`: a `-uitest-health-*` arg swaps the REAL
@@ -208,6 +243,13 @@ final class AppDependencies {
             Self.seedDemoMonths(into: insightsRepo)
         }
 
+        // Plan 13-03 safety: the scrub seed is inserted ONLY when BOTH `-uitest-seed-scrub` AND the
+        // in-memory `-uitest-reset` store are active, so the gap/zero fixture can never leak to a
+        // real store.
+        if seedScrub && uiTestReset {
+            Self.seedScrubFixture(into: insightsRepo)
+        }
+
         self.insightsCoordinator = InsightsCoordinator(
             loadSnapshots: { try insightsRepo.daySnapshots() },
             loadDismissed: { try insightsRepo.dismissedSignalKeys() },
@@ -302,6 +344,29 @@ final class AppDependencies {
         for offset in stride(from: 21, through: 1, by: -1) {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
             try? repo.upsertSymptom(type: .pelvicPain, severity: 6, on: day)
+        }
+    }
+
+    /// Test-only fixture seam (Plan 13-03): insert a deterministic scrub fixture so the chart-scrub E2E
+    /// (ChartScrubUITests) can assert all THREE selection states. Clones `seedThresholdCrossingInsights`'s
+    /// dense pelvicPain spine (21 days ending yesterday — well past `HonestyGate.minSample(.trend) == 3`)
+    /// with two deliberate anomalies, BOTH inside the last-7 window so every window-card resolves the
+    /// same state (RESEARCH Pitfall 6 — an out-of-window day is logged for the 30-day card but a gap for
+    /// the 7-day card, making assertions ambiguous):
+    ///   • offset 3 — SKIPPED entirely (the in-window GAP day → "Not logged")
+    ///   • offset 2 — severity 0 (the logged-ZERO day → "Severity 0 of 10"; absence ≠ 0)
+    ///   • offset 1 — severity 6 (the logged assertion day → "Severity 6 of 10")
+    /// PAIRED with the in-memory `-uitest-reset` store; it can never touch a real store. Best-effort;
+    /// a seed failure must not crash a UI-test launch. Does NOT modify `seedThresholdCrossingInsights`
+    /// (four existing E2Es depend on its exact shape).
+    private static func seedScrubFixture(into repo: SwiftDataRepository) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        for offset in stride(from: 21, through: 1, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            if offset == 3 { continue }            // the in-window gap day (never logged)
+            let severity = offset == 2 ? 0 : 6     // the logged-zero day vs the dense spine
+            try? repo.upsertSymptom(type: .pelvicPain, severity: severity, on: day)
         }
     }
 
@@ -568,5 +633,23 @@ extension EnvironmentValues {
     var healthImportService: HealthImportService {
         get { self[HealthImportServiceKey.self] }
         set { self[HealthImportServiceKey.self] = newValue }
+    }
+}
+
+/// Environment key carrying the test-only deterministic chart-scrub day (Phase 13 E2E seam, T-13-02).
+/// The default is `nil` — production-inert by construction: only a DEBUG launch that pairs
+/// `-uitest-select-day` with `-uitest-reset` ever injects a value. `Date?` is `Sendable`, so no
+/// `MainActor.assumeIsolated` dance is needed (unlike the consent/terminology keys above).
+private struct UITestScrubDayKey: EnvironmentKey {
+    static let defaultValue: Date? = nil
+}
+
+extension EnvironmentValues {
+    /// The deterministic chart-scrub selection day for UI tests (Plan 13-03). `nil` on every normal
+    /// launch; `InsightTrendChart` reads it in `.onAppear` behind its `allowsSelection` +
+    /// `xDomain.contains` guards.
+    var uiTestScrubDay: Date? {
+        get { self[UITestScrubDayKey.self] }
+        set { self[UITestScrubDayKey.self] = newValue }
     }
 }
