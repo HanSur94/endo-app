@@ -1,272 +1,166 @@
 # Feature Research
 
-**Domain:** Endometriosis & menstrual/symptom tracking + insights (free, privacy-first iOS app)
-**Researched:** 2026-06-03
-**Confidence:** HIGH for table-stakes & endo symptom model (multiple clinical + product sources, Apple docs); MEDIUM for the insights-engine sub-capabilities (synthesized from competitor behavior, not internal docs); MEDIUM for flare prediction (genuinely hard, see PITFALLS).
+**Domain:** Chart interactivity (scrub/tooltip) + multi-series "explore" overlays + scatter views in consumer health/cycle-tracking apps (v1.1 milestone of Endo-App)
+**Researched:** 2026-06-10
+**Confidence:** MEDIUM — synthesized from competitor support docs (Bearable, Guava), Apple platform conventions (Health/Stocks, Swift Charts WWDC material), and dataviz literature (dual-axis critiques, Xiong et al. VIS 2019 on causality perception). No hands-on audit of competitor builds; UI specifics may have drifted.
+
+> Scope note: this file covers ONLY the v1.1 features (interactive trend charts, Explore overlay screen, scatter view). The v1.0 feature landscape this milestone builds on lives in `.planning/milestones/` history and PROJECT.md Validated requirements. Do not re-derive v1.0 scope from this file.
 
 ## Benchmark Summary
 
-| Product | Type | Core strength | Insights depth | Report export | Notable gap (our opportunity) |
-|---------|------|---------------|----------------|---------------|-------------------------------|
-| **Endo-App** (German DiGA) | Prescription DTx | Multimodal therapy modules + specialized endo-diary; "Endo-Plan" + SOS plan | Diary *evaluations* feed a therapy plan; not a correlation/trigger engine | Yes — evaluations usable in doctor consults | Insights are therapy-routing, not "what triggers MY flares." Prescription-gated, German-only, 90-day course. **We out-insight it and are free/global.** |
-| **Phendo** (Columbia/Citizen Endo) | Research app | Best endo-specific symptom model (momentary + day-level; pain locations, GI/GU, dyspareunia, daily-function "Great→Unbearable"); has controls (non-endo users) | "Insight" tab = bleeding patterns, daily experience, tracking activity over 30 days (descriptive, not predictive/correlational) | Limited | Data goes to *researchers*, not back to the user as personalized insight. **We close the loop: insights for the person.** |
-| **Luna for Health** | Endo app (freemium) | LunaEndoScore, medical record, PDF for consults, validated quizzes | Score-based; light on personal correlations | Yes — PDF summary | Insight is a one-time-ish score, not longitudinal trigger discovery. |
-| **Bearable** | General symptom tracker | **Best-in-class insights**: "Impacts"/correlation grid, factors↔symptoms over time, experiments | Correlations after ~7d; trigger ranking after ~30d; custom experiments | Weekly reports | Generic (not endo-shaped), best insights paywalled. **We bring Bearable-grade insights to an endo-native model, free.** |
-| **Flo** | Mainstream period tracker | Predictions, huge content library, cycle-phase mapping | Cycle-phase symptom mapping, predictions | Limited | **2021 FTC complaint: shared health data with Facebook/Google.** Trust liability — our anti-model. |
-| **Clue** | Mainstream period tracker | Clinically-validated predictions, **irregular-cycle tolerant**, BC modes, 6 hormonal subphases, inclusive | Analysis tab (flow/cramps), cycle-phase patterns; correlations modest | Limited | Good cycle engine + inclusivity to emulate; weak on cross-factor trigger discovery. |
+| Product | Scrub/tooltip | Multi-series overlay | Scatter | Notable for us |
+|---------|---------------|----------------------|---------|----------------|
+| **Apple Health** | Touch-and-hold a chart → lollipop readout of day + exact value; drag to scrub; segmented time-range picker (W/M/6M/Y) | Only curated "Highlights" pair two related metrics; no free-form user overlay (a gap third-party apps like Health Hive exist to fill) | None | THE iOS gesture vocabulary users arrive with. Match it or feel broken. |
+| **Bearable** | Tooltips on charts; less polished than Apple | Best-in-class: rotate to landscape on Insights → comparison graph; toggle Mood/Symptoms/Energy/Sleep/measurements via buttons below chart; **binary Factors shown as highlighted days, not lines** | No raw scatter — shows computed "% effect" of factors instead | Closest comparator for Explore. Its factor-day-highlight pattern validates an event-lane approach for binary tags. Its % effect numbers are exactly what our honesty policy forbids. |
+| **Guava** | Tap calendar/chart entries for detail | Per-symptom detail has a "Compare" button to overlay other symptoms/metrics; toggles for frequency vs severity and time period | No raw scatter — correlation/insight cards instead | Validates "start from one metric, add comparisons" as an alternate entry path to a blank Explore canvas. |
+| **Clue** | Basic chart taps | Cycle-length line of last 6 cycles vs ACOG range; Analysis tab tools — **no free-form overlay** | None | Mainstream cycle apps don't do user-driven overlays at all — Explore is genuinely beyond category norm. |
+| **Flo** | Basic | Graphs & Reports: cycle duration charts only | None | Same — confirms Explore is a differentiator, not table stakes, for the cycle-app category. |
 
-**Strategic read:** Table stakes = Phendo's symptom model + Clue's irregular-tolerant cycle engine. Differentiator = Bearable-grade insights, but endo-native and free, with the loop closed back to the user (not a research silo like Phendo, not a therapy router like the DiGA). Anti-model = Flo's data monetization.
+**Strategic read:** Scrub-to-read-value is iOS table stakes (Apple Health trained everyone). A user-driven multi-series Explore is a *differentiator* — only Bearable/Guava have anything close, and both hide honest raw data behind computed claims. A raw scatter view is rarer still and aligns unusually well with this app's honesty invariants: visualization research (Xiong et al., VIS 2019) found scatter plots elicit the *lowest* causality ratings of common chart types — the least causally-suggestive way to show an association.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Missing these = the app feels like a generic period tracker or an incomplete diary; endo users churn to Phendo/Bearable.
+Missing these = the new surfaces feel broken or below iOS platform standard.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Endo-specific symptom logging** (full set below) | Endo users explicitly reject generic period apps; pain/GI/dyspareunia are the disease | **M** | The differentiator vs a period tracker. Model enumerated in next section. Depends on data model + entry UI. |
-| **Pain severity + location body map** | Pain location matters clinically (bowel/bladder/pelvic phenotypes); Endolog/Phendo/Endo-App all do it | **M** | Tappable body/pelvic map + 0–10 (or NRS) severity per region. Higher value than a single global pain score. |
-| **Bleeding / menstrual flow logging** | Core of any cycle tool; also a symptom for endo (heavy flow = severe phenotype) | **S** | Flow level + spotting/intermenstrual bleeding. Maps to HealthKit `menstrualFlow`/`intermenstrualBleeding`. |
-| **Cycle tracking & prediction, irregular-tolerant** | Expected of any cycle app; endo cycles are irregular / suppressed | **L** | MUST degrade gracefully: no textbook 28-day assumption; support "no cycle / on continuous hormonal Tx" mode. See ARCHITECTURE/PITFALLS. Depends on bleeding log. |
-| **Mood / emotional state logging** | Standard across all benchmarks; mood is an endo symptom and a confound | **S** | Simple scale + optional tags (anxious, low, irritable). |
-| **Fatigue / energy logging** | One of the most reported endo symptoms beyond pain | **S** | 0–N scale; HealthKit `fatigue` exists. |
-| **GI / "endo belly" logging** | Bloating, nausea, constipation/diarrhea, dyschezia — hallmark endo cluster | **S** | Group as a GI sub-section. HealthKit has `bloating`, `nausea`, `constipation`, `diarrhea`, `abdominalCramps`. |
-| **Medication & hormonal treatment logging** | Needed for both self-mgmt and doctor reports; Phendo maps 64 options; confounds insights | **M** | Meds (incl. PRN painkillers), hormonal therapy (pill/IUD/GnRH), supplements. Doses + adherence optional. |
-| **Daily / reminder-based logging flow** | Adherence is the whole game; benchmarks optimize "a few taps" | **M** | Fast daily check-in; smart defaults; local notification reminders. Adherence feeds insight quality. |
-| **Food / nutrition logging** | In PROJECT scope; users hunt for dietary triggers (low-FODMAP, gluten, dairy, caffeine, alcohol) | **M** | Lightweight tag-based ("had dairy", "caffeine", "alcohol", "processed") beats a full calorie DB for trigger-finding. HealthKit nutrition import optional. |
-| **Physical activity / sport logging** | In PROJECT scope; exercise is both trigger and relief; pull from HealthKit workouts | **S–M** | Type + intensity/duration; auto-import from HealthKit workouts reduces double-logging. |
-| **Trends & charts over time** | Every benchmark visualizes history; "is it getting worse?" is the #1 user question | **M** | Swift Charts: symptom severity over time, flow calendar, frequency. |
-| **Cycle-phase symptom mapping** | Clue/Flo/Oura standard: "how do I feel across my cycle" | **M** | Overlay symptoms on cycle phases; degrade to calendar/heatmap when no cycle. Depends on cycle engine + symptom log. |
-| **Doctor-ready PDF report export** | In PROJECT scope; Luna/Endolog/CareClinic/EndoTracker all ship it; #1 reason endo users track | **M** | Clean PDF: date range, pain distribution, symptom frequency/severity, flow trend, meds overview, wellness score. Share sheet. |
-| **HealthKit integration (read + selective write)** | In PROJECT scope; reduces double-logging; iOS users expect it | **M** | Read cycle/sleep/workouts/nutrition; consider writing symptoms back. Depends on data model. |
-| **Private, no-account data ownership** | Post-Dobbs/post-Flo-FTC, privacy is now a table-stakes *expectation*, not just a differentiator | **M** | On-device + private CloudKit, no login. Must be *visibly* communicated (privacy is also a differentiator below). |
-| **Customizable / "track only what's relevant" set** | Endo presentations vary (4 phenotypes); forcing all fields kills adherence | **M** | Let users enable/disable symptom categories. Also serves inclusive design (disable fertility/pregnancy framing). |
-| **Inclusive, non-assumptive design** | Not all users identify as women or menstruate (continuous Tx); pink/fertility framing causes dysphoria & alienation | **S–M** | Gender-neutral copy, neutral palette, ability to hide pregnancy/fertility & cycle-prediction, no "your period is late!" nags. Mostly copy/IA discipline, low code cost, high trust payoff. |
+| **Touch-and-hold + drag scrub with lollipop tooltip** (vertical rule + date + exact value) | Apple Health/Stocks trained every iOS user; "tap chart, see number" is the platform reflex | **LOW–MED** | iOS 17+ `.chartXSelection` binding + `RuleMark` + `.annotation` is the canonical implementation; gesture recognition is handled by the framework. Applies to all existing dashboard trend charts. |
+| **Tooltip readout pinned above the finger / chart top** | Finger occludes the point; Health/Stocks pin the readout at the top edge | **LOW** | Annotation position + collision handling near chart edges (first/last days) is the only fiddly part. |
+| **Gap-honest tooltip** ("Not logged" on unlogged days, never 0) | This app's own v1.0 invariant (absence ≠ 0) extended to the new surface; a tooltip showing 0 on a gap day would silently break it | **LOW–MED** | Scrub selection must resolve to *logged days only* or explicitly render a "no entry" state. This is the one place generic Swift Charts tutorials will mislead — they interpolate to nearest point. |
+| **Selection haptic on day change** | Health/Stocks do it; scrubbing feels dead without it | **LOW** | `UISelectionFeedbackGenerator` on day boundary crossings. |
+| **Tooltip dismissal** (release-to-dismiss or tap-elsewhere) | Standard; a stuck tooltip reads as a bug | **LOW** | Decide persist-on-tap vs live-only-while-touching; Health uses live-while-touching. |
+| **Series picker as toggle chips/buttons** on Explore | Bearable (buttons below chart) and Guava (Compare button) both converge on this; users expect add/remove per tap, not a settings form | **MED** | Needs a unified "series catalog" (every loggable metric with id, display name, unit, scale type, kind: continuous/ordinal/binary). This catalog is the real work of Explore. |
+| **Distinct series colors + legend** | Basic legibility for any overlay | **LOW** | Color assignments must be stable per metric across sessions and color-blind-safe; reuse insight-dashboard palette where metrics already have colors. |
+| **Shared time axis + existing time-range control on Explore** | Consistency with v1.0 dashboard (absolute dates, range presets) | **LOW–MED** | Reuse v1.0 axis/gap rendering. Do not introduce a second axis vocabulary. |
+| **Empty/sparse states** ("pick at least one series", "not enough overlapping days for a scatter") | Explore with 0–1 selected series or a scatter with 2 shared days must not render nonsense | **LOW–MED** | Mirrors v1.0 withheld-when-insufficient discipline; copy goes through ClaimsPolicy scan. |
+| **Scrub works on Explore overlay too** (one tooltip listing each visible series' value for that day) | Once charts are scrubbable, an inert Explore chart feels inconsistent | **MED** | Multi-series tooltip layout (n values + "not logged" per missing series) is a small design problem of its own. |
+| **Accessibility parity** (VoiceOver summaries / Audio Graphs on new charts) | Platform expectation for charts; v1.0 charts presumably ship descriptors — new surfaces can't regress | **MED** | Swift Charts provides accessibility descriptors; multi-series + scatter need bespoke audio-graph descriptions. |
 
 ### Differentiators (Competitive Advantage)
 
-This is where we beat the DiGA and the generic trackers. The **insights engine is the centerpiece** — broken into buildable sub-capabilities.
+Where v1.1 beats the category — all flow from the same honesty positioning as v1.0.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Insights: correlation / trigger discovery** (symptoms ↔ food, sleep, activity, cycle phase, meds) | The core promise: "what makes MY endo worse?" Bearable's killer feature, but endo-native & free | **L** | Compute lagged associations (e.g., dairy on day N → bloating day N/N+1). Show ranked "factors linked to your flares." Needs ~7–30d data before surfacing. Statistical rigor + plain-language framing is the hard part (see PITFALLS: spurious correlation, confounding). |
-| **Insights: trend & cycle-phase mapping with charts** | "My fatigue clusters in the late luteal phase" — actionable pattern recognition | **M** | Heatmaps/phase overlays; works in calendar mode when no cycle. Builds on table-stakes charts; the *interpretation layer* is the differentiator. |
-| **Insights: flare prediction / early warning** | "Tomorrow looks high-risk based on your pattern" — proactive, unique vs all benchmarks | **L** | Hardest & riskiest. Start with simple personal heuristics (cycle-phase risk + recent trigger exposure) before any ML. MUST be framed as informational, never diagnostic. High research-flag (see PITFALLS). Depends on correlation engine + cycle engine. |
-| **Insights: personalized, data-driven recommendations** | "You tend to feel better on days you walk + sleep 7h+" — closes the loop the DiGA/Phendo don't | **L** | Derive from the user's *own* positive/negative correlations. Must avoid medical-advice framing ("you tend to report..." not "you should..."). Depends on correlation engine. |
-| **Insights confidence / "more data needed" honesty** | Trust differentiator: most apps over-claim; we under-promise & show data sufficiency | **S–M** | Show n, confidence, "need X more days." Directly counters spurious-correlation harm. Cheap, high-trust. |
-| **Endo-native symptom model with body map & momentary + day-level logging** | Phendo-grade depth, but the data feeds the *user's own* insights, not a research silo | **M–L** | Momentary (a flare now) + daily summary, like Phendo. This is both table-stakes depth and a differentiator vs generic trackers. |
-| **Privacy-by-architecture as a feature** (on-device, private iCloud, no account, no ads/analytics SDK) | Post-Flo-FTC / post-Dobbs, "we literally cannot see or sell your data" is a strong, marketable wedge | **M** | Architectural, but surface it in UX: privacy explainer, "your data never leaves your devices." Genuine differentiator vs Flo/most freemium apps. |
-| **Doctor report that's genuinely clinical-grade** | Beyond a data dump: phenotype-aware summary (pain map, cyclicity, severity trend, function score) | **M** | Lean into endo-clinical framing (cyclical vs constant pain, dyspareunia, dyschezia/dysuria, function). Higher value than competitors' generic PDFs. Depends on report export + symptom model. |
-| **Free, global, no prescription** | The whole reason to exist vs the DiGA (prescription-gated, German, 90-day) | n/a | Positioning, not a build. Reinforced by no-backend/no-cost architecture. |
+| **Honest mixed-scale overlay: aligned lanes / banded layout instead of dual-axis spaghetti** | Dataviz consensus: dual independent y-axes mislead (arbitrary crossovers, scale manipulation). Stacked per-scale lanes sharing one time axis keep every series in honest units — no competitor does this deliberately | **MED–HIGH** | E.g. severity (0–10) lane, hours lane, 1–5 lane vertically aligned on one x-axis; or one plot area with per-series labeled bands. This is the core design decision of Explore — prototype early. |
+| **Binary tags as an event-marker lane** (tick strip under the plot), not fake 0/1 lines | Bearable's day-highlight pattern proves it; a 0/1 line series is visual noise and implies a scale that doesn't exist | **MED** | One row of date-aligned ticks per selected tag (e.g. "dairy" dots under the chart). Also the honest home for bleeding-intensity if treated as ordinal events. |
+| **Raw scatter view, one point = one logged day** | The "show me the actual data" move no mainstream cycle app makes; research says scatter is the least causality-implying encoding — a perfect fit for the descriptive-only policy | **MED** | Day-pairing: only days where BOTH factors are logged become points (absence ≠ 0 again). Discrete scales (0–10 vs 1–5) collide on a grid — needs jitter or count-encoded point size to handle overplotting honestly. |
+| **Tap a scatter point → see the exact day, jump to that day's log** | Turns an abstract cloud into "oh, that was the day I…" — uniquely useful for lay users; nobody in category does it | **MED** | Needs point→date identity and a navigation hook into the existing log/day view. |
+| **Cross-link from gated correlation cards → prefilled Explore/scatter** ("see the days behind this") | The correlation engine says "possible association"; Explore lets the user inspect the raw evidence — deepens trust, exercises the differentiator | **LOW–MED** | Pure wiring: correlation card carries (factorA, factorB) → opens scatter preconfigured. High leverage per effort. |
+| **Descriptive-only chart chrome by design** (no r-values, no trend lines, no "% impact") | Bearable sells "% effect on your mood" — statistically shaky on n≈30 self-tracked days; our restraint is the brand | **LOW** | Mostly a *negative* spec (see anti-features) plus one neutral caption pattern, ClaimsPolicy-scanned. |
+| **Portrait-first Explore** | Bearable forces landscape rotation for its comparison graph — a known friction point | **LOW–MED** | Lanes layout works in portrait; landscape can be a later enhancement, not a prerequisite. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **Ad / analytics / attribution SDKs on health data** | Standard monetization; "we need usage metrics" | This is the Flo FTC scandal. Special-category GDPR data; destroys the privacy wedge; legal exposure | No third-party SDKs on health data. If any telemetry, on-device/aggregate-only & opt-in, no health content. |
-| **Medical-diagnosis / "you have endometriosis" claims** (cf. Luna's "diagnosis" framing) | Users want answers; sounds authoritative | Regulated medical-device territory (DiGA/CE/FDA); legal risk; PROJECT explicitly out-of-scope | Informational insights only: "you tend to report..."; persistent "not medical advice / see a clinician" framing. |
-| **Cloud account / custom backend / web app** | "Sync everywhere", "log in on the web" | Recurring server cost (breaks free model); creates a breachable health-data honeypot; login friction | Private CloudKit sync across the user's own Apple devices, no account. (PROJECT decision.) |
-| **Social feed / community / sharing** | Endo is isolating; peer support is real | Moderation burden, abuse/privacy risk, off-core for v1, can leak sensitive data | Out of scope for v1 (PROJECT). Revisit only post-validation; if ever, keep it firewalled from tracking data. |
-| **Fertility / "trying to conceive" / pregnancy-mode as default** | Many cycle apps lead with this | Many endo users aren't TTC, are on suppressive Tx, or find it alienating/dysphoria-inducing | Optional, off by default; never nag. Supports inclusive design. |
-| **Aggressive gamification / streak shaming** | Boosts retention metrics | Punishes the days users are too sick to log (the worst flares = missed logs = broken streaks + guilt) | Gentle, optional encouragement; never penalize gaps; treat missing data as signal, not failure. |
-| **Full calorie/macro food database** | "Proper nutrition tracking" | Heavy to build/maintain; calorie precision is irrelevant for trigger discovery; tanks logging speed | Lightweight food-tag taxonomy (dairy, gluten, caffeine, alcohol, FODMAP-ish, processed) — enough for correlations. |
-| **Over-confident flare predictions / push alerts** | "Warn me before a flare" | Endo is noisy; false alarms erode trust & cause anxiety; over-claiming flirts with medical-device line | Probabilistic, low-key, opt-in early-warning with confidence + "not a diagnosis"; ship descriptive insights first. |
-| **Forcing the full symptom set on everyone** | "Comprehensive tracking" | Endo phenotypes vary (Phendo found 4); long forms kill daily adherence | Customizable enabled set; smart defaults; progressive disclosure. |
-| **Generic "women's health" pink-everything branding** | Market convention | Alienates trans/nonbinary users & those not menstruating; signals "generic period app" | Neutral, clinical-but-warm design; gender-neutral copy. |
-
-## Endo-Specific Symptom Model (Concrete)
-
-This is the credibility line between an endometriosis app and a period tracker. Synthesized from Phendo's data model, the clinical endo literature (classic triad + GI/GU + systemic), and HealthKit's available symptom identifiers. Severity on a consistent scale (e.g., 0–10 NRS or none/mild/moderate/severe); each ideally supports cyclicity (worse around menses vs constant).
-
-**Pain (with body-map location + severity):**
-- Pelvic / lower-abdominal pain
-- Dysmenorrhea (period pain)
-- Dyspareunia (pain during/after sex) — pairs with optional sexual-activity log (HealthKit `sexualActivity`)
-- Dyschezia (pain on bowel movement)
-- Dysuria (pain/burning on urination)
-- Lower back pain (HealthKit `lowerBackPain`)
-- Leg / radiating pain
-- Ovulation / mittelschmerz pain
-- Pain *cyclicity* flag (cyclical worsening vs constant/chronic — clinically meaningful for endo)
-
-**GI / "endo belly" cluster:**
-- Bloating / "endo belly" distension (`bloating`)
-- Abdominal cramps (`abdominalCramps`)
-- Nausea (`nausea`) / vomiting (`vomiting`)
-- Constipation (`constipation`) / diarrhea (`diarrhea`)
-- Appetite changes (`appetiteChanges`)
-
-**Genitourinary:**
-- Urinary frequency / urgency
-- Bladder pain / interstitial-cystitis-like symptoms
-
-**Bleeding / menstrual:**
-- Flow level (`menstrualFlow`)
-- Spotting / intermenstrual bleeding (`intermenstrualBleeding`)
-- Clots / heavy flow flag
-- Period start/end (cycle-start metadata for HealthKit)
-
-**Systemic / other:**
-- Fatigue / low energy (`fatigue`)
-- Headache / migraine (`headache`)
-- Dizziness / fainting (`dizziness`/`fainting`)
-- Hot flashes (`hotFlashes` — esp. on GnRH/menopausal Tx)
-- Sleep quality (or import from HealthKit `sleepAnalysis`)
-- Brain fog / concentration
-
-**Mood / psychological:**
-- Mood / emotional state (`moodChanges`)
-- Anxiety / low mood (often `mindfulSession`-adjacent; track as tags)
-
-**Function / quality-of-life (Phendo-style):**
-- Overall day rating ("Great → Unbearable")
-- Daily activities that were hard (work, exercise, social, intimacy) — strong for doctor reports
-- Days off work / bed-bound flag
-
-**Contextual factors (inputs for the insights engine, not symptoms):**
-- Food tags (dairy, gluten, caffeine, alcohol, high-FODMAP, processed, large meal)
-- Activity (type, intensity, duration; HealthKit workouts)
-- Sleep (duration/quality; HealthKit)
-- Stress level
-- Medications taken (scheduled + PRN painkillers), hormonal therapy, supplements
-- Weather / barometric pressure (optional; some users report sensitivity)
-- Cycle phase (derived) / on-continuous-suppression flag
-
-## Insights Engine — Buildable Sub-Capabilities
-
-The PROJECT's centerpiece. Decomposed from highest-confidence/lowest-risk to hardest, which is also the recommended build order.
-
-1. **Descriptive trends (foundation)** — per-symptom severity/frequency over time, flow calendar, "30-day at a glance" (Phendo-grade). **M.** Pure aggregation over the log. *Ship first.*
-2. **Cycle-phase mapping** — overlay symptoms on derived phases; heatmap of "symptom × phase"; calendar fallback when no/suppressed cycle. **M.** Depends on cycle engine + log.
-3. **Correlation / trigger discovery** — ranked associations between contextual factors and symptoms, with lag (factor day N → symptom N/N+1), gated by data sufficiency (n, confidence). **L.** The core differentiator. Statistical care required (multiple-comparisons, confounding, base rates) — see PITFALLS. Output as plain-language "factors linked to your flares" + "factors linked to your better days."
-4. **Personalized recommendations** — surface the user's *own* protective factors ("you tend to feel better on days you walk + sleep 7h+"). **L.** Derived from #3; strictly "you tend to report…", never prescriptive. Depends on correlation engine.
-5. **Flare prediction / early warning** — combine cycle-phase risk + recent trigger exposure + trend momentum into a low-key, probabilistic "today/tomorrow looks higher-risk." **L, highest risk.** Start heuristic (no ML); always show confidence; never diagnostic. Depends on #2 + #3. *Build last; flag for deeper phase research.*
-6. **Insight honesty layer** — data-sufficiency indicators, "need X more days," confidence on every claim. **S–M.** Cross-cuts all of the above; a trust differentiator that directly mitigates the spurious-correlation pitfall.
+| **Dual independent y-axes** (two scales overlaid in one plot area) | "Just put sleep hours and pain on the same chart" — obvious-seeming ask | Crossover points are arbitrary; independent scales manufacture fake visual relationships; unclear which line owns which axis. Dataviz literature near-unanimously warns against it | Aligned per-scale lanes sharing the x-axis; or an explicitly labeled "shape view" normalization (below) |
+| **Silent normalization to 0–100 "to fit everything on one axis"** | Makes the overlay look clean | Hides real units; a 6→7 severity move and a 5→8h sleep move become visually identical; violates the honest-axis invariant | If offering a normalized mode at all, label it loudly ("shapes, not values"), keep per-series real-unit readout in the scrub tooltip, and keep lanes as the default |
+| **Trend/regression line + correlation coefficient on the scatter** | "The classic correlation look" includes a fitted line; users may ask for it | A fitted line is a visual causal/strength claim; numeric r is exactly the numeric-confidence framing v1.0 forbids; meaningless at sparse n | Raw points only; neutral caption ("each point is one logged day"); the *gated* correlation engine remains the only thing allowed to say "possible association" |
+| **Smoothing / moving averages that bridge gaps** | Self-tracked data is jagged; smoothed lines look nicer | Interpolating across unlogged days fabricates data (absence ≠ 0); a moving average that spans gaps double-fabricates | Keep v1.0 gap breaks. If smoothing is ever added, compute only within contiguous logged runs and label it — defer entirely from v1.1 |
+| **Unlimited series in one overlay** | "Why can I only add N?" | Overplotting spaghetti; tooltip becomes a wall; lane layout degrades; Bearable's own chart gets noisy fast | Cap at 3–4 quantitative series + a couple of event lanes; clear "remove one to add another" affordance |
+| **On-the-fly correlation/insight badges inside Explore** ("these two look related!") | Feels helpful, "smart" | Bypasses every v1.0 honesty gate (sufficiency thresholds, suppression, claims policy); turns a descriptive surface into an ungated claims engine | Explore stays descriptive; the only bridge is the *inbound* link from already-gated correlation cards |
+| **Causal/affirmative copy in new chrome** ("trigger found", "X affects Y") | Marketing-style copy is the category default (Bearable/Guava both use causal verbs) | Violates ClaimsPolicy and the app's positioning; legal/positioning risk for a wellness app | All v1.1 copy through existing ClaimsPolicy scans; descriptive verbs only ("logged together", "on days you logged X…") |
+| **Pinch-zoom / free pan on the time axis** | Power-user expectation from finance apps | High implementation cost; `chartScrollableAxes` + selection gestures interact poorly; range presets already cover the need | Keep segmented range presets (consistent with dashboard); revisit only on user demand |
+| **Binary tags rendered as 0/1 line series** | Simplest implementation of "add food tag to chart" | Implies a continuous scale that doesn't exist; lines between 0s and 1s are pure noise | Event-marker lane (tick strip), per Bearable's day-highlight precedent |
 
 ## Feature Dependencies
 
 ```
-[Endo symptom data model] ──required by──> [Symptom logging UI]
-        │                                         │
-        │                                         └──required by──> [Trends & charts]
-        │                                                                  │
-[Bleeding/flow log] ──required by──> [Cycle engine (irregular-tolerant)]   │
-        │                                  │                               │
-        │                                  └──required by──> [Cycle-phase mapping]
-        │                                                          │
-[Contextual factor logging                                         │
- (food / activity / sleep / meds)] ──required by──> [Correlation / trigger engine]
-                                                          │         │
-                                                          ├──required by──> [Personalized recommendations]
-                                                          └──+ cycle-phase ──> [Flare prediction]
+[Scrub/tooltip on dashboard charts]
+    └──requires──> [v1.0 dashboard trend charts (Phase 8)]   ✓ exists
+    └──requires──> [v1.0 gap rendering / absence≠0 model]    ✓ exists (must be honored by selection logic)
 
-[HealthKit integration] ──enhances──> [Activity/sleep/nutrition/cycle logging] (reduces double-entry)
-[Insight honesty layer] ──enhances──> [Correlation engine, Recommendations, Flare prediction]
-[Private CloudKit sync] ──independent of──> [feature logic] (persistence layer; build early, parallelizable)
-[Doctor PDF report] ──required by──> [Symptom model + Trends + (optionally) Insights]
-[Customizable symptom set] ──enhances──> [Logging UI] (+ serves inclusive design)
+[Explore overlay screen]
+    └──requires──> [Series catalog abstraction]  ← NEW: unified metadata for every loggable metric
+                       └──requires──> [v1.0 logging models + ImportedSample merge]  ✓ exists
+    └──requires──> [Scrub/tooltip mechanics]     (reuse; multi-series tooltip variant)
+    └──requires──> [Event-lane rendering]        ← NEW: binary/ordinal lanes
+    └──requires──> [ClaimsPolicy scan coverage for new copy]  ✓ exists, extend
+
+[Scatter view]
+    └──requires──> [Series catalog abstraction]  (same NEW dependency)
+    └──requires──> [Day-pairing logic]           ← NEW: both-logged-day intersection
+    └──enhances──> [v1.0 gated correlation cards]  via prefilled deep-link ("see the days behind this")
+
+[Tap-point → day log navigation] ──enhances──> [Scatter view]
+[Multi-series tooltip] ──requires──> [single-series tooltip] (build single first)
+
+[On-the-fly explore insights] ──conflicts──> [v1.0 honesty gate architecture]  (anti-feature)
+[Dual y-axes / silent normalization] ──conflicts──> [honest-axis invariant]    (anti-feature)
 ```
 
 ### Dependency Notes
 
-- **Cycle engine requires bleeding log AND must be optional/suppressible:** prediction degrades to a calendar/heatmap when the user is on continuous hormonal suppression or has no discernible cycle. This is a hard requirement, not a nice-to-have (PROJECT context).
-- **Correlation engine requires contextual factor logging:** with only symptoms and no food/activity/sleep/med inputs, there's nothing to correlate against. Factor logging must ship before/with the insights engine.
-- **Flare prediction depends on both cycle-phase mapping and the correlation engine:** it's a composition of earlier capabilities — it cannot be built first.
-- **Doctor report depends on the symptom model and trends; insights are optional enrichment:** a useful report can ship before the full insights engine, de-risking value delivery.
-- **HealthKit enhances but should not be required:** the app must be fully usable for someone who declines HealthKit permissions.
-- **Insight honesty layer enhances every insight feature:** it's the guardrail that keeps correlations/predictions from over-claiming.
+- **Series catalog is the keystone:** Both Explore and Scatter need one registry describing each metric's unit, scale (0–10 ordinal, hours continuous, 1–5 ordinal, binary tag, bleeding ordinal), source (manual vs HealthKit-imported), and gap semantics. Build it once, first; both screens consume it.
+- **Scrub before Explore:** The tooltip/selection mechanics built on the existing single-series dashboard charts are reused (and complicated) by the multi-series overlay — sequencing scrub first de-risks Explore.
+- **Scatter is independent of the overlay chart** beyond the shared catalog + day-pairing — it can land in a separate phase/parallel track.
+- **Correlation-card deep-link is post-scatter glue:** trivial once scatter accepts a (factorA, factorB) configuration; schedule it after scatter works.
+- **ClaimsPolicy extension is cross-cutting:** every new copy string (tooltips, empty states, captions, series names in sentences) enters the existing forbidden-phrasing scans; treat as acceptance criteria on every v1.1 phase, not a separate feature.
 
 ## MVP Definition
 
-### Launch With (v1)
+### Launch With (v1.1)
 
-Minimum to validate "insights make logging worth it" while being a credible endo tool.
+- [ ] Scrub/tap-to-read on all existing dashboard trend charts (rule mark + lollipop, gap-honest "not logged", haptic) — the table-stakes core of the milestone
+- [ ] Series catalog abstraction — prerequisite for everything else
+- [ ] Explore screen: 2–4 quantitative series in aligned per-scale lanes on a shared time axis, toggle-chip picker, shared range presets, multi-series scrub tooltip
+- [ ] Binary food tags (+ bleeding, if treated as events) as event-marker lanes in Explore
+- [ ] Scatter view: factor vs factor, one point per both-logged day, overplotting handled (jitter or count-sized points), descriptive caption, empty-state gating
+- [ ] ClaimsPolicy scan coverage over all new copy — invariant, not optional
 
-- [ ] **Endo-specific symptom logging + pain body map** — credibility vs generic trackers
-- [ ] **Bleeding/flow logging** — cycle + symptom foundation
-- [ ] **Irregular-tolerant cycle tracking** with suppression/no-cycle mode — non-negotiable for endo
-- [ ] **Contextual factor logging** (food tags, activity, sleep, meds, mood, fatigue, stress) — inputs for insights
-- [ ] **Fast daily check-in + reminders** — adherence is prerequisite to insight quality
-- [ ] **Trends & charts (descriptive insights)** — immediate value before correlation engine matures
-- [ ] **Cycle-phase mapping** — differentiated pattern view
-- [ ] **Correlation / trigger discovery + insight honesty layer** — the centerpiece differentiator
-- [ ] **Doctor-ready PDF report** — top reason endo users track; high retention driver
-- [ ] **HealthKit read integration** (workouts/sleep/nutrition/cycle) — reduce double-logging
-- [ ] **Private CloudKit sync, no account** — privacy wedge + PROJECT architecture
-- [ ] **Inclusive, customizable, non-assumptive design** — trust + adherence, low marginal cost
+### Add After Validation (v1.1.x)
 
-### Add After Validation (v1.x)
-
-- [ ] **Personalized recommendations** — once correlation engine proves stable & trustworthy on real data
-- [ ] **Flare prediction / early warning** — after enough longitudinal data validates personal heuristics; needs dedicated research phase
-- [ ] **Custom "experiments"** (Bearable-style A/B on a trigger) — power-user trigger validation
-- [ ] **HealthKit write-back** of symptoms — once data model is stable
-- [ ] **Richer report customization** (date ranges, phenotype-aware summaries)
-- [ ] **Weather/barometric factor** — low-cost optional correlation input
+- [ ] Tap-a-scatter-point → that day's log — once scatter ships and navigation hook is confirmed cheap
+- [ ] Correlation card → prefilled scatter deep-link — once both ends exist; high leverage, low cost
+- [ ] Saved/recent Explore configurations — if users demonstrably rebuild the same comparison repeatedly
+- [ ] Landscape-optimized Explore layout — if portrait lanes feel cramped with 3–4 series in real use
 
 ### Future Consideration (v2+)
 
-- [ ] **Education / knowledge library** — explicitly deferred (PROJECT)
-- [ ] **Guided therapy programs** (physio/nutrition/pain-coping) — large content + clinical lift; the DiGA's turf (PROJECT)
-- [ ] **Android / web** — iOS-first (PROJECT)
-- [ ] **Community / peer support** — only if firewalled from health data; high moderation cost
-- [ ] **Medical-device/DiGA certification path** — only if positioning ever changes (currently out-of-scope)
+- [ ] Lag-shifted comparison ("factor day N vs symptom day N+1") — Bearable does timing-aware association internally; exposing a lag control is powerful but a UX + honesty-framing project of its own
+- [ ] Explore chart export into the PDF report — wait until Explore configurations prove valuable
+- [ ] Pinch-zoom/pan time axis — only on demonstrated demand; conflicts with selection gestures
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Endo symptom logging + body map | HIGH | MEDIUM | P1 |
-| Bleeding/flow logging | HIGH | LOW | P1 |
-| Irregular-tolerant cycle engine | HIGH | HIGH | P1 |
-| Contextual factor logging | HIGH | MEDIUM | P1 |
-| Daily check-in + reminders | HIGH | MEDIUM | P1 |
-| Trends & charts (descriptive) | HIGH | MEDIUM | P1 |
-| Doctor PDF report | HIGH | MEDIUM | P1 |
-| Private CloudKit sync, no account | HIGH | MEDIUM | P1 |
-| Inclusive/customizable design | MEDIUM | LOW | P1 |
-| HealthKit read integration | MEDIUM | MEDIUM | P1 |
-| Cycle-phase mapping | HIGH | MEDIUM | P1/P2 |
-| Correlation/trigger engine + honesty layer | HIGH | HIGH | P1/P2 |
-| Personalized recommendations | HIGH | HIGH | P2 |
-| Flare prediction / early warning | MEDIUM–HIGH | HIGH | P2/P3 |
-| Custom experiments | MEDIUM | MEDIUM | P3 |
-| HealthKit write-back | LOW–MEDIUM | MEDIUM | P3 |
-| Weather/barometric factor | LOW | LOW | P3 |
-
-**Priority key:** P1 = must have for launch · P2 = should have, add when possible · P3 = nice to have / future.
+| Scrub/tooltip on existing charts | HIGH | LOW–MED | P1 |
+| Series catalog | (enabler) | MED | P1 |
+| Explore overlay (lanes + chips + tooltip) | HIGH | HIGH | P1 |
+| Event lanes for binary tags | MEDIUM | MED | P1 |
+| Scatter view (raw points, gated empty states) | HIGH | MED | P1 |
+| Multi-series scrub tooltip | MEDIUM | MED | P1 (with Explore) |
+| Accessibility parity on new charts | MEDIUM | MED | P1 (non-negotiable platform bar) |
+| Scatter point → day log | MEDIUM | LOW–MED | P2 |
+| Correlation card → scatter deep-link | MEDIUM | LOW | P2 |
+| Saved Explore configs | LOW–MED | MED | P3 |
+| Lag-shifted comparison | MEDIUM | HIGH | P3 |
+| Pinch-zoom/pan | LOW | HIGH | P3 |
 
 ## Competitor Feature Analysis
 
-| Feature | Endo-App (DiGA) | Phendo | Bearable | Clue | Our Approach |
-|---------|-----------------|--------|----------|------|--------------|
-| Endo symptom depth | High (endo-diary) | **Highest** (pain loc, GI/GU, dyspareunia, function) | Low (generic, customizable) | Low–med (endo "use case") | Phendo-grade model, but feeding the user's own insights |
-| Irregular/suppressed cycles | Endo-aware | Tracks bleeding patterns | N/A (generic) | **Strong** (irregular-tolerant) | Clue-grade tolerance + explicit suppression mode |
-| Correlation/trigger insights | No (therapy routing) | No (descriptive only) | **Yes** (paywalled) | Modest | Bearable-grade, endo-native, **free**, with honesty layer |
-| Cycle-phase mapping | Limited | Limited | Limited | **Yes** (6 subphases) | Yes; degrades to calendar when no cycle |
-| Flare prediction | No | No | No | No | **Unique** (v1.x, heuristic-first, non-diagnostic) |
-| Personalized recommendations | Therapy-plan based | No | Partial (impacts) | No | From user's own correlations; non-prescriptive |
-| Doctor report export | Yes (evaluations) | Limited | Weekly reports | Limited | **Clinical-grade**, phenotype-aware PDF |
-| Privacy model | Clinical/regulated | Research servers (HIPAA) | Commercial | Better-than-most | **On-device + private iCloud, no account, no SDKs** |
-| Cost / access | Prescription, German, 90d | Free (research) | Freemium | Freemium | **Free, global, no prescription** |
-| Inclusive design | Clinical | Has non-endo controls | Neutral | **Strong (LGBTQIA+)** | Gender-neutral, non-assumptive, customizable |
+| Feature | Apple Health | Bearable | Guava | Our Approach |
+|---------|--------------|----------|-------|--------------|
+| Scrub/tooltip | Touch-and-hold lollipop, drag scrub, haptic — the reference implementation | Tooltips, less refined | Tap-for-detail | Match Apple Health's gesture vocabulary exactly, plus gap-honest "not logged" readouts they don't need (their data has no absence-≠-0 problem) |
+| Multi-series overlay | Curated Highlights pairs only; no user control | Landscape comparison graph, button toggles, factor day-highlights | Per-symptom "Compare" button | User-driven like Bearable but portrait-first, lanes instead of one shared/normalized plot area, event lanes for binaries |
+| Mixed scales | Avoided (pairs are curated to compatible units) | Single plot; scale handling undocumented/implicit | Undocumented | Explicit per-scale lanes; any normalized mode loudly labeled — the honesty differentiator |
+| Scatter | None | None (shows computed "% effect" instead) | None (correlation cards instead) | Raw day-points scatter, no fit line, no coefficient — show evidence, let gated engine make the (hedged) claims |
+| Causal framing | Neutral | "% effect of factor on mood" — affirmative numeric claims | "find what could be causing flare-ups" — softened causal | Strictly descriptive; ClaimsPolicy-scanned; "possible associations" language only via existing gated engine |
 
 ## Sources
 
-- Endo-App (DiGA): https://endometriose.app/en/endo-app/ · https://www.diga-verzeichnis.de/en/diga/endo-app · https://femtechinsider.com/endo-app-diga-2/
-- Phendo / Citizen Endo: https://citizenendo.org/phendo/ · https://apps.apple.com/us/app/phendo/id1145512423 · Phenotypes paper (npj Digital Medicine 2020): https://pmc.ncbi.nlm.nih.gov/articles/PMC7314826/ · https://www.nature.com/articles/s41746-020-0292-9
-- Luna for Health: https://apps.apple.com/us/app/luna-for-health/id1585942826
-- Bearable: https://bearable.app/ · https://bearable.app/symptom-tracker/ · https://bearable.app/chronic-illness-symptom-tracker-app/
-- Clue: https://helloclue.com/ · https://helloclue.com/articles/about-clue/discover-cycle-phase-insights-understand-your-body-feel-empowered · https://support.helloclue.com/hc/en-us/articles/15007319214493
-- Systematic review of good-quality endo mHealth apps (incl. QENDO, Bearable, Luna, Matilda, Branch, CHARLI): https://pmc.ncbi.nlm.nih.gov/articles/PMC11845897/ · https://www.sciencedirect.com/science/article/pii/S2468227623002892
-- Symptom tracking in endometriosis (review): https://pmc.ncbi.nlm.nih.gov/articles/PMC10518625/
-- Endo symptom clinical references: https://internationalendo.com/endometriosis-symptoms-signs/ · MSD Manual https://www.msdmanuals.com/professional/gynecology-and-obstetrics/endometriosis/endometriosis · Endo belly review https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10671958/ · Endo phenotypes https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12705834/
-- Doctor-report apps: Endolog https://www.endolog.app/endometriosis-tracker-app · CareClinic https://careclinic.io/endometriosis-symptom-tracker/ · EndoTracker https://apps.apple.com/us/app/endometriosis-adenomyosis/id6759827829 · Chronius https://www.chroniushealth.com/endometriosis-multidimensional-symptom-tracker
-- HealthKit identifiers: https://developer.apple.com/documentation/healthkit/symptom-type-identifiers · https://developer.apple.com/documentation/healthkit/hkcategorytypeidentifier · menstrualFlow/irregularMenstrualCycles/sexualActivity sub-pages
-- Privacy / data-monetization context (anti-features): https://www.cam.ac.uk/research/news/menstrual-tracking-app-data-is-a-gold-mine-for-advertisers-that · Flo FTC & post-Dobbs: https://stateline.org/2024/07/26/data-privacy-after-dobbs-is-period-tracking-safe/ · https://pmc.ncbi.nlm.nih.gov/articles/PMC12131320/
-- Inclusive design: https://helloclue.com/articles/cycle-a-z/tips-for-using-clue-when-you're-trans · https://redmoongang.com/2022/05/13/how-inclusive-are-period-tracking-apps/
+- [Bearable — How to find correlations](https://bearable.app/support/howto/how-to-find-correlations/), [Visualising your health data in many forms](https://bearable.app/support/tips/visualise-your-health-data-in-many-forms/) — comparison graph mechanics, factor highlighting, data-sufficiency thresholds (MEDIUM confidence: vendor docs, cross-checked)
+- [Guava — Tracking and Visualizing Symptoms](https://guavahealth.com/article/tracking-and-visualizing-symptoms-in-guava), [Ultimate Guide](https://guavahealth.com/article/guava-ultimate-guide) — Compare button, frequency/severity toggles (MEDIUM)
+- [Apple Support — View your health data](https://support.apple.com/guide/iphone/view-your-health-data-iphe3d379c32/ios) + [Health Hive: Compare Metrics](https://apps.apple.com/us/app/health-hive-compare-metrics/id1613535038) — Health chart interaction model; third-party compare-gap evidence (MEDIUM; gesture specifics partly from platform knowledge, verify on device)
+- Dual-axis critique: [PolicyViz](https://policyviz.com/2022/10/06/avoiding-the-dual-axis-chart/), [Flourish](https://flourish.studio/blog/dual-axis-charts/), [Data Revelations](https://www.datarevelations.com/be-careful-with-dual-axis-charts/), [Why Two Y-Axes (Y2Y)](https://uncharted.software/assets/WhyTwoYAxes_Y2Y.pdf) (MEDIUM, convergent)
+- Causality perception: [Xiong et al., "Illusion of Causality in Visualized Data", IEEE VIS 2019](https://users.eecs.northwestern.edu/~jhullman/VIS_2019_Correlation_Causation_CR.pdf) — scatter plots elicit lowest causality ratings (MEDIUM)
+- Swift Charts interactivity: [WWDC23 — Explore pie charts and interactivity in Swift Charts](https://developer.apple.com/videos/play/wwdc2023/10037/), [Swift with Majid — Mastering charts: Selection](https://swiftwithmajid.com/2023/07/18/mastering-charts-in-swiftui-selection/) (MEDIUM; implementation detail belongs in STACK)
+- Cycle-app baseline: [Clue — Cycle Phase Insights](https://helloclue.com/articles/about-clue/discover-cycle-phase-insights-understand-your-body-feel-empowered), [Flo — Analyzing your cycles and symptoms](https://help.flo.health/hc/en-us/articles/4407228784276-Analyzing-your-cycles-and-symptoms) (MEDIUM)
 
 ---
-*Feature research for: free privacy-first iOS endometriosis tracking & insights app*
-*Researched: 2026-06-03*
+*Feature research for: Endo-App v1.1 — Interactive Charts & Explore*
+*Researched: 2026-06-10*

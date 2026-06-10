@@ -1,173 +1,131 @@
-# Stack Research
+# Stack Research — v1.1 Interactive Charts & Explore
 
-**Domain:** Native iOS health/symptom-tracking app — on-device store, private CloudKit sync, HealthKit, charts, on-device insights, PDF export. No backend, no accounts.
-**Researched:** 2026-06-03
-**Confidence:** HIGH (core Apple frameworks verified against current docs and 2025–2026 ecosystem reporting; on-device insights approach is MEDIUM as it's a design recommendation, not a single library)
+**Domain:** iOS chart interactivity (scrub/tooltip), multi-series overlay plots with mixed scales, scatter plots — additions to an existing Swift Charts surface
+**Researched:** 2026-06-10
+**Confidence:** HIGH (every load-bearing API verified against Apple's official documentation availability metadata today; community idioms cross-checked are marked MEDIUM)
 
-> **Context note:** Today is June 2026. iOS 26 (WWDC25) is the current shipping major version; iOS 27 is in beta. The recommendations below target the *current* stable platform. "2025 stack" in the brief maps to the iOS 18 / iOS 26 generation of frameworks.
+> **Milestone context:** v1.0 stack (SwiftUI + SwiftData/CloudKit + Swift Charts + EndoInsights SPM, iOS 18 min, Swift 6.0, Xcode 26.5) is validated and out of scope here. This file covers ONLY what the v1.1 chart-interactivity/Explore features need. The previous full-project STACK.md (2026-06-03) is superseded by this milestone-scoped version.
 
 ---
 
-## TL;DR Decisions
+## TL;DR Verdict
 
-1. **Persistence + sync:** **SwiftData (iOS 18+)** with built-in CloudKit private-database sync via `ModelConfiguration(cloudKitDatabase:)`. This is the prescriptive greenfield choice. Core Data + `NSPersistentCloudKitContainer` is the fallback only if a specific SwiftData limitation bites.
-2. **Charts:** **Swift Charts** (native, first-party). No third-party charting.
-3. **Health import:** **HealthKit** (read-only authorization for the categories you need).
-4. **PDF export:** **PDFKit + Core Graphics (`UIGraphicsPDFRenderer`)** for the report shell, optionally rendering individual SwiftUI chart views to vector PDF pages via `ImageRenderer`'s PDF/`CGContext` path. Consider **TPPDF** only if hand-rolled layout becomes a time sink.
-5. **Insights engine:** Start with **plain Swift + the `Accelerate`/`simd` and `Foundation` math** (descriptive stats, Pearson/Spearman correlation, rolling windows, simple logistic/threshold flare model). Add **Core ML** (with on-device personalization or a Create ML-trained baseline) only if/when a statistical baseline proves insufficient. Do NOT start with ML.
-6. **UI:** **SwiftUI** (already mandated).
-7. **Testing:** **Swift Testing** for logic/units, **XCUITest** for the few UI flows.
-8. **Min deployment target:** **iOS 18.0** (reaches ~88% of devices, halves your test matrix, unlocks the mature SwiftData generation). Drop to iOS 17 only if early-adopter reach matters more than velocity.
+**Plain Swift Charts on iOS 18 is sufficient. Zero new dependencies, zero SPM additions, zero schema changes implied by the stack.** Every needed capability ships in the OS at or below the project's iOS 18 floor:
+
+1. **Scrub/tap-to-read (lollipop):** `chartXSelection(value:)` (iOS 17+) is the modern idiom — the framework owns gesture recognition and writes the raw X value into a binding; you snap to the nearest *logged* day and draw a `RuleMark` + `.annotation(overflowResolution:)` tooltip.
+2. **Multi-series overlay:** plain mark composition + `chartForegroundStyleScale` (iOS 16+) for explicit series→color mapping and an automatic legend.
+3. **Mixed scales:** Swift Charts has **no secondary Y axis** — one Y scale per `Chart`. This is a confirmed framework limitation, not a missing library. Handle it with normalization or aligned stacked panels (architecture decision, not a stack gap — see "Stack Patterns by Variant").
+4. **Scatter:** `PointMark` (already in the codebase) with both axes value-typed; the iOS 18 vectorized `PointPlot` is available headroom if point counts ever grow large.
+
+No capability gap exists that a third-party charting library would close. Do not add one.
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies
+### Core Technologies (all already present — no installs)
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| **Swift** | 6.x (Xcode 26 toolchain) | Language | Current; strict concurrency available. Use Swift 6 language mode pragmatically — opt into it per-target once concurrency warnings are tractable. |
-| **SwiftUI** | iOS 18+ | UI layer | Mandated by project; first-class bindings to HealthKit/Charts/SwiftData; `@Observable`/`@Query` reduce boilerplate. |
-| **SwiftData** | iOS 18+ | On-device persistence + private CloudKit sync | First-party, SwiftUI-native (`@Model`, `@Query`). Built-in iCloud **private-database** sync with near-zero config — exactly this app's need (one user, own devices, no sharing). Matured notably in the 2025 cycle (perf improvements back-ported; model inheritance added). The standard greenfield choice for a single-user synced tracker. **Confidence: HIGH** for the private-sync use case. |
-| **CloudKit** (private database) | current | Cross-device sync transport | Apple-hosted, free within generous user-iCloud quotas, **no backend to run or pay for**, no accounts (uses the user's existing iCloud identity). Data lives in the user's *private* database — Apple cannot read it; aligns with GDPR special-category privacy-by-design. Drives the sync layer beneath SwiftData. **Confidence: HIGH** |
-| **HealthKit** | iOS 18+ (some APIs iOS 26+) | Import cycle, sleep, workouts, nutrition | The canonical, privacy-gated source for the exact data you want to avoid double-logging. Read-only auth keeps scope minimal. Note iOS 26 brought iPhone-side workout APIs that were previously Watch-only. **Confidence: HIGH** |
-| **Swift Charts** | iOS 18+ (3D/`Chart3D` iOS 26+) | Trend, cycle-phase, correlation visualizations | First-party declarative charting that composes directly with SwiftUI; `LineMark`/`BarMark`/`PointMark`/`AreaMark`/`RuleMark` cover every visualization this app needs (trend lines, cycle-phase bands via `RuleMark`/`RectangleMark`, scatter for correlations). No dependency, no maintenance risk. **Confidence: HIGH** |
-| **PDFKit** + **Core Graphics** (`UIGraphicsPDFRenderer`) | iOS 18+ | Doctor-ready PDF report | First-party. CG-based rendering yields crisp, vector, text-selectable, small-file PDFs — what clinicians expect — vs. raster-image PDFs. PDFKit also handles preview/share/`PDFView`. **Confidence: HIGH** |
+| **Swift Charts** | iOS 18 SDK (Xcode 26.5) | All three features: interactivity, overlay, scatter | Already the project's charting layer; every needed API verified ≤ iOS 18 (see table below). First-party = no dependency risk, composes with the existing `InsightTrendChart`, keeps the PDF vector-render path working. **Confidence: HIGH** |
+| **SwiftUI** | iOS 18+ | Selection state (`@State` binding), Explore screen, series pickers | Selection is a plain optional `@State` bound through `chartXSelection` — no new state machinery, Swift 6 strict-concurrency clean (main-actor view state). **Confidence: HIGH** |
+| **EndoInsights (existing SPM package)** | local | Pure helpers for the new math: nearest-logged-day snapping, series normalization, scatter day-pairing | Same pattern as `ChartSeriesGrouping`: keep the snap/normalize/pair logic Foundation-only and unit-testable, feed views plain values. No package changes needed beyond new pure functions. **Confidence: HIGH** |
+
+### The exact APIs (verified against Apple docs availability metadata, 2026-06-10)
+
+| API | iOS | Verified signature / note | Use for |
+|-----|-----|---------------------------|---------|
+| `chartXSelection(value:)` | **17.0** | `func chartXSelection<P>(value: Binding<P?>) -> some View where P: Plottable` | THE selection idiom. Bind `Date?`; framework handles tap + drag-to-scrub natively. |
+| `chartXSelection(range:)` | 17.0 | `Binding<ClosedRange<P>?>` | Optional: two-finger/drag range selection. Not needed for v1.1 core; know it exists. |
+| `chartGesture(_:)` | 17.0 | `(ChartProxy) -> some Gesture` | Escape hatch for custom gestures via `proxy.selectXValue(at:)`. Only if `chartXSelection`'s default behavior proves insufficient — start without it. |
+| `ChartProxy` | 16.0 | `value(atX:as:)`, `position(forX:)`, `selectXValue(at:)`, `plotFrame` (17.0, `Anchor<CGRect>?`) | Coordinate↔value conversion if drawing custom tooltip chrome in `chartOverlay`. Prefer `plotFrame` over the iOS 16-era `plotAreaFrame`. |
+| `chartOverlay(content:)` | 16.0 | `(ChartProxy) -> some View` | Legacy iOS 16 selection pattern (manual `DragGesture`). **Do not use for selection** — `chartXSelection` replaces it. Still fine for purely visual overlays. |
+| `.annotation(position:alignment:spacing:overflowResolution:content:)` | **17.0** (`AnnotationOverflowResolution` verified iOS 17.0) | Overflow resolution e.g. `.fit(to: .chart)` | The lollipop tooltip card on the selection `RuleMark`/`PointMark` — `overflowResolution` keeps it inside the plot at the window edges instead of clipping. |
+| `RuleMark` | 16.0 | already known | The vertical scan line; set `.zIndex(-1)` so it draws behind the data line. |
+| `PointMark` | 16.0 | already in `InsightTrendChart` | Scatter view: `PointMark(x: .value("Factor A", a), y: .value("Factor B", b))`, one mark per logged day-pair. |
+| `chartForegroundStyleScale(_:)` | 16.0 | `KeyValuePairs<DataValue, S>` mapping | Explore overlay: explicit, stable series→color mapping + free legend. Deterministic colors matter for cross-session recognizability. |
+| `chartScrollableAxes(_:)` + `chartXVisibleDomain` / `chartScrollPosition` | 17.0 | `Axis.Set` | Optional: pan a long all-time Explore axis instead of cramming it. Nice-to-have, not required. |
+| `PointPlot` / `LinePlot` (vectorized plots) | **18.0** | `struct PointPlot<Content>`; takes a whole collection + KeyPaths | Performance headroom for scatter if points ever exceed ~1k. Daily logging ≈ 365 points/year — `PointMark` + `ForEach` is fine at launch; `PointPlot` is available at the project floor if profiling says otherwise. |
+
+All iOS 17 APIs are unconditionally usable: project minimum is iOS 18.
 
 ### Supporting Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| **Accelerate** (`vDSP`, `simd`) | system | Fast vectorized stats: means, variance, correlation, rolling windows over symptom/cycle series | Use for the insights engine number-crunching once datasets grow; avoids hand-loops and keeps it on-device & fast. **Confidence: HIGH** |
-| **Core ML** | iOS 18+ | On-device inference for flare prediction / pattern models, *if* a statistical model is outgrown | Add in a later phase only. Runs on Neural Engine, data never leaves device. Pair with a **Create ML** training step (offline or on-device personalization). **Confidence: MEDIUM** (warranted, not yet needed) |
-| **Create ML** | Xcode tool / framework | Train the baseline flare/pattern model from de-identified or on-device data | Optional, later. Tabular classifiers/regressors fit symptom-trigger prediction well. **Confidence: MEDIUM** |
-| **TPPDF** | latest (SPM) | Higher-level PDF document builder (auto-pagination, tables, headers/footers) | Only if PDFKit+CG layout math becomes a meaningful time sink for multi-page reports. Adds a dependency — defer until justified. **Confidence: MEDIUM** |
-| **WidgetKit** | iOS 18+ | Optional home-screen "log today" / next-flare widget | Differentiator, post-MVP. **Confidence: HIGH** (capability), LOW (need) |
-| **ImageRenderer** | iOS 18+ | Render a SwiftUI chart view into a PDF page / image for the report | Use to embed live SwiftUI charts in the PDF; prefer its `CGContext`/PDF path over raster snapshots for vector quality. **Confidence: HIGH** |
+| *(none new)* | — | — | The entire feature set is OS-provided. Adding a charting dependency would break the v1.0 "near-zero dependencies" privacy/maintenance posture for zero capability gain. |
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| **Xcode 26** | IDE / build / SwiftData & CloudKit consoles | Required: App Store submissions must build with the current SDK (Apple enforced iOS 18 SDK from April 2025 onward). |
-| **Swift Testing** | Unit/logic tests (insights math, cycle logic, parsers) | Apple's recommended default for new test code; macros (`@Test`, `#expect`), parameterized tests, parallel by default. Ships in Xcode 16+. |
-| **XCUITest** (part of XCTest) | The handful of end-to-end UI flows | Still the *only* native UI-automation option; coexists with Swift Testing in separate targets. |
-| **CloudKit Dashboard / Console** | Inspect synced records, deploy schema to Production | You MUST deploy the schema from Development → Production before App Store release, or sync silently fails for real users. |
-| **Swift Package Manager** | Dependency management | Prefer SPM over CocoaPods/Carthage. Keep dependencies near-zero (privacy + maintenance). |
-| **Xcode Cloud** *(or GitHub Actions w/ macOS runners)* | CI for an indie | Xcode Cloud: easiest, free tier for low volume, native signing. GitHub Actions: cheaper at scale, more setup. Either is fine; start with Xcode Cloud. |
+| Xcode 26.5 (existing) | Builds against current SDK | No toolchain change. All listed APIs are years-stable (WWDC22–24 vintage). |
+| Swift Testing (existing) | Unit-test the new pure helpers | Nearest-logged-day snap, normalization mapping, scatter pairing — all Foundation-only, same harness as `ChartSeriesGrouping` tests. |
+| iOS Simulator | Scrub-gesture verification | Drag-scrub works in Simulator; only haptics (if added via `sensoryFeedback`) need a device. |
 
 ## Installation
 
-This is a native Apple stack — **no package-manager install for the core**. Everything in "Core Technologies" is a system framework added via Xcode capabilities/imports, not dependencies.
-
-```text
-# Xcode → Signing & Capabilities, add:
-#   - HealthKit                (entitlement; read-only data types)
-#   - iCloud → CloudKit        (entitlement; one CloudKit container)
-#   - Background Modes → Remote notifications  (for CloudKit sync push)
-
-# Info.plist usage-description strings (REQUIRED or the app crashes on access):
-#   - NSHealthShareUsageDescription      (HealthKit read)
-#   - NSHealthUpdateUsageDescription     (only if you ever write back to Health)
-
-# In code:
-import SwiftData      # persistence + sync
-import HealthKit      # health import
-import Charts         # Swift Charts
-import PDFKit         # PDF
-import Accelerate     # stats (later phases)
-import CoreML         # optional, later
-```
-
-```swift
-// SwiftData + private CloudKit, the whole sync setup:
-let config = ModelConfiguration(
-    cloudKitDatabase: .private("iCloud.com.yourorg.endoapp")
-)
-let container = try ModelContainer(for: SymptomEntry.self, CycleDay.self,
-                                   configurations: config)
-```
-
 ```bash
-# Only if you adopt the optional PDF builder:
-# Xcode → Add Package Dependencies → https://github.com/techprimate/TPPDF
+# Nothing to install. No SPM dependencies added, no project.yml changes
+# beyond new source files. All APIs ship in the iOS 18 SDK already targeted.
 ```
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| **SwiftData (private CloudKit)** | **Core Data + `NSPersistentCloudKitContainer`** | If you hit a SwiftData wall: you need **public or shared** CloudKit databases, complex migrations, `@Attribute(.unique)` enforcement, or fine-grained sync control. Core Data + NSPersistentCloudKitContainer is more mature and battle-tested. For this single-user private-sync app, you likely won't need it. |
-| **SwiftData (private CloudKit)** | **SQLiteData (Point-Free, GRDB-backed)** with CloudKit | If you want raw SQL power, value-type models, and explicit control, and are comfortable with a third-party persistence layer. Strong library, but adds a dependency and diverges from the all-first-party privacy story. Not recommended for v1. |
-| **Built-in CloudKit sync (via SwiftData)** | **`CKSyncEngine`** (manual CloudKit) | If you outgrow automatic sync and need custom conflict resolution, partial sync, or to sync non-SwiftData data. Significantly more code. Defer until proven necessary. |
-| **PDFKit + Core Graphics** | **TPPDF** | When multi-page tabular reports with auto-pagination would otherwise cost days of CG layout math. |
-| **Plain Swift + Accelerate stats** | **Core ML / Create ML** | When descriptive stats + correlation + threshold/logistic flare model demonstrably underperform and you have enough per-user history to train a model. |
-| **Swift Testing** | **XCTest** | UI automation (XCUITest), performance tests (`XCTMetric`), or any Objective-C interop. |
+| `chartXSelection(value:)` | `chartOverlay` + manual `DragGesture` + `ChartProxy.value(atX:)` (iOS 16 idiom) | Only if you needed iOS 16 support (you don't) or exotic gesture arbitration. The manual pattern is more code, fights scroll gestures, and duplicates what the framework now owns. |
+| `chartXSelection(value:)` | `chartGesture(_:)` + `proxy.selectXValue(at:)` | If the default tap/drag recognition conflicts with an enclosing ScrollView in practice. Keep as fallback, don't start here. |
+| Aligned stacked panels or labeled normalization for mixed scales | True dual Y axis | Never available in Swift Charts — confirmed limitation (Apple Dev Forums thread 742659; `AxisMarks(position: .trailing)` only repositions marks of the *same single* Y scale). |
+| `PointMark` scatter | `PointPlot` (iOS 18 vectorized) | Switch only if a profiled performance problem appears at large point counts; `PointPlot`'s KeyPath styling is less ergonomic for per-point accessibility labels. |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| **Any third-party backend** (Firebase, Supabase, custom server) | Recurring cost, an account system, and — critically — moves GDPR Art. 9 special-category health data off-device to a controller you'd have to secure and document. Directly contradicts the privacy-first, free-to-run mandate. | CloudKit private database (data stays in the user's iCloud; you never see it). |
-| **User accounts / auth (Sign in with Apple as a login, OAuth, etc.)** | The whole architecture is "no login." Accounts create liability and friction for sensitive data. | The user's existing iCloud identity, used implicitly by CloudKit. |
-| **Third-party analytics / crash SDKs that capture content** (Firebase Analytics, Amplitude, Mixpanel, etc.) | Risk of exfiltrating health data or behavioral signals about a stigmatized condition; GDPR consent nightmare. | Apple's privacy-preserving **MetricKit** + opt-in **App Store / Xcode Organizer** crash reports only. No event analytics in v1. |
-| **Cloud/LLM inference for insights** (server ML, hosted APIs) | Sends symptom data off-device; defeats privacy-first positioning; adds cost. | On-device stats first, then Core ML on the Neural Engine. |
-| **Third-party charting libraries** (Charts/DGCharts, etc.) | Unnecessary dependency and maintenance; Swift Charts covers all needs natively. | Swift Charts. |
-| **Raster-image PDFs** (snapshotting views to UIImage → PDFPage) | Large files, blurry on print/zoom, no selectable text — unprofessional for a clinician. | CG/`UIGraphicsPDFRenderer` vector text + `ImageRenderer`'s vector PDF path for charts. |
-| **`@Attribute(.unique)` and non-optional model properties** (when CloudKit-synced) | CloudKit rejects unique constraints and requires every property to be optional or defaulted; sync will break. | Optional/defaulted properties; enforce uniqueness in app logic (e.g., upsert by a UUID you generate). |
-| **Diagnostic/medical-device framing in copy or model** | Triggers DiGA/medical-device regulation; out of scope. | "Informational insights, not medical advice" framing; no diagnosis output. |
+| **DGCharts** (ex-ios-charts) | UIKit-era, maintenance-mode, huge dependency; duplicates everything Swift Charts now does; breaks the existing vector-PDF chart reuse | Swift Charts |
+| **SciChart / commercial chart SDKs** | Paid license for a free app; only "advantage" is true multi-axis, which the honesty model argues against anyway | Stacked panels / normalization |
+| **`chartOverlay` + DragGesture for selection** | Pre-iOS-17 workaround; more code, worse gesture coexistence | `chartXSelection(value:)` |
+| **Interpolating tooltip values between logged days** | `chartXSelection` returns a *raw* X (any date in the domain). Reading a value at an unlogged date would fabricate data — the exact Pitfall-1 class the gap-break design exists to prevent | Snap to nearest **logged** day within a tap-tolerance; outside tolerance/inside a gap → "no entry" state or no lollipop |
+| **A second fake Y axis via overlaid `AxisMarks` labels with hidden rescaling** | Silently plotting two scales on one axis misleads — violates the honest-axis invariant | Explicit per-series normalization labeled as such, or per-scale stacked panels with synchronized X selection |
 
 ## Stack Patterns by Variant
 
-**If you prioritize device reach (older iPhones) over velocity:**
-- Set min target to **iOS 17** (~92% reach) instead of iOS 18 (~88%).
-- Because: ~4% more devices. Cost: a larger test matrix and missing the most-matured SwiftData/Charts/HealthKit APIs from the iOS 18/26 cycle. Not worth it for a v1 with a small team — recommend iOS 18.
+**Trend-chart interactivity (existing `InsightTrendChart`):**
+- Add `@State private var rawSelectedDate: Date?` + `.chartXSelection(value: $rawSelectedDate)`; derive `selectedPoint` by snapping to the nearest logged `InsightPoint` (pure helper in EndoInsights, unit-tested like `ChartSeriesGrouping`).
+- Selection chrome = `RuleMark(x:)` + highlighted `PointMark` + `.annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .disabled))`.
+- Keep the PDF path untouched: the PDF renderer constructs a fresh chart — simply never attach the selection modifier there (selection state lives in the live view, additive exactly like the `inkColor` pattern).
+- Keep `.animation(..., value: points)` scoped to `points` so selection-state changes don't re-animate the series; respect the existing Reduce Motion gate for any selection transition.
+- Accessibility: selection is a *pointer-user affordance*; per-mark `accessibilityLabel/Value` + Audio Graph already carry the values for VoiceOver — don't remove them, and mirror the selected value into visible text so the lollipop isn't gesture-only information.
 
-**If the statistical insights baseline proves insufficient:**
-- Add a **Core ML tabular classifier/regressor**, trained via **Create ML**, for flare prediction; keep inference on-device.
-- Because: more nuanced multivariate patterns than hand-tuned thresholds, while preserving the privacy boundary.
+**Explore overlay (mixed scales — the one real design problem):**
+- Because one `Chart` = one Y scale: either (a) **normalize** each series to a shared 0–1/0–10 band with an explicit "normalized for comparison — scales differ" label and per-series true-value readout in the selection tooltip, or (b) **stacked small-multiple panels** sharing the X domain, one panel per scale family (0–10 severity, hours, minutes, 1–5, binary lane), with one `chartXSelection` binding shared across panels so a single scrub reads all series. (b) is the honesty-preserving default; (a) is acceptable if labeled. Roadmap/UX decision — stack supports both with zero additions.
+- Binary food tags: render as a categorical occurrence lane (`PointMark`/`RectangleMark` at a fixed band), never as a 0/1 line — a connecting line between binary days fabricates intermediate states.
+- Gap honesty carries over per series: reuse the `ChartSeriesGrouping` run-splitting per selected series.
 
-**If multi-page clinical reports get layout-heavy:**
-- Adopt **TPPDF** for auto-pagination/tables; keep chart pages rendered via `ImageRenderer`.
-- Because: avoids manual Core Graphics pagination math.
-
-**If you later want family/partner sharing of data:**
-- Migrate sync from SwiftData's built-in path to **Core Data + NSPersistentCloudKitContainer** (shared DB) or **`CKSyncEngine`**.
-- Because: SwiftData currently supports only the **private** database, not shared/public. (Confirm against current docs at that time — Apple may close this gap.)
+**Scatter view:**
+- Pure pairing helper: for factors A and B, emit one `(a, b, date)` per day where **both** are logged (days with only one logged are absent, not zero).
+- `PointMark` + per-point `accessibilityLabel` (date) / `accessibilityValue` (both values); descriptive copy only — ClaimsPolicy scan applies to all new chrome strings (no causal framing).
 
 ## Version Compatibility
 
-| Package A | Compatible With | Notes |
-|-----------|-----------------|-------|
-| SwiftData (iOS 18+) | CloudKit **private** DB only | Shared/public DBs unsupported as of the iOS 26 cycle. Models must be all-optional/defaulted, no `.unique`, relationships optional with inverses. |
-| SwiftData + CloudKit | Background Modes → Remote notifications | Required entitlement for sync to receive push; without it sync is sluggish/manual. |
-| HealthKit | **Physical device** for realistic testing | Simulator HealthKit is limited; menstrual/sleep/workout flows need a real device (and Health app sample data). |
-| CloudKit | **Schema deployed to Production** | Dev schema must be promoted in CloudKit Console before release or real-user sync fails silently. |
-| Swift Testing ⟷ XCTest | Coexist, **not interoperable** | `#expect` and `XCTFail` don't bubble across frameworks; keep them in separate targets/files. |
-| Xcode 26 / iOS 18 SDK | App Store submission | Apple mandates building against the current SDK; min deployment target can still be lower. |
+| Capability | Needs | Project floor | Status |
+|------------|-------|---------------|--------|
+| `chartXSelection(value:/range:)`, `chartGesture`, `plotFrame`, annotation `overflowResolution`, scrollable axes | iOS 17.0 | iOS 18.0 | ✅ unconditional |
+| `chartForegroundStyleScale`, `ChartProxy`, `RuleMark`, `PointMark`, `chartOverlay` | iOS 16.0 | iOS 18.0 | ✅ unconditional |
+| `PointPlot` / `LinePlot` vectorized | iOS 18.0 | iOS 18.0 | ✅ available (optional perf path) |
+| True secondary Y axis | — | — | ❌ does not exist in Swift Charts (any version incl. iOS 26 SDK); design around it |
 
-## Architecture Constraints These Frameworks Impose
-
-- **Entitlements & capabilities:** HealthKit + iCloud(CloudKit) + Background Modes(remote notifications) must all be enabled; each requires a paid Apple Developer account and provisioning. HealthKit apps need a privacy policy and Info.plist usage strings or they crash on first access.
-- **CloudKit container is global per app:** one private DB per user identity; no server-side joins or queries you control — model your data so the *device* does the analysis.
-- **Sync is eventually-consistent:** design the insights engine to tolerate partial/late-arriving data; don't assume all devices are in sync at compute time. Generate stable UUIDs app-side for idempotent upserts (since `.unique` is unavailable).
-- **HealthKit is read-gated per type:** request the *minimum* set (menstrual flow, sleep analysis, workouts, dietary types you use). Authorization is per-type and the app cannot tell if the user *denied* read access (Apple hides this for privacy) — handle "no data" and "denied" identically.
-- **On-device compute budget:** stats over a single user's history is trivial; Core ML inference runs on the Neural Engine cheaply. No scaling concern — but keep heavy computation off the main thread (background `ModelContext` / actor).
-- **Simulator gaps:** HealthKit and CloudKit both behave differently/limited in Simulator — budget for real-device testing and at least two devices to validate sync.
+Swift 6.0 strict concurrency: no impact — selection bindings are main-actor SwiftUI state; the new pure helpers stay in the Foundation-only package.
 
 ## Sources
 
-- `/websites/developer_apple_swiftdata` (Context7) — SwiftData framework reference, CloudKit configuration — HIGH
-- `/pointfreeco/sqlite-data` (Context7) — SQLiteData as a SwiftData alternative w/ CloudKit — MEDIUM
-- developer.apple.com/documentation/{swiftdata, cloudkit, healthkit, charts, pdfkit} — framework capabilities — HIGH
-- fatbobman.com — "Designing Models for CloudKit Sync: rules" / "Swift 2025 maturity" — CloudKit model constraints, SwiftData maturity — MEDIUM (independent expert, corroborated by Apple docs)
-- distantjob.com, swiftprogramming.com, mjtsai.com (WWDC25 recap) — SwiftData vs Core Data 2025 state, private-only sync — MEDIUM
-- dev.to (WWDC25 Swift Charts 3D) — Chart3D / iOS 26 charting — MEDIUM
-- developer.apple.com/forums + Apple "Configuring HealthKit access" — entitlements, simulator limits — HIGH/MEDIUM
-- ioscompatibility.com, telemetrydeck.com, macrumors — iOS 17 vs 18 adoption (~88–92%) — MEDIUM
-- developer.apple.com (Swift Testing) + multiple 2025 comparisons — Swift Testing as default for new code — HIGH
+- Apple Developer Documentation (availability metadata fetched via docs JSON endpoints, 2026-06-10 — **HIGH**): [`chartXSelection(value:)`](https://developer.apple.com/documentation/swiftui/view/chartxselection(value:)) (iOS 17.0, signature verified), [`chartXSelection(range:)`](https://developer.apple.com/documentation/swiftui/view/chartxselection(range:)) (17.0), [`chartGesture(_:)`](https://developer.apple.com/documentation/swiftui/view/chartgesture(_:)) (17.0), [`chartForegroundStyleScale(_:)`](https://developer.apple.com/documentation/swiftui/view/chartforegroundstylescale(_:)) (16.0), [`chartScrollableAxes(_:)`](https://developer.apple.com/documentation/swiftui/view/chartscrollableaxes(_:)) (17.0), [`ChartProxy`](https://developer.apple.com/documentation/charts/chartproxy) (16.0; `plotFrame` 17.0, `plotAreaFrame` 16.0 legacy), [`PointPlot`](https://developer.apple.com/documentation/charts/pointplot) (18.0), [`AnnotationOverflowResolution`](https://developer.apple.com/documentation/charts/annotationoverflowresolution) (17.0)
+- [WWDC23 — Explore pie charts and interactivity in Swift Charts](https://developer.apple.com/videos/play/wwdc2023/10037/) — selection-idiom origin (**HIGH**)
+- [WWDC24 — Swift Charts: Vectorized and function plots](https://developer.apple.com/videos/play/wwdc2024/10155/) — `PointPlot`/`LinePlot` rationale (**HIGH**)
+- [Swift with Majid — Mastering charts in SwiftUI: Selection](https://swiftwithmajid.com/2023/07/18/mastering-charts-in-swiftui-selection/) — lollipop + snap-to-datapoint idiom (**MEDIUM**, cross-checked against Apple docs)
+- [Apple Developer Forums thread 742659 — secondary Y axis](https://developer.apple.com/forums/thread/742659) — confirms no dual-axis support (**MEDIUM**, consistent with absence of any such API in official docs)
 
 ---
-*Stack research for: privacy-first native iOS endometriosis tracking & insights app*
-*Researched: 2026-06-03*
+*Stack research for: v1.1 Interactive Charts & Explore (Endo-App)*
+*Researched: 2026-06-10*
