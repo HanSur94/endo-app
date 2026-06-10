@@ -142,6 +142,17 @@ struct InsightTrendChart: View {
                                 rawSelectedDate = day
                             }
                         }
+                        // The tooltip's a11y element lives HERE, not on the annotation view: Swift
+                        // Charts does NOT expose `.annotation` content in the accessibility tree
+                        // (verified on the iOS 18 simulator — the visual tooltip renders but never
+                        // appears in the AX hierarchy), so the readout + ids ride a transparent
+                        // overlay proxy instead (CHART-04; the Plan-03 E2E asserts these ids).
+                        // Branch-local: the PDF path gains zero new modifiers.
+                        .overlay(alignment: .top) {
+                            if let sel = resolvedSelection {
+                                selectionAccessibilityProxy(sel)
+                            }
+                        }
                 } else {
                     chart
                 }
@@ -257,15 +268,44 @@ struct InsightTrendChart: View {
                 Text(InsightsCopy.scrubNotLogged)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip.notLogged" })
             }
         }
         .padding(8)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
-        // ONE quiet a11y element: the full readout via accessibilityValue, NO UIAccessibility.post.
-        .accessibilityElement(children: .ignore)
-        .accessibilityValue(Text(selectionReadout(sel)))
-        .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip" })
+        // Hidden from the a11y tree: Swift Charts never exposes annotation content anyway (verified),
+        // and the readout/ids live on `selectionAccessibilityProxy` — hiding this PREVENTS a duplicate
+        // element if a future OS starts exposing annotations.
+        .accessibilityHidden(true)
+    }
+
+    /// The tooltip's a11y representation (CHART-04): ONE quiet element whose `accessibilityValue`
+    /// carries the full "{date} — Severity {n} of 10" / "{date} — Not logged" readout, plus (gap days
+    /// only) the explicit `.notLogged` marker element the honesty E2E asserts. Lives as a transparent,
+    /// non-hit-testable overlay because Swift Charts does not expose `.annotation` content in the
+    /// accessibility tree. NO `UIAccessibility.post` — the quiet-selection posture is unchanged.
+    private func selectionAccessibilityProxy(_ sel: ChartScrubSelection.Resolution) -> some View {
+        HStack(spacing: 0) {
+            Color.clear
+                .frame(width: 8, height: 8)
+                .accessibilityElement(children: .ignore)
+                .accessibilityValue(Text(selectionReadout(sel)))
+                .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip" })
+            if sel.point == nil {
+                // The explicit gap-state marker (CHART-02): exists ONLY when the selected day is
+                // unlogged — its ABSENCE on a logged severity-0 day proves absence ≠ 0 end-to-end.
+                Color.clear
+                    .frame(width: 8, height: 8)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityValue(Text(InsightsCopy.scrubNotLogged))
+                    .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip.notLogged" })
+            }
+        }
+        // Container boundary (the Section→cell→`.confidence` precedent): the card's outer
+        // `.accessibilityIdentifier("\(idRoot).chart")` bleeds down and MASKS bare descendant
+        // element ids (verified in the AX hierarchy), but ids one level inside an explicit
+        // container survive — so the proxy ids are shielded behind `.contain`.
+        .accessibilityElement(children: .contain)
+        .allowsHitTesting(false)
     }
 
     /// "{date} — Severity {n} of 10" / "{date} — Not logged" — composed from the audited strings
