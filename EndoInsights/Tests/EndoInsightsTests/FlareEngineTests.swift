@@ -132,6 +132,32 @@ struct FlareEngineTests {
         assertNoForbiddenTerms(warning)
     }
 
+    // MARK: - WR-03: cycle-phase proximity counts logged-SEVERITY days, never bare presence.
+
+    /// Pins the WR-03 fix: Signal C (cycle-phase proximity) counts a historical day toward
+    /// "higher-symptom phase" only when the dominant symptom was logged WITH a severity — the SAME
+    /// logged-severity basis as the rising spine and the 21-day evidence floor. So adding extra historical
+    /// dominant-symptom days that are logged present-WITHOUT-severity must be INVISIBLE to proximity: the
+    /// engine output is byte-identical whether or not those severity-nil days are present. (Pre-WR-03,
+    /// proximity counted bare presence, so those days WOULD shift the per-phase argmax and could change the
+    /// confidence — the over-permissiveness WR-03 removes. Proximity can only add a single capped notch and
+    /// can never fabricate a warning; this pins that the corroborating signal is no more permissive than
+    /// the logged-severity spine it strengthens.)
+    @Test func proximity_ignoresPresenceWithoutSeverity() async throws {
+        let withoutExtraDays = flareWarnings(Fixtures.flareProximityFixture(extraHigherPhaseDays: false))
+        let withSeverityNilDays = flareWarnings(Fixtures.flareProximityFixture(extraHigherPhaseDays: true))
+
+        // The severity-nil extra days are invisible to the logged-severity-counting proximity signal, so
+        // the engine emits exactly the same warning (same confidence, same copy) in both cases.
+        #expect(withoutExtraDays == withSeverityNilDays,
+                "WR-03: cycle-phase proximity must count logged-severity days, not bare presence — adding present-without-severity dominant-symptom days must not change the flare output (without=\(withoutExtraDays.map(\.confidence)), withSeverityNil=\(withSeverityNilDays.map(\.confidence))).")
+
+        // Both surface exactly one warning, bounded ≤ .medium (the cap and spine hold regardless).
+        let warning = try #require(withoutExtraDays.first)
+        #expect(warning.confidence <= .medium)
+        #expect(withSeverityNilDays.count == 1)
+    }
+
     // MARK: - Determinism: the same fixture twice yields exactly equal `[Insight]`.
 
     @Test func output_isDeterministic() async throws {

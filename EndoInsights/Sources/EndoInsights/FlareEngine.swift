@@ -235,7 +235,14 @@ enum FlareEngine {
         var perPhaseSymptomDays: [CyclePhase: Int] = [:]
         for snap in snapshots {
             guard let phase = CyclePhaseMapper.phase(for: snap.day, in: windows, calendar: calendar) else { continue }
-            if snap.symptoms.contains(where: { $0.type == rising.symptom }) {
+            // WR-03 — count a day toward "historically higher-symptom phase" only when the dominant symptom
+            // was logged WITH A SEVERITY (`$0.severity != nil`), the SAME logged-severity basis the rising
+            // spine (lines 122-128) and the 21-day evidence floor (line 72) use. Counting bare *presence*
+            // (no severity) here would make this corroborating proximity signal MORE permissive than the
+            // spine it strengthens — the opposite of the bias-to-withhold posture. This signal can only add
+            // a single capped notch and can never fabricate a warning, but it must be at least as
+            // conservative as the spine.
+            if snap.symptoms.contains(where: { $0.type == rising.symptom && $0.severity != nil }) {
                 perPhaseSymptomDays[phase, default: 0] += 1
             }
         }

@@ -439,4 +439,59 @@ enum Fixtures {
         }
         return days
     }
+
+    // MARK: Phase-12 WR-03 — cycle-phase proximity must count logged-SEVERITY days, not bare presence.
+
+    /// A flare fixture exercising Signal C (cycle-phase proximity) where the dominant rising symptom's
+    /// HISTORICAL higher-symptom-phase days can be toggled between logged-WITH-severity and
+    /// logged-present-WITHOUT-severity. WR-03 makes proximity count only logged-SEVERITY days (the SAME
+    /// basis as the rising spine + the 21-day evidence floor), so a phase whose extra symptom days are
+    /// severity-NIL must NOT be counted as "more active" than one whose days carry severity. This fixture
+    /// lets a test pin that: the severity-nil variant can NEVER yield a HIGHER confidence than the
+    /// severity-logged variant.
+    ///
+    /// Construction:
+    ///   • A regular bleeding cadence (4 period starts, gap 28 → spread 0 → phaseConfidence resolves) so
+    ///     `CyclePhaseMapper.phaseWindows` produces non-overlapping windows projected forward from the last
+    ///     start (offset 0).
+    ///   • A rising-severity `pelvicPain` spine over the most recent days (≥21 logged-severity days), so a
+    ///     warning surfaces and the dominant symptom is `pelvicPain`.
+    ///   • Extra historical `pelvicPain` days placed in the projected windows; their `severity` is the
+    ///     toggled parameter. When severity is nil, WR-03 must not count them toward the higher-symptom
+    ///     phase.
+    ///
+    /// - Parameter extraHigherPhaseDays: when `true`, adds extra historical `pelvicPain` days in the
+    ///   projected phase windows logged present-WITHOUT-severity (`severity: nil`). WR-03 makes proximity
+    ///   count only logged-SEVERITY days, so these severity-nil days must be INVISIBLE to Signal C — the
+    ///   engine output must be byte-identical whether or not they are present.
+    static func flareProximityFixture(extraHigherPhaseDays: Bool) -> [DaySnapshot] {
+        var days: [DaySnapshot] = []
+
+        // Regular period runs (gap 28, spread 0) so the phase windows resolve. Last start at offset 0.
+        for start in [-84, -56, -28, 0] {
+            for d in 0...2 { days.append(snapshot(offset: start + d, flow: .medium)) }
+        }
+
+        // Rising-severity pelvicPain spine over a substantial recent history (≥21 logged-severity days):
+        // recent days high, prior days lower → direction == .up and the dominant symptom is pelvicPain.
+        for i in 0...11 {   // recent rising spine — high severity
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 7)]))
+        }
+        for i in 12...35 {  // prior calmer baseline — lower severity (so the recent rise is real)
+            days.append(snapshot(offset: -i, symptoms: [SymptomPoint(type: .pelvicPain, severity: 3)]))
+        }
+
+        // Extra historical pelvicPain days in the projected future windows (offsets +5…+25), logged
+        // present-WITHOUT-severity. Under WR-03 these are NOT counted toward the higher-symptom phase, so
+        // the engine output must be identical to the fixture WITHOUT them. (If proximity counted bare
+        // presence — the pre-WR-03 behavior — these days WOULD shift the per-phase argmax and could change
+        // the confidence, which is exactly the over-permissiveness WR-03 removes.)
+        if extraHigherPhaseDays {
+            for off in stride(from: 5, through: 25, by: 1) {
+                days.append(snapshot(offset: off, symptoms: [SymptomPoint(type: .pelvicPain, severity: nil)]))
+            }
+        }
+
+        return days
+    }
 }
