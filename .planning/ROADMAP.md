@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: HealthKit Import** - Additive read-only import of cycle/sleep/workouts/nutrition that never breaks manual-only usage (completed 2026-06-09)
 - [x] **Phase 10: Doctor-Ready PDF Report** - Date-ranged, source-labeled, on-device vector PDF report shared via the system share sheet (completed 2026-06-09)
 - [x] **Phase 11: Personalized Recommendations** - Data-driven, non-prescriptive recommendations derived from the user's own patterns (completed 2026-06-10)
-- [ ] **Phase 12: Flare Early-Warning** - Built last and gated by the honesty layer: a heuristic, non-diagnostic flare early-warning with confidence
+- [x] **Phase 12: Flare Early-Warning** - Built last and gated by the honesty layer: a heuristic, non-diagnostic flare early-warning with confidence (completed 2026-06-10)
 
 ## Phase Details
 
@@ -383,4 +383,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. HealthKit Import | 3/3 | Complete    | 2026-06-09 |
 | 10. Doctor-Ready PDF Report | 3/3 | Complete    | 2026-06-09 |
 | 11. Personalized Recommendations | 3/3 | Complete    | 2026-06-09 |
-| 12. Flare Early-Warning | 3/3 | Plans complete — pending end-of-phase human-verify | - |
+| 12. Flare Early-Warning | 3/3 | Complete    | 2026-06-10 |

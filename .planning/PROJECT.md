@@ -20,6 +20,7 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - ✓ Apple HealthKit integration (read-only import of cycle/sleep/workouts/nutrition) — Phase 9 (additive `ImportedSample`, manual-wins/nil-honest merge, contextual rationale-before-sheet permission, graceful denial, "from Apple Health" labels; verified + threat-secured. Real-device read deferred to release.)
 - ✓ Doctor-ready report export (shareable PDF summary) — Phase 10 (on-device vector PDF for a date range, per-source labels, prominent "self-tracked, not diagnostic" framing, system share sheet with no silent upload; verified + code-reviewed.)
 - ✓ Insights: personalized, data-driven recommendations — Phase 11 (deterministic, non-prescriptive discussion prompts composed from the gated correlation engine, behind the single honesty gate; new forbidden-imperative copy scan; dismissable dashboard section; suppressed/sparse → zero. Verified + code-reviewed.)
+- ✓ Insights: flare early-warning from personal history — Phase 12 (heuristic, non-diagnostic, uncertainty-first warning composed from a required rising-severity spine + active triggers + cycle-phase proximity; bounded ≤medium, withheld-when-insufficient, calm/non-alarmist card, in-app only — no push; new alarmist/diagnostic copy scan + no-push + no-alarm-visual source guards. Verified + code-reviewed.)
 
 ### Active
 
@@ -30,7 +31,6 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - [ ] Food & nutrition logging
 - [ ] Physical activity / sport tracking
 - [ ] Insights: correlations & triggers across logged factors (symptoms ↔ food, sleep, activity, cycle) — engine shipped (Phase 7) + rendered in dashboard (Phase 8); pending confirmation with real multi-factor data
-- [ ] Insights: flare prediction / early warnings from personal history
 - [ ] Private iCloud (CloudKit) sync across the user's own devices — no account/login
 
 ### Out of Scope
@@ -93,4 +93,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-10 after Phase 11 (Personalized Recommendations shipped, verified & reviewed)*
+*Last updated: 2026-06-10 after Phase 12 (Flare Early-Warning shipped, verified & reviewed) — v1.0 milestone feature-complete*
