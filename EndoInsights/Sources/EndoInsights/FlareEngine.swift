@@ -175,6 +175,17 @@ enum FlareEngine {
 
     /// The set of `Factor.key`s that are `.present` on at least one day in `bucket` (the recently-active
     /// factors). Mirrors `CorrelationEngine`'s factor enumeration but only needs presence, not a stat.
+    ///
+    /// WR-02 — INTENTIONAL ASYMMETRY (do NOT "fix" by adding cyclePhase keys): this set DELIBERATELY omits
+    /// the `cyclePhase.<phase>` factor family, even though `Factor.cyclePhase` exists (Factor.swift:61) and
+    /// `factorKey(fromCorrelationSignalKey:)` will happily parse a `cyclePhase.luteal` key from an
+    /// aggravating cycle-phase correlation. Cycle-phase contribution is ALREADY the job of Signal C
+    /// (`cyclePhaseProximity`): the proximity boolean is the cycle-phase notch. Emitting cyclePhase keys
+    /// HERE too would let one cycle-phase signal raise confidence via BOTH Signal B (active triggers) and
+    /// Signal C (proximity) — double-counting the same evidence. So an active aggravating cycle-phase
+    /// correlation is intentionally NOT counted as an active trigger; it can still raise confidence, but
+    /// ONLY once, through proximity. A future maintainer who adds cyclePhase keys to this set to "complete"
+    /// the enumeration would silently double-count cycle phase — keep the omission.
     private static func activeFactorKeys(in bucket: [DaySnapshot]) -> Set<String> {
         var keys: Set<String> = []
         for snap in bucket {
