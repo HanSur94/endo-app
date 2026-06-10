@@ -1,0 +1,99 @@
+# Requirements: Endo-App — Milestone v1.1 (Interactive Charts & Explore)
+
+**Defined:** 2026-06-10
+**Core Value:** Turn everyday self-tracking into understanding — and let users *see* their own raw patterns, honestly.
+
+v1.0 requirements are archived in [milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-REQUIREMENTS.md).
+
+## v1.1 Requirements
+
+Requirements for this milestone. Each maps to roadmap phases.
+
+### Chart Interactivity
+
+- [ ] **CHART-01**: User can touch-and-hold/drag (scrub) on any dashboard trend chart and read the exact date + logged value via a rule-mark + lollipop tooltip
+- [ ] **CHART-02**: Scrubbing onto an unlogged day shows an explicit "not logged" state — never a zero, never an interpolated value
+- [ ] **CHART-03**: Scrubbing gives a selection haptic on day change; the tooltip lives while touching and dismisses on release
+- [ ] **CHART-04**: VoiceOver users can read per-day values without the drag gesture (accessibility alternative to scrubbing)
+
+### Explore
+
+- [ ] **EXPL-01**: User can open a new Explore screen as a third tab (consent-gated like the rest of the app)
+- [ ] **EXPL-02**: User can toggle series on/off via chips from a unified series catalog (symptoms, sleep hours, activity minutes, stress, mood, bleeding, food tags) — capped at 3–4 quantitative series with a clear remove-to-add affordance
+- [ ] **EXPL-03**: Selected quantitative series render as aligned per-scale lanes sharing ONE time axis, each in its real unit (no dual y-axis, no silent normalization)
+- [ ] **EXPL-04**: Binary food tags (and bleeding, treated as events) render as event-marker lanes (date-aligned ticks), never as fake 0/1 lines
+- [ ] **EXPL-05**: User can scrub the Explore chart and read every visible series' value — or "not logged" per series — for the selected day
+- [ ] **EXPL-06**: User can switch the Explore time range with the familiar presets (same axis vocabulary as the dashboard: absolute dates, gap breaks)
+- [ ] **EXPL-07**: Explore shows honest empty/sparse states ("pick a series", "not enough data") and unlogged days stay gaps in every lane
+
+### Scatter
+
+- [ ] **SCAT-01**: User can switch Explore to a scatter view: one factor against another, each point = one day where BOTH factors were logged
+- [ ] **SCAT-02**: Identical day-pairs stack honestly via count-encoded point size/opacity (no jitter fabricating non-integer values)
+- [ ] **SCAT-03**: The scatter stays descriptive-only: no fitted line, no correlation number, a neutral caption, and an honest sparse state when too few both-logged days exist
+- [ ] **SCAT-04**: User can open a prefilled scatter from a "Possible association" card ("see the days behind this")
+
+### Cross-cutting acceptance criteria (every phase, not separate requirements)
+
+- All new chrome copy goes through the existing ClaimsPolicy scans AND is registered in `CopyAuditTests` (registration is opt-in per surface — an unregistered copy enum silently escapes the scans)
+- Charts are never the sole carrier of meaning (text summary parity); series colors are colorblind-safe and never the only signal
+- New files are added via `project.yml`/`xcodegen generate` (the `.xcodeproj` is generated)
+- The PDF report render path (`ReportPDFRenderer` → `InsightTrendChart`) stays untouched by interactivity changes and is re-verified
+
+## Future Requirements (v1.1.x / v2)
+
+Deferred. Tracked but not in the current roadmap.
+
+### Explore enhancements
+
+- **EXPL-08**: Tap a scatter point → see the exact day and jump to that day's log entry
+- **EXPL-09**: Saved/recent Explore configurations (privacy call: where selection state persists)
+- **EXPL-10**: Landscape-optimized Explore layout
+- **EXPL-11**: Lag-shifted comparison (factor day N vs symptom day N+1)
+- **EXPL-12**: Explore chart export into the PDF report
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Dual independent y-axes | Dataviz consensus: arbitrary crossovers manufacture fake visual relationships; violates honest-axis invariant |
+| Silent 0–100% normalization | Hides real units; a 0–100 axis would inject forbidden percentage framing; if a "shape view" ever ships it must be loudly labeled |
+| Trend/regression line or r-value on the scatter | A fitted line is a visual strength/causal claim; numeric r is exactly the numeric-confidence framing the ClaimsPolicy forbids |
+| On-the-fly correlation/insight badges inside Explore | Would bypass every v1.0 honesty gate (sufficiency, suppression, claims policy); Explore stays descriptive |
+| Smoothing / moving averages bridging gaps | Interpolating across unlogged days fabricates data (absence ≠ 0) |
+| Pinch-zoom / free pan on the time axis | High cost, conflicts with selection gestures; range presets cover the need |
+| Unlimited overlay series | Overplotting spaghetti; cap at 3–4 quantitative + event lanes |
+| Binary tags as 0/1 line series | Implies a continuous scale that doesn't exist; event-marker lanes instead |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CHART-01 | — | Pending |
+| CHART-02 | — | Pending |
+| CHART-03 | — | Pending |
+| CHART-04 | — | Pending |
+| EXPL-01 | — | Pending |
+| EXPL-02 | — | Pending |
+| EXPL-03 | — | Pending |
+| EXPL-04 | — | Pending |
+| EXPL-05 | — | Pending |
+| EXPL-06 | — | Pending |
+| EXPL-07 | — | Pending |
+| SCAT-01 | — | Pending |
+| SCAT-02 | — | Pending |
+| SCAT-03 | — | Pending |
+| SCAT-04 | — | Pending |
+
+**Coverage:**
+- v1.1 requirements: 15 total
+- Mapped to phases: 0 (roadmap pending)
+- Unmapped: 15 ⚠️ (expected before roadmap)
+
+---
+*Requirements defined: 2026-06-10*
+*Last updated: 2026-06-10 after initial definition (milestone v1.1)*
