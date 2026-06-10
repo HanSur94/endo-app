@@ -1,11 +1,12 @@
 ---
 phase: 13
 slug: trend-chart-scrubbing
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 platform: ios-swiftui
 created: 2026-06-10
+reviewed_at: 2026-06-10
 ---
 
 # Phase 13 — UI Design Contract (Trend-Chart Scrubbing)
