@@ -13,8 +13,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **CHART-01**: User can touch-and-hold/drag (scrub) on any dashboard trend chart and read the exact date + logged value via a rule-mark + lollipop tooltip
 - [x] **CHART-02**: Scrubbing onto an unlogged day shows an explicit "not logged" state — never a zero, never an interpolated value
-- [ ] **CHART-03**: Scrubbing gives a selection haptic on day change; the tooltip lives while touching and dismisses on release
-- [ ] **CHART-04**: VoiceOver users can read per-day values without the drag gesture (accessibility alternative to scrubbing)
+- [x] **CHART-03**: Scrubbing gives a selection haptic on day change; the tooltip lives while touching and dismisses on release
+- [x] **CHART-04**: VoiceOver users can read per-day values without the drag gesture (accessibility alternative to scrubbing)
 
 ### Explore
 
@@ -73,10 +73,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CHART-01 | Phase 13 | Complete (13-01 resolver + copy foundations; UI renders in 13-02) |
-| CHART-02 | Phase 13 | Complete (13-01 unit-pinned gap→nil / severity-0→0 invariants) |
-| CHART-03 | Phase 13 | Pending |
-| CHART-04 | Phase 13 | Pending |
+| CHART-01 | Phase 13 | Complete (13-01 resolver + copy foundations; 13-02 lollipop chrome live on the dashboard) |
+| CHART-02 | Phase 13 | Complete (13-01 unit-pinned invariants; 13-02 gap = no point + "Not logged", severity-0 = point at zero) |
+| CHART-03 | Phase 13 | Complete (13-02 day-change-only haptic; device feel + dismiss-on-release at the phase-gate manual checkpoint) |
+| CHART-04 | Phase 13 | Complete (13-02 AXChartDescriptor Audio Graph + kept per-mark labels; VoiceOver playback at the phase-gate manual checkpoint) |
 | EXPL-01 | Phase 15 | Pending |
 | EXPL-02 | Phase 15 | Pending |
 | EXPL-03 | Phase 15 | Pending |
