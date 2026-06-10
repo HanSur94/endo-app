@@ -2,6 +2,10 @@
 
 > Working name — easily changed later.
 
+## Current State
+
+**v1.0 — feature-complete (shipped 2026-06-10).** All 12 phases built, goal-verified, and code-reviewed; cross-phase integration intact (7/7 seams); the full insights engine (trends · cycle-phase · correlations · honesty layer · recommendations · flare) ships behind a single honesty gate, with HealthKit import, a doctor-ready PDF report, and private-CloudKit sync wired. 28/31 requirements are automatable-complete. Remaining before App Store submission = a documented **release/device-gated checklist** (CloudKit Dev→Prod deploy + a real Developer team; 6 on-device/multi-device human verifications incl. DATA-02/03/04 sync survival) — see [ROADMAP.md](ROADMAP.md) and [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md). Next milestone: run `/gsd-new-milestone`.
+
 ## What This Is
 
 A free, privacy-first **iOS app for people with endometriosis** to track their symptoms, menstrual cycle, nutrition, and physical activity — and turn that data into genuinely useful insights. It is inspired by the official German **Endo-App** (a prescription-only DiGA) but is **free, open to everyone worldwide, and goes deeper on data insights**.
