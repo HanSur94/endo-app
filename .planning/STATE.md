@@ -156,6 +156,12 @@ Items acknowledged and carried forward from previous milestone close:
 | Phase 4 caveat | Explicit P-1 iCloud sign-out data-loss acknowledgement for v1 | Auto-approved under AUTO_MODE; user-confirm at phase gate | 04-03 |
 | Phase 4 review | Paste 5.1.3(ii) review note into App Store Connect (04-HUMAN-UAT A4) | Pending (before submission) | 04-03 |
 
+## Quick Tasks Completed
+
+| ID | Task | Status | Date |
+|----|------|--------|------|
+| 260610-sng | Wire the "Bloom" app icon into the iOS app (alpha-stripped 1024 single-size asset catalog + `ASSETCATALOG_COMPILER_APPICON_NAME` wiring) | complete ✓ | 2026-06-10 |
+
 ## Session Continuity
 
 Last session: 2026-06-10T18:06:57.000Z
