@@ -15,6 +15,8 @@
 //   • Reduce Motion disables chart animation; Dynamic Type scales axis labels.
 import SwiftUI
 import Charts
+import UIKit
+import Accessibility
 import EndoInsights
 
 /// A line chart of one `.trend` (symptom severity over time) on an absolute-date axis with honest gaps.
@@ -55,6 +57,11 @@ struct InsightTrendChart: View {
     /// The raw selection date from `chartXSelection` — per-card, view-local, EPHEMERAL (never
     /// persisted, never in any shared Observable; a scrub frame must not invalidate the List).
     @State private var rawSelectedDate: Date?
+
+    /// ONE selection-feedback generator per view identity (CHART-03 — `UISelectionFeedbackGenerator`
+    /// is LOCKED in CONTEXT; UIKit class from main-actor view code is Swift-6 clean). Simulator
+    /// no-ops are expected — device verification is the locked phase-gate manual checkpoint.
+    @State private var haptics = UISelectionFeedbackGenerator()
 
     /// The ONLY raw-date → value path: the pure exact-day resolver (CHART-02 honesty choke-point).
     /// No `proxy.value(atX:)`, no nearest-point math anywhere — a gap day resolves to `point == nil`
@@ -106,12 +113,29 @@ struct InsightTrendChart: View {
                 if allowsSelection {
                     chart
                         .chartXSelection(value: $rawSelectedDate)
+                        // Haptic (CHART-03): fires on resolved-DAY change ONLY — nil→day (initial
+                        // touch) and day→nil (release) fire nothing; dayA→dayB fires one selection
+                        // tick (naturally including logged↔gap transitions: the day changes even
+                        // when the point is nil). prepare() keeps the Taptic Engine warm mid-scrub;
+                        // no explicit release is needed (the generator idles when unused).
+                        .onChange(of: resolvedSelection?.day) { old, new in
+                            if old != nil, new != nil, old != new {
+                                haptics.selectionChanged()
+                            }
+                            if new != nil {
+                                haptics.prepare()
+                            }
+                        }
                 } else {
                     chart
                 }
             }
             .frame(height: 200)
             .accessibilityLabel(Text(summaryText))
+            // Audio Graph (CHART-04): attached in BOTH modes — render-inert (`ImageRenderer`
+            // rasterizes visuals only, so it never reaches the PDF). Escape hatch (UI-SPEC): if
+            // Plan 03's PDF re-verification shows ANY diff, gate this behind `allowsSelection` too.
+            .accessibilityChartDescriptor(self)
         }
     }
 
@@ -236,6 +260,46 @@ struct InsightTrendChart: View {
             return "\(date) — \(InsightsCopy.scrubSeverity(Int(point.value.rounded())))"
         }
         return "\(date) — \(InsightsCopy.scrubNotLogged)"
+    }
+}
+
+// MARK: - Audio Graph (CHART-04 — the non-gesture VoiceOver path, alongside the KEPT per-mark labels)
+
+// `@preconcurrency`: the protocol's requirements are nonisolated but this View is implicitly
+// MainActor (Swift 6); SwiftUI invokes `makeChartDescriptor()` on the main actor, so the
+// conformance is main-actor-safe at runtime (the compiler-suggested resolution).
+extension InsightTrendChart: @preconcurrency AXChartDescriptorRepresentable {
+    /// Discrete tones for LOGGED days ONLY, sorted by date — gaps are OMITTED (never zeros), and
+    /// `isContinuous: false` means the Audio Graph never sonically interpolates across a gap
+    /// (the audio equivalent of the broken line). Same date vocabulary as the axis labels.
+    func makeChartDescriptor() -> AXChartDescriptor {
+        let sorted = points.sorted { $0.date < $1.date }
+        let xAxis = AXCategoricalDataAxisDescriptor(
+            title: "Day",
+            categoryOrder: sorted.map { $0.date.formatted(.dateTime.month().day()) }
+        )
+        let yAxis = AXNumericDataAxisDescriptor(
+            title: "Severity",
+            range: 0...10,
+            gridlinePositions: []
+        ) { value in
+            "\(Int(value)) of 10"
+        }
+        let series = AXDataSeriesDescriptor(
+            name: headline,
+            isContinuous: false,
+            dataPoints: sorted.map { point in
+                AXDataPoint(x: point.date.formatted(.dateTime.month().day()), y: point.value)
+            }
+        )
+        return AXChartDescriptor(
+            title: headline,
+            summary: summaryText,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            additionalAxes: [],
+            series: [series]
+        )
     }
 }
 

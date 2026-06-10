@@ -157,7 +157,9 @@ struct InsightCardView: View {
                 points: insight.points,
                 window: insight.window,
                 directionWord: directionWord,
-                headline: insight.headline
+                headline: insight.headline,
+                allowsSelection: true,                       // ← Phase 13: the dashboard switch-on
+                selectionA11yIDRoot: "\(idRoot).chart"       //   tooltip a11y ids hang off this
             )
             .accessibilityIdentifier("\(idRoot).chart")
 
