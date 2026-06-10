@@ -73,27 +73,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CHART-01 | — | Pending |
-| CHART-02 | — | Pending |
-| CHART-03 | — | Pending |
-| CHART-04 | — | Pending |
-| EXPL-01 | — | Pending |
-| EXPL-02 | — | Pending |
-| EXPL-03 | — | Pending |
-| EXPL-04 | — | Pending |
-| EXPL-05 | — | Pending |
-| EXPL-06 | — | Pending |
-| EXPL-07 | — | Pending |
-| SCAT-01 | — | Pending |
-| SCAT-02 | — | Pending |
-| SCAT-03 | — | Pending |
-| SCAT-04 | — | Pending |
+| CHART-01 | Phase 13 | Pending |
+| CHART-02 | Phase 13 | Pending |
+| CHART-03 | Phase 13 | Pending |
+| CHART-04 | Phase 13 | Pending |
+| EXPL-01 | Phase 15 | Pending |
+| EXPL-02 | Phase 15 | Pending |
+| EXPL-03 | Phase 15 | Pending |
+| EXPL-04 | Phase 15 | Pending |
+| EXPL-05 | Phase 15 | Pending |
+| EXPL-06 | Phase 15 | Pending |
+| EXPL-07 | Phase 15 | Pending |
+| SCAT-01 | Phase 16 | Pending |
+| SCAT-02 | Phase 16 | Pending |
+| SCAT-03 | Phase 16 | Pending |
+| SCAT-04 | Phase 16 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 15 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 15 ⚠️ (expected before roadmap)
+- Mapped to phases: 15 ✓
+- Unmapped: 0
+
+Note: Phase 14 (Series Catalog & Pure Extraction Layer) carries no direct requirement mapping — it is the foundational pure-helper keystone (per research) that unblocks EXPL-02–05, EXPL-07, SCAT-01, and SCAT-02 in Phases 15–16.
 
 ---
 *Requirements defined: 2026-06-10*
-*Last updated: 2026-06-10 after initial definition (milestone v1.1)*
+*Last updated: 2026-06-10 — traceability mapped to roadmap phases 13–16 (milestone v1.1)*

@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Interactive Charts & Explore
-status: planning
-last_updated: "2026-06-10T15:44:57.035Z"
+status: ready-to-plan
+last_updated: "2026-06-10T16:06:46.000Z"
 last_activity: 2026-06-10
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-03)
+See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 12 — Flare Early-Warning (final phase)
+**Current focus:** Phase 13 — Trend-Chart Scrubbing (v1.1 Interactive Charts & Explore)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-10 — Milestone v1.1 started
+Phase: 13 of 16 — Trend-Chart Scrubbing (pending)
+Plan: — (not yet planned)
+Status: Ready to plan — v1.1 roadmap created (Phases 13–16, 15/15 requirements mapped)
+Progress: [ ] 13 [ ] 14 [ ] 15 [ ] 16 — 0%
+Last activity: 2026-06-10 — v1.1 roadmap created
 
 ## Performance Metrics
 
@@ -92,6 +93,11 @@ Last activity: 2026-06-10 — Milestone v1.1 started
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [Roadmap v1.1]: Research-driven 4-phase order (13 scrub → 14 pure catalog → 15 Explore lanes → 16 scatter): Phase 13 builds the reusable selected-date→logged-day-or-nil resolver (`ChartScrubSelection`), the selection-a11y pattern, and the `-uitest-select-day` E2E seam both later surfaces reuse; Phase 14 locks the honesty invariants in pure Foundation helpers BEFORE any pixel exists (the v1.0 `ChartSeriesGrouping` playbook). Phase 14 carries no REQ-IDs — it is the foundational keystone consumed by Phases 15–16.
+- [Roadmap v1.1]: Mixed scales = aligned per-scale lanes sharing ONE time axis and one scrub state, each series in its real unit; binary tags/bleeding = event-marker lanes. NEVER dual y-axis (confirmed Swift Charts limitation + dataviz consensus), never silent normalization, never 0/1 lines, no fitted line/r-value on the scatter, no jitter (count-encoded stacking instead).
+- [Roadmap v1.1]: Explore reads `Repository.daySnapshots()` directly and deliberately bypasses InsightsEngine/HonestyGate (they gate claims, not raw data); Explore/scatter chrome stays descriptive-only and ALL new copy registers in `CopyAuditTests` before it is written (an unregistered copy enum silently escapes the scans). Plain Swift Charts on the iOS 18 stack — zero new dependencies, zero schema changes, zero engine changes; `InsightsEngine`/`HonestyGate`/`InsightsCoordinator`/SchemaV1/PDF report content stay untouched.
+- [Roadmap v1.1]: Phase 15 flagged `research: true` — the lanes-vs-labeled-normalization layout decision (full-UI-rework recovery cost), the multi-series tooltip layout, and the bleeding-series-under-suppression product call are decided before building.
+- [Roadmap v1.1]: Dashboard scrubbing is tap-to-select (in-List scroll conflict); free scrub is reserved for Explore's fixed-chart layout. `InsightTrendChart` gains an additive defaulted `allowsSelection` param (the `inkColor` precedent); the PDF passes `false` and `ReportPDFRenderer` stays untouched in the diff.
 - [Roadmap]: All four FOUNDATIONAL pitfalls (cycle/bleeding model, CloudKit append-only schema, App Store 5.1.3(ii) line, GDPR consent + non-causal language) concentrated in Phase 1 — irreversible after launch.
 - [Roadmap]: Insights engine is a standalone, value-type-consuming Swift package built against synthetic fixtures (Phases 5–7) BEFORE integration with real data (Phase 8).
 - [Roadmap]: HealthKit is additive read-only (Phase 9, after pipeline works on manual data); doctor PDF is late (Phase 10); flare prediction (INST-06) is built LAST (Phase 12), gated by the honesty layer.
@@ -130,9 +136,9 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1]: App Store 5.1.3(ii) private-CloudKit-health-storage interpretation is reviewer-dependent — the one genuine go/no-go. De-risk via throwaway TestFlight + pre-submission review note; keep a local-only fallback. (Research flag — HIGH impact.)
-- [Phase 7]: Correlation statistical rigor (min-sample, multiple-comparison correction, confounding thresholds) are unsettled design decisions — prototype against synthetic + early real data.
-- [Phase 12]: Flare prediction is genuinely hard, noisy, and brushes the MDR line — warrants dedicated research before building.
+- [Phase 15]: The lanes-vs-labeled-normalization Explore layout decision (recovery cost = full UI rework) + the bleeding-series-under-suppression product call — both flagged `research: true` on Phase 15; decide before building.
+- [Phases 13/15 + every OS update]: Scroll-vs-scrub gesture arbitration is OS-version-volatile (documented iOS 18/26-beta chart-gesture-in-scroll regressions) — a recurring release-checklist item, not a one-time check.
+- [v1.0 carried]: App Store 5.1.3(ii) private-CloudKit-health-storage interpretation is reviewer-dependent — the one genuine go/no-go. De-risk via throwaway TestFlight + pre-submission review note; keep a local-only fallback.
 
 ## Deferred Items
 
@@ -147,10 +153,11 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T16:33:23.925Z
-Stopped at: Completed 09-01-PLAN.md (HealthKit seam + value contracts + mapping tables + ImportedSample SchemaV6 migration + boundary lint)
-Resume file: .planning/phases/09-healthkit-import/09-02-PLAN.md
+Last session: 2026-06-10T16:06:46.000Z
+Stopped at: v1.1 roadmap created (Phases 13–16, 15/15 requirements mapped) — awaiting user approval
+Resume file: .planning/ROADMAP.md
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Review the v1.1 roadmap (Phases 13–16) in .planning/ROADMAP.md
+- Then plan the first phase: /gsd-plan-phase 13
