@@ -89,6 +89,16 @@ final class AppDependencies {
         // store, so it can NEVER write to the user's real local/CloudKit store. Unreachable in normal launches.
         let seedFlare = ProcessInfo.processInfo.arguments.contains("-uitest-seed-flare")
 
+        // Test-only, launch-arg-guarded DEMO seed (manual exploration on the Simulator). When present we
+        // insert ~4 months (120 days) of deterministic, realistic data — cyclical bleeding every ~29 days,
+        // cycle-modulated symptoms, food/sleep/activity/stress/mood factors with two honest associations
+        // (dairy→pelvicPain, poor-sleep→next-day pain), occasional unlogged gap days, and a mild RECENT
+        // severity rise — so every dashboard section (flare → trends → cycle phase → associations →
+        // recommendations), the report, and the cycle summary all light up at once. PAIRED with
+        // `-uitest-reset` (mirrors `-uitest-seed-insights`): the seed only ever touches the in-memory
+        // store, so it can NEVER write to the user's real local/CloudKit store. Unreachable in normal launches.
+        let seedDemo = ProcessInfo.processInfo.arguments.contains("-uitest-seed-demo")
+
         // Test-only, launch-arg-guarded HealthKit fixture selection (used by HealthConnectUITests, 09-03).
         // Mirrors `-uitest-reset`/`-uitest-seed-insights`: a `-uitest-health-*` arg swaps the REAL
         // `SystemHealthDataReading` for the deterministic `FixtureHealthDataReading` so the whole import →
@@ -189,6 +199,13 @@ final class AppDependencies {
         // real store.
         if seedFlare && uiTestReset {
             Self.seedFlareWarning(into: insightsRepo)
+        }
+
+        // Demo-seed safety (mirrors T-08-06): inserted ONLY when BOTH `-uitest-seed-demo` AND the
+        // in-memory `-uitest-reset` store are active, so the multi-month fixture can never leak to a
+        // real store.
+        if seedDemo && uiTestReset {
+            Self.seedDemoMonths(into: insightsRepo)
         }
 
         self.insightsCoordinator = InsightsCoordinator(
@@ -349,6 +366,75 @@ final class AppDependencies {
             guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
             let severity = offset <= 10 ? 7 : 3
             try? repo.upsertSymptom(type: .pelvicPain, severity: severity, on: day)
+        }
+    }
+
+    /// Test-only DEMO fixture seam: ~4 months (120 days, ending yesterday) of deterministic, realistic
+    /// data so EVERY surface lights up at once for manual Simulator exploration — 4 bleeding cycles
+    /// (~29-day rhythm, 5-day runs), cycle-modulated pelvic pain + dysmenorrhea + fatigue, two honest
+    /// associations (dairy→pelvicPain, poor-sleep→next-day pain), food/activity/sleep/stress/mood
+    /// factors, occasional fully-unlogged gap days (absence ≠ 0 stays visible in charts), and a mild
+    /// RECENT rise so the calm flare card appears. Deterministic (offset arithmetic only, no RNG).
+    /// PAIRED with the in-memory `-uitest-reset` store; it can never touch a real store. Best-effort.
+    private static func seedDemoMonths(into repo: SwiftDataRepository) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        for offset in stride(from: 120, through: 1, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+
+            // Honest gaps: roughly every 11th historic day is fully unlogged (skip recent week).
+            if offset % 11 == 0 && offset > 7 { continue }
+
+            // ── Cycle: a ~29-day rhythm with a 5-day bleed at the start of each cycle.
+            let cycleDay = offset % 29   // 0…28; days 0–4 of the rhythm = menses
+            let menses = cycleDay < 5
+            if menses {
+                let intensity: FlowIntensity = (cycleDay < 2) ? .heavy : (cycleDay < 4 ? .medium : .light)
+                try? repo.setBleeding(intensity: intensity, clots: cycleDay < 2, on: day)
+            }
+
+            // ── Factors first (associations key off these).
+            let dairyDay = offset % 3 == 0
+            var tags: [FoodTag] = dairyDay ? [.dairy] : [.caffeine]
+            if offset % 13 == 0 { tags.append(.highSugar) }
+            try? repo.setFood(tags: tags, freeText: nil, on: day)
+
+            let poorSleepNight = offset % 7 < 2   // ~2 nights/week poor sleep
+            try? repo.setSleep(hours: poorSleepNight ? 5.5 : 7.5,
+                               quality: poorSleepNight ? .poor : (offset % 5 == 0 ? .good : .okay),
+                               on: day)
+
+            if offset % 4 != 1 {   // activity most days, honest skips
+                let yoga = offset % 5 == 0
+                try? repo.setActivity(type: yoga ? .yogaStretching : .walking,
+                                      minutes: yoga ? 25 : 35,
+                                      intensity: yoga ? .low : .medium, on: day)
+            }
+            try? repo.setStress(poorSleepNight ? 4 : 2, on: day)
+            try? repo.setMood(menses ? 2 : 4, on: day)
+
+            // ── Symptoms: baseline modulated by cycle phase + the two seeded associations + a recent rise.
+            // Prior-day poor sleep bumps today's pain (offset+1's night was poor when (offset+1) % 7 < 2).
+            let afterPoorSleep = (offset + 1) % 7 < 2
+            var pain = 2
+            if menses { pain += 3 }
+            if dairyDay { pain += 2 }
+            if afterPoorSleep { pain += 1 }
+            if offset <= 7 { pain += 2 }          // the mild recent rise (calm flare hint)
+            try? repo.upsertSymptom(type: .pelvicPain, severity: min(pain, 9), on: day)
+            if menses {
+                try? repo.upsertSymptom(type: .dysmenorrhea, severity: min(pain + 1, 10), on: day)
+                try? repo.setPainPoint(region: .lowerAbdomenPelvis, severity: min(pain, 9), on: day)
+            }
+            try? repo.upsertSymptom(type: .fatigue, severity: menses ? 6 : (poorSleepNight ? 5 : 3), on: day)
+            if offset % 6 == 0 {
+                try? repo.upsertSymptom(type: .giEndoBelly, severity: dairyDay ? 6 : 3, on: day)
+            }
+
+            if cycleDay == 0 {
+                try? repo.setNote("Period started today.", on: day)
+            }
         }
     }
 
