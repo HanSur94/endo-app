@@ -77,7 +77,11 @@ Plans:
   3. Presence-kind series (food tags, bleeding-as-events) extract as occurrence days, never coerced into 0/1 values — the series-kind model makes the coercion unrepresentable
   4. Scatter pairing returns only days where BOTH factors were logged, with identical day-pairs counted (aggregated) rather than duplicated
   5. All helpers are Foundation-only (boundary lint stays green) and emit the existing `InsightPoint`, so the shipped gap-breaking `ChartSeriesGrouping` is reused unchanged
-**Plans**: TBD
+**Plans**: 4 plans (1 keystone wave + 3 parallel composers)
+- [ ] 14-01-PLAN.md — ExploreSeries catalog + ScaleKind taxonomy + field-discriminator accessors + shared test harness (wave 1, keystone)
+- [ ] 14-02-PLAN.md — ExploreSeriesExtraction: two-return-type honesty move ([InsightPoint] quantitative / [Date] presence) + suppression gate (wave 2)
+- [ ] 14-03-PLAN.md — ScatterPairing: both-logged-only intersection + count-encoded ScatterPoint, no jitter/imputation (wave 2)
+- [ ] 14-04-PLAN.md — SeriesNormalization: fixed honest per-scale domain + real-unit readout round-trip (wave 2)
 **Notes**: No UI in this phase — verification is the EndoInsights Swift Testing suite (the v1.0 `ChartSeriesGrouping` playbook: honesty properties become unit tests before rendering exists). Deliverables per research: `ExploreSeries` catalog, `ExploreSeriesExtraction`, `ScatterPairing`, `SeriesNormalization` (round-tripping real-unit readouts). New EndoInsights package files need no `project.yml` change; any app-target files go through `xcodegen generate`.
 
 ### Phase 15: Explore Tab & Overlay Lanes
