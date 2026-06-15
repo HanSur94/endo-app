@@ -133,7 +133,15 @@ Plans:
   3. The scatter stays descriptive-only: no fitted line, no correlation number, a neutral caption ("Based on N days where both were logged"), and an honest sparse state when too few both-logged days exist
   4. User can open a prefilled scatter from a "Possible association" card via a "see the days behind this" affordance
 
-**Plans**: TBD
+**Plans**: 4 plans (4 waves)
+
+Plans:
+
+- [ ] 16-01-PLAN.md — ScatterDeepLink pure resolver (signalKey → optional quantitative axis pair) + ScatterDeepLinkTests + audited ExploreCopy scatter strings registered in CopyAuditTests (foundations, no UI)
+- [ ] 16-02-PLAN.md — ScatterPlotView (count-encoded PointMark, fixed real-unit domains, neutral caption, a11y summary) + quantitative-only ScatterAxisPicker + the Lanes|Scatter mode toggle + empty/sparse states in ExploreView
+- [ ] 16-03-PLAN.md — ExploreScatterRouter (@Observable PendingScatter, env-injected like CheckInRouter) + ConsentedShell TabView(selection:) + the .correlation card "see the days behind this" affordance (resolver-gated) + ExploreView router-read prefill
+- [ ] 16-04-PLAN.md — -uitest-seed-scatter-link (stress.high→pelvicPain) seam + ScatterUITests E2E (render, count, caption, sparse, positive deep-link prefill + dairy negative, suppressed-no-bleeding) + regression gates (Explore/Insights/Report)
+
 **UI hint**: yes
 **Notes**: The scatter's chrome is the most causality-sensitive copy of the milestone — every caption/empty-state string goes through the audited `ExploreCopy` choke point with descriptive-only framing (no r-values, no "% impact", no trend line — by acceptance criterion and ClaimsPolicy). Text summary parity for the scatter; E2E via the Phase 13 selection seam; `xcodegen generate`; PDF path untouched. Sets up the v1.1.x tail (tap-point → day log) without building it.
 
@@ -144,7 +152,7 @@ Plans:
 | 13. Trend-Chart Scrubbing | 3/3 | Complete | 2026-06-15 |
 | 14. Series Catalog & Pure Extraction Layer | 4/4 | Complete   | 2026-06-15 |
 | 15. Explore Tab & Overlay Lanes | 6/6 | Complete   | 2026-06-15 |
-| 16. Scatter View & Correlation Deep-Link | 0/TBD | Not started | - |
+| 16. Scatter View & Correlation Deep-Link | 0/4 | Planned (4 plans, 4 waves) | - |
 
 ---
-*Roadmap updated: 2026-06-10 — Phase 13 planned (3 plans, 3 waves)*
+*Roadmap updated: 2026-06-16 — Phase 16 planned (4 plans, 4 waves)*
