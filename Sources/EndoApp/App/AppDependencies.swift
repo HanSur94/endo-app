@@ -113,6 +113,25 @@ final class AppDependencies {
         // in-memory store, so it can NEVER write to the user's real local/CloudKit store.
         let seedScrub = ProcessInfo.processInfo.arguments.contains("-uitest-seed-scrub")
 
+        // Test-only, launch-arg-guarded EXPLORE seed (used by ExploreUITests, Plan 15-06). When present we
+        // insert a deterministic MULTI-series dataset so the Explore-tab E2E can assert per-scale lanes, the
+        // multi-series scrub tooltip (a real-unit readout line AND a per-series "Not logged" gap line), event
+        // ticks, and the empty/sparse states — all via a11y ids + the `-uitest-select-day` seam, with NO
+        // scrub-gesture coordinates. Two quantitative series on DIFFERENT scales (pelvicPain severity 0…10 +
+        // sleep hours) + one event series (a food tag) + an in-window GAP day + a logged-0 day, ALL inside the
+        // last-7 window (the Phase-13 "all anomalies in last-7" rule) so a single `-uitest-select-day` resolves
+        // deterministically in every range preset. PAIRED with `-uitest-reset` (mirrors `-uitest-seed-scrub`):
+        // the seed only ever touches the in-memory store, so it can NEVER write to the user's real
+        // local/CloudKit store. Unreachable in normal launches.
+        let seedExplore = ProcessInfo.processInfo.arguments.contains("-uitest-seed-explore")
+
+        // The suppressed VARIANT of the Explore seed (used by ExploreUITests' suppression-hides-bleeding case):
+        // the SAME multi-series dataset PLUS a "suppressed" `TreatmentState`, so the picker offers NO
+        // `bleeding.intensity`/`bleeding.event` chip (T-15-11, the UI half of the Phase-14 accessor gate),
+        // provable by the chip's ABSENCE. PAIRED with `-uitest-reset` (in-memory only). Unreachable in normal
+        // launches.
+        let seedExploreSuppressed = ProcessInfo.processInfo.arguments.contains("-uitest-seed-explore-suppressed")
+
         // Test-only, launch-arg-guarded deterministic SCRUB-SELECTION day (Phase 13 E2E seam, T-13-02).
         // Parsed ONLY when `-uitest-reset` is present (in-memory store — the same unreachable-in-production
         // pairing as every seed above) and ONLY in DEBUG builds (belt-and-suspenders compile-out). The
@@ -250,6 +269,14 @@ final class AppDependencies {
             Self.seedScrubFixture(into: insightsRepo)
         }
 
+        // Plan 15-06 safety: the Explore seed is inserted ONLY when BOTH `-uitest-seed-explore` (or its
+        // `-uitest-seed-explore-suppressed` variant) AND the in-memory `-uitest-reset` store are active, so
+        // the multi-series fixture can never leak to a real store. The suppressed variant additionally flips
+        // the latest `TreatmentState` to "suppressed" so the picker hides the bleeding chips (T-15-11).
+        if (seedExplore || seedExploreSuppressed) && uiTestReset {
+            Self.seedExploreFixture(into: insightsRepo, suppressed: seedExploreSuppressed)
+        }
+
         self.insightsCoordinator = InsightsCoordinator(
             loadSnapshots: { try insightsRepo.daySnapshots() },
             loadDismissed: { try insightsRepo.dismissedSignalKeys() },
@@ -367,6 +394,68 @@ final class AppDependencies {
             if offset == 3 { continue }            // the in-window gap day (never logged)
             let severity = offset == 2 ? 0 : 6     // the logged-zero day vs the dense spine
             try? repo.upsertSymptom(type: .pelvicPain, severity: severity, on: day)
+        }
+    }
+
+    /// Test-only fixture seam (Plan 15-06): insert a deterministic MULTI-series dataset so the Explore-tab
+    /// E2E (ExploreUITests) can assert per-scale lanes (EXPL-03), the single multi-series scrub tooltip
+    /// (EXPL-05 — a real-unit readout line AND a per-series "Not logged" gap line on the SAME day), event
+    /// ticks (EXPL-04), and the empty/sparse states (EXPL-07) via a11y ids + the `-uitest-select-day` seam,
+    /// with NO scrub-gesture coordinates. Cloned from `seedScrubFixture`'s posture; does NOT modify it.
+    ///
+    /// Everything lands inside the LAST-7 window (the Phase-13 "all anomalies in last-7" rule) so a single
+    /// `-uitest-select-day` resolves the SAME state in EVERY range preset (RESEARCH Pitfall 6). The seeded
+    /// scrub day is **offset 1** (today-1), chosen so the multi-series tooltip exercises ALL three line kinds
+    /// at once:
+    ///   • `pelvicPain` severity (a 0…10 quantitative lane) — LOGGED severity 6 on offset 1 (a readout line),
+    ///     with an in-window GAP day (offset 3, never logged → "Not logged") and a logged-ZERO day (offset 2,
+    ///     severity 0 → a real point, distinct from a gap).
+    ///   • `sleep.hours` (a SECOND quantitative lane on a DIFFERENT scale) — logged on the other in-window
+    ///     days but a deliberate GAP on offset 1, so the scrub day shows sleep's per-series "Not logged" line
+    ///     alongside pelvicPain's readout (the gap-honest multi-series proof).
+    ///   • `food.dairy` (a presence/EVENT lane) — present on offset 1 (and others), so the scrub day also
+    ///     carries an event "Logged" line and the event lane renders ticks, never a 0/1 line.
+    ///
+    /// When `suppressed` is `true` the latest `TreatmentState` is flipped to "suppressed" so the picker hides
+    /// BOTH bleeding chips (T-15-11) — provable by the chip's ABSENCE. PAIRED with the in-memory
+    /// `-uitest-reset` store; it can never touch a real store. Best-effort; a seed failure must not crash a
+    /// UI-test launch.
+    private static func seedExploreFixture(into repo: SwiftDataRepository, suppressed: Bool) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // A dense 6-day spine ending yesterday (offsets 6…1), all inside the last-7 window. The two
+        // deliberate pelvicPain anomalies (the GAP day + the logged-0 day) sit at offsets 3 and 2; offset 1
+        // is the seeded scrub/assertion day.
+        for offset in stride(from: 6, through: 1, by: -1) {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+
+            // ── Series 1: pelvicPain severity (0…10). offset 3 is the GAP (skipped); offset 2 is the logged
+            //    ZERO; every other in-window day is the dense severity-6 spine.
+            if offset != 3 {
+                let severity = offset == 2 ? 0 : 6
+                try? repo.upsertSymptom(type: .pelvicPain, severity: severity, on: day)
+            }
+
+            // ── Series 2: sleep hours (a DIFFERENT scale). Logged every in-window day EXCEPT offset 1, so
+            //    the seeded scrub day (offset 1) is a sleep GAP → its tooltip line reads "Not logged" while
+            //    pelvicPain reads a real value (the multi-series gap-honest proof). Distinct hours so the
+            //    lane is a real shape, not a flat line.
+            if offset != 1 {
+                try? repo.setSleep(hours: offset % 2 == 0 ? 7.5 : 6.0, quality: .okay, on: day)
+            }
+
+            // ── Event series: a food tag (dairy). Present on the scrub day (offset 1) and a couple of others
+            //    so the event lane renders occurrence ticks and the scrub-day tooltip shows an event line.
+            if offset == 1 || offset == 4 || offset == 6 {
+                try? repo.setFood(tags: [.dairy], freeText: nil, on: day)
+            }
+        }
+
+        // The suppressed variant: append a "suppressed" TreatmentState so the latest snapshot's `suppressed`
+        // flag drives the picker filter to hide the bleeding chips (T-15-11). Without this the default seed
+        // is NOT suppressed, so the bleeding chips ARE offered (the normal chip-render path).
+        if suppressed {
+            try? repo.setSuppressed(true)
         }
     }
 
