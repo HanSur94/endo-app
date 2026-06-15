@@ -164,6 +164,12 @@ struct ExploreLanesView: View {
         .overlay { scrubAccessibilityProxy(day) }
     }
 
+    // NOTE (IN-03, intentional v1 deferral): the visible tooltip card and the a11y proxy each call these
+    // line builders, so the same per-series string is resolved twice per scrubbed day. The EXPENSIVE work
+    // (extraction) is already cached in `prepared`; re-running the exact-day resolver over the cached
+    // points is cheap and only on scrub-day change (not per frame). De-duplicating into one memoized list
+    // is deferred — flagged so a future reader knows it is a known choice, not an oversight.
+
     /// "{displayName}: {real-unit readout}" for a logged day, or "{displayName}: Not logged" for a gap
     /// day — resolved via the exact-day `ChartScrubSelection.resolve` (the ONLY raw-date→value path).
     private func quantitativeLine(_ series: ExploreSeries, points: [InsightPoint], day: Date) -> String {

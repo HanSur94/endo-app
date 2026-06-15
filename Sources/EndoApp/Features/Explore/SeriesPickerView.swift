@@ -148,12 +148,16 @@ struct SeriesPickerView: View {
 /// A simple wrapping layout: lays subviews left→right, wrapping to the next row when the proposed width
 /// is exceeded. Used for the chip cluster so chips reflow at large Dynamic Type without clipping. Pure
 /// system `Layout` (iOS 16+) — no third-party dependency.
+///
+/// NOTE (IN-02, intentional v1 deferral): this ignores the `Layout` cache seam and recomputes the row
+/// layout each pass. For the small chip count here that is perf-neutral; a cache is deferred — flagged so
+/// a future reader knows it is a known choice, not an oversight.
 private struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let maxWidth = proposal.width ?? .infinity
-        var rows = rowsLayout(maxWidth: maxWidth, subviews: subviews)
+        let rows = rowsLayout(maxWidth: maxWidth, subviews: subviews)
         let height = rows.totalHeight(spacing: spacing)
         // Width: the widest row (or the proposed width when finite).
         let width = proposal.width ?? rows.maxRowWidth(spacing: spacing)
