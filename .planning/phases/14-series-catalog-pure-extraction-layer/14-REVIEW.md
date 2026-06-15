@@ -18,7 +18,17 @@ findings:
   warning: 3
   info: 4
   total: 7
-status: findings_found
+status: fixed
+fixed_at: 2026-06-15T00:00:00Z
+fix_commits:
+  WR-01: bccf492  # graceful-degrade wrong-kind series to [] (subsumes IN-03 cross-routing)
+  WR-02: d56771d  # clamp normalize output to [0,1]
+  WR-03: 0e0ecc3  # max severity for duplicate-type days (not positional-first)
+  IN-01: 4841e70  # drop trailing .0 from whole-number readouts (shared commit with IN-04)
+  IN-02: e69b8c4  # document PairKey no-arithmetic invariant
+  IN-03: bccf492  # subsumed by WR-01 (direct wrong-door cross-routing tests added)
+  IN-04: 4841e70  # strengthen readout honesty assertion (shared commit with IN-01)
+fix_verification: "swift test --package-path EndoInsights -> 156 tests in 18 suites passed; BoundaryLintTests (D-12 package import boundary) green"
 ---
 
 # Phase 14: Code Review Report
