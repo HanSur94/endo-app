@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — Interactive Charts & Explore
 status: executing
 stopped_at: Completed 13-03-PLAN.md (test seam + scrub E2E + regression gates — Phase 13 3/3 plans complete)
-last_updated: "2026-06-15T09:58:17.181Z"
+last_updated: "2026-06-15T10:04:18.738Z"
 last_activity: 2026-06-15 -- Phase 14 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
   percent: 25
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 ## Current Position
 
 Phase: 14 (Series Catalog & Pure Extraction Layer) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Progress: [x] 13 [ ] 14 [ ] 15 [ ] 16 — 25% (1/4 phases)
 Last activity: 2026-06-15 -- Phase 14 execution started
@@ -90,6 +90,7 @@ Last activity: 2026-06-15 -- Phase 14 execution started
 | Phase 13 P02 | ~9min | 2 tasks | 2 files |
 | Phase 13 P03 | ~30min | 3 tasks | 4 files |
 | Phase 14 P01 | ~5min | 3 tasks | 3 files |
+| Phase 14 P02 | ~10min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,8 @@ Recent decisions affecting current work:
 - [09-02]: Wave-2 import service + manual-wins merge landed (DATA-05/D-02/D-09/D-12). `HealthImportService` is an isolated `actor` composing the Sendable seam: load anchor → pull → persist values+deletions → store new anchor → fire Phase-8 `dataChanged()` ONCE (D-12). Consent-gated (consentGuard, T-09-08); no-content logging (only error type, swallowed, T-09-07); persists BEFORE advancing the anchor so a store failure re-delivers samples. `HealthAnchorStore` keeps per-domain `HKQueryAnchor` OUTSIDE CloudKit (UserDefaults + NSKeyedArchiver secure coding; corrupt blob → nil re-backfill, T-09-09). `FixtureHealthDataReading` is the deterministic in-memory double (seed two-pull script / empty; NEVER constructs HKHealthStore, T-09-06). Repository imported CRUD: dedupe-by-hkSampleUUID upsert + delete-by-uuid + replaceOrInsertImported. THE LOAD-BEARING part: manual-wins, per-field, nil-honest merge in daySnapshots() (D-02/D-04/SC3) — each imported-capable field resolves manual→imported→nil (NEVER 0); an empty/denied import leaves every field nil (the make-or-break SC3 honesty). Provenance via a SEPARATE app-side daySnapshotSources(on:) read so the EndoInsights.DaySnapshot contract is UNCHANGED (minimal blast radius). 16 tests GREEN (anchor-pull 5 + service 5 + merge 6, RED→GREEN on the merge). 09-03 ships the real reader + permission UX + entitlement on top.
 - [09-03]: Wave-3 PAYOFF slice landed — read-only HealthKit permission UX + provenance + entitlement, E2E-proven on the Simulator via the fixture seam (DATA-05/SC2/SC3/D-03/D-06/D-08/D-10). The read-only capability SHIPS: com.apple.developer.healthkit + empty .access array (NO write/share key) in the entitlements file + NSHealthShareUsageDescription in Info.plist (NSHealthUpdateUsageDescription ABSENT — read-only triple-proven: empty .access + toShare:[] + grep-gated update-key absence, T-09-14). `SystemHealthDataReading` is the real reader: HKHealthStore lives behind a dedicated `@globalActor HealthStoreActor` (Pattern 1) so the non-Sendable store is serialized app-wide while the seam stays a plain Sendable type; toShare:[] async auth (read-only, never branches authorizationStatus for reads — Pitfall 1); HKAnchoredObjectQuery does the D-13 365-day backfill (anchor==nil) / D-09 incremental pull, mapping each HKSample→Sendable ImportedSampleValue INSIDE the continuation via the 09-01 HealthSampleMapping tables (no HKSample escapes, Pitfall 2). UX: `HealthRationaleView` states read-only+private+optional and is the ONLY path to requestAuthorization (D-06); `HealthConnectSection` is a passive affordance — a device-local `health.connect.decided` @AppStorage flag (NOT a read-status probe, T-09-12) picks rationale-vs-Settings-deep-link (D-08, reads can't be re-requested in-app); `HealthSourceBadge` renders "from Apple Health" (symbol+text, never color-alone, D-03) on a HomeView day row whose daySnapshotSources is .appleHealth; Settings adds an "Apple Health" section + "Refresh from Health" (D-10). AppDependencies constructs HealthImportService over the selected reader (real, or FixtureHealthDataReading under -uitest-health-seed/-denied/-empty PAIRED with -uitest-reset, T-09-06), persist wraps Repository.replaceOrInsertImported, recompute fires InsightsCoordinator.dataChanged() (D-12); injects \\.healthImportService. TWO Rule-1 auto-fixes: (1) MainActor.assumeIsolated in the persist/recompute closures TRAPPED — those run on the import-service actor's executor, NOT MainActor — so persist now calls the actor-confined ModelContext directly and recompute hops via Task { @MainActor }; (2) the health.connect.decided flag LEAKED across same-Simulator UI runs (-uitest-reset cleared only consent.grantedAt) — now also cleared under -uitest-reset. HealthConnectCopyAuditTests GREEN (5, ClaimsPolicy choke-point T-09-15, incl. the NSHealthShareUsageDescription source-of-truth literal). HealthConnectUITests GREEN (4 E2E via the fixture seam: rationale-before-sheet / denied-keeps-app-usable-with-insights.empty-never-"no symptoms" / "from Apple Health" badge / Refresh pulls+recomputes). Full EndoAppTests GREEN (183/183). DEFERRED (auto-approved under AUTO_MODE, surfaced to the phase gate, same posture as Phase 4 HUMAN-UAT): the REAL-device HealthKit read + the OS authorization sheet — Simulator HealthKit has no realistic data + the entitlement is inert without a DEVELOPMENT_TEAM. Phase 9 is now 3/3 plans complete; ready for /gsd-verify-work.
 - [03-01]: Phase-3 data spine landed — unified FactorReading @Model (kindRaw + valueRaw/amount/level/note columns) discriminates all six factor kinds; Sendable FactorDay snapshot is the insights seam with nil!=0 honesty (missing stress/mood row -> nil; logged level-0 -> 0). Additive SchemaV3 + lightweight v2toV3 migration (A1 closed for Phase-3 models). Medication is a soft-archive definition; per-day "taken" is a .medication FactorReading keyed by med-id. KEY DEVIATION: quiet-hours uses a QuietHours{start,end} value type, NOT ClosedRange<DateComponents> — a midnight-crossing window (start>end) traps ClosedRange's invariant. Reminder copy must avoid the 'her' substring ('here's' fails the gendered-token audit). NotificationScheduler fatigue logic is pure free functions (isInQuietHours/shouldFireToday); UN calls are the thin shell. Local notifications need NO entitlement (project.yml unchanged).
+- [Phase ?]: ExploreSeriesExtraction has TWO return types: quantitativePoints -> [InsightPoint], occurrenceDays -> [Date] (presence path has no value field, so 0/1 coercion is unrepresentable by construction)
+- [Phase ?]: Suppression enforced upstream in Plan-01 accessors; both bleeding extraction paths emit nothing for a suppressed snapshot (no leak)
 
 ### Pending Todos
 
@@ -161,7 +164,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T09:58:09.485Z
+Last session: 2026-06-15T10:03:43.985Z
 Stopped at: Completed 13-03-PLAN.md (test seam + scrub E2E + regression gates — Phase 13 3/3 plans complete)
 Resume file: None
 

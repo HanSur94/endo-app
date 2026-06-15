@@ -87,7 +87,7 @@ Plans:
 **Plans**: 4 plans (1 keystone wave + 3 parallel composers)
 
 - [x] 14-01-PLAN.md — ExploreSeries catalog + ScaleKind taxonomy + field-discriminator accessors + shared test harness (wave 1, keystone)
-- [ ] 14-02-PLAN.md — ExploreSeriesExtraction: two-return-type honesty move ([InsightPoint] quantitative / [Date] presence) + suppression gate (wave 2)
+- [x] 14-02-PLAN.md — ExploreSeriesExtraction: two-return-type honesty move ([InsightPoint] quantitative / [Date] presence) + suppression gate (wave 2)
 - [ ] 14-03-PLAN.md — ScatterPairing: both-logged-only intersection + count-encoded ScatterPoint, no jitter/imputation (wave 2)
 - [ ] 14-04-PLAN.md — SeriesNormalization: fixed honest per-scale domain + real-unit readout round-trip (wave 2)
 
@@ -132,7 +132,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 13. Trend-Chart Scrubbing | 3/3 | Complete | 2026-06-15 |
-| 14. Series Catalog & Pure Extraction Layer | 1/4 | In Progress|  |
+| 14. Series Catalog & Pure Extraction Layer | 2/4 | In Progress|  |
 | 15. Explore Tab & Overlay Lanes | 0/TBD | Not started | - |
 | 16. Scatter View & Correlation Deep-Link | 0/TBD | Not started | - |
 

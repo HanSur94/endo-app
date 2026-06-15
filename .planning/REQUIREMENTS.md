@@ -20,11 +20,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [ ] **EXPL-01**: User can open a new Explore screen as a third tab (consent-gated like the rest of the app)
 - [x] **EXPL-02**: User can toggle series on/off via chips from a unified series catalog (symptoms, sleep hours, activity minutes, stress, mood, bleeding, food tags) — capped at 3–4 quantitative series with a clear remove-to-add affordance
-- [ ] **EXPL-03**: Selected quantitative series render as aligned per-scale lanes sharing ONE time axis, each in its real unit (no dual y-axis, no silent normalization)
-- [ ] **EXPL-04**: Binary food tags (and bleeding, treated as events) render as event-marker lanes (date-aligned ticks), never as fake 0/1 lines
-- [ ] **EXPL-05**: User can scrub the Explore chart and read every visible series' value — or "not logged" per series — for the selected day
+- [x] **EXPL-03**: Selected quantitative series render as aligned per-scale lanes sharing ONE time axis, each in its real unit (no dual y-axis, no silent normalization)
+- [x] **EXPL-04**: Binary food tags (and bleeding, treated as events) render as event-marker lanes (date-aligned ticks), never as fake 0/1 lines
+- [x] **EXPL-05**: User can scrub the Explore chart and read every visible series' value — or "not logged" per series — for the selected day
 - [ ] **EXPL-06**: User can switch the Explore time range with the familiar presets (same axis vocabulary as the dashboard: absolute dates, gap breaks)
-- [ ] **EXPL-07**: Explore shows honest empty/sparse states ("pick a series", "not enough data") and unlogged days stay gaps in every lane
+- [x] **EXPL-07**: Explore shows honest empty/sparse states ("pick a series", "not enough data") and unlogged days stay gaps in every lane
 
 ### Scatter
 
@@ -79,11 +79,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHART-04 | Phase 13 | Complete (13-02 AXChartDescriptor Audio Graph + kept per-mark labels; VoiceOver playback at the phase-gate manual checkpoint) |
 | EXPL-01 | Phase 15 | Pending |
 | EXPL-02 | Phase 15 | Complete |
-| EXPL-03 | Phase 15 | Pending |
-| EXPL-04 | Phase 15 | Pending |
-| EXPL-05 | Phase 15 | Pending |
+| EXPL-03 | Phase 15 | Complete |
+| EXPL-04 | Phase 15 | Complete |
+| EXPL-05 | Phase 15 | Complete |
 | EXPL-06 | Phase 15 | Pending |
-| EXPL-07 | Phase 15 | Pending |
+| EXPL-07 | Phase 15 | Complete |
 | SCAT-01 | Phase 16 | Complete |
 | SCAT-02 | Phase 16 | Pending |
 | SCAT-03 | Phase 16 | Pending |
