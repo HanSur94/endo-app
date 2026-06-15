@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
-status: executing
-stopped_at: Completed 14-03-PLAN.md
-last_updated: "2026-06-15T10:09:59.355Z"
+status: verifying
+stopped_at: Completed 14-04-PLAN.md
+last_updated: "2026-06-15T10:15:05.051Z"
 last_activity: 2026-06-15 -- Phase 14 execution started
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 25
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 Phase: 14 (Series Catalog & Pure Extraction Layer) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Progress: [x] 13 [ ] 14 [ ] 15 [ ] 16 — 25% (1/4 phases)
 Last activity: 2026-06-15 -- Phase 14 execution started
 
@@ -92,6 +92,7 @@ Last activity: 2026-06-15 -- Phase 14 execution started
 | Phase 14 P01 | ~5min | 3 tasks | 3 files |
 | Phase 14 P02 | ~10min | 2 tasks | 2 files |
 | Phase 14 P03 | 4min | 2 tasks | 2 files |
+| Phase 14 P04 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -141,6 +142,7 @@ Recent decisions affecting current work:
 - [03-01]: Phase-3 data spine landed — unified FactorReading @Model (kindRaw + valueRaw/amount/level/note columns) discriminates all six factor kinds; Sendable FactorDay snapshot is the insights seam with nil!=0 honesty (missing stress/mood row -> nil; logged level-0 -> 0). Additive SchemaV3 + lightweight v2toV3 migration (A1 closed for Phase-3 models). Medication is a soft-archive definition; per-day "taken" is a .medication FactorReading keyed by med-id. KEY DEVIATION: quiet-hours uses a QuietHours{start,end} value type, NOT ClosedRange<DateComponents> — a midnight-crossing window (start>end) traps ClosedRange's invariant. Reminder copy must avoid the 'her' substring ('here's' fails the gendered-token audit). NotificationScheduler fatigue logic is pure free functions (isInQuietHours/shouldFireToday); UN calls are the thin shell. Local notifications need NO entitlement (project.yml unchanged).
 - [Phase ?]: ExploreSeriesExtraction has TWO return types: quantitativePoints -> [InsightPoint], occurrenceDays -> [Date] (presence path has no value field, so 0/1 coercion is unrepresentable by construction)
 - [Phase ?]: Suppression enforced upstream in Plan-01 accessors; both bleeding extraction paths emit nothing for a suppressed snapshot (no leak)
+- [Phase 14]: SeriesNormalization domain is FIXED per ScaleKind (never per-window min/max); readout always reports real value+unit, never the normalized number (Phase 14 Plan 04)
 
 ### Pending Todos
 
@@ -165,8 +167,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T10:09:59.347Z
-Stopped at: Completed 14-03-PLAN.md
+Last session: 2026-06-15T10:15:04.946Z
+Stopped at: Completed 14-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
