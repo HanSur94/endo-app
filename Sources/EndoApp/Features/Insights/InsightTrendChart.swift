@@ -187,7 +187,11 @@ struct InsightTrendChart: View {
                     )
                     .foregroundStyle(inkColor)
                     .accessibilityLabel(Text(point.date, format: .dateTime.month().day()))
-                    .accessibilityValue(Text("severity \(Int(point.value.rounded())) of 10"))
+                    // IN-02: route through `InsightsCopy.scrubSeverity` so the per-mark value and
+                    // the scrub tooltip share ONE source of truth for the "Severity n of 10"
+                    // vocabulary (previously the per-mark emitted lowercase "severity n of 10",
+                    // diverging from the capitalized tooltip for the identical datum).
+                    .accessibilityValue(Text(InsightsCopy.scrubSeverity(Int(point.value.rounded()))))
                 }
             }
             // A PointMark per logged day — so a single day still shows AND a literal severity-0 draws
@@ -199,7 +203,8 @@ struct InsightTrendChart: View {
                 )
                 .foregroundStyle(inkColor)
                 .accessibilityLabel(Text(point.date, format: .dateTime.month().day()))
-                .accessibilityValue(Text("severity \(Int(point.value.rounded())) of 10"))
+                // IN-02: same single-source-of-truth routing as the LineMark above.
+                .accessibilityValue(Text(InsightsCopy.scrubSeverity(Int(point.value.rounded()))))
             }
             // Selection chrome (CHART-01/02) — renders iff the resolver returned non-nil. With
             // `allowsSelection == false` the binding can never become non-nil, so this is unreachable

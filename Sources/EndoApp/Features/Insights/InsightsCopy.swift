@@ -109,8 +109,9 @@ enum InsightsCopy {
     /// never "0", never "No data", never an error tone. The gap is information, not an error.
     static let scrubNotLogged = "Not logged"
 
-    /// The logged-day tooltip value line (e.g. "Severity 6 of 10") — matches the shipped per-mark
-    /// accessibilityValue vocabulary ("severity n of 10"). A literal severity-0 day reads
+    /// The logged-day tooltip value line (e.g. "Severity 6 of 10") — the SINGLE source of truth for
+    /// the per-mark accessibilityValue vocabulary too (IN-02: the per-mark values now route through
+    /// this function, so the casing is genuinely consistent). A literal severity-0 day reads
     /// "Severity 0 of 10" — textually distinct from `scrubNotLogged` (absence ≠ 0).
     /// NB: digits in a factual readout are legal — the bare-digit audit scan is scoped to the
     /// three confidence words (D-11); "Severity" hosts no forbidden substring.
