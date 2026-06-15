@@ -50,6 +50,16 @@ struct EventLaneChart: View {
         selectedDate.map { calendar.startOfDay(for: $0) }
     }
 
+    /// The lane-level a11y text summary (WR-03 — the non-gesture VoiceOver path, parity with the
+    /// quantitative lane's Audio Graph). Names the series + how many days it was logged WITHIN the shared
+    /// window, so a VoiceOver user reaches the occurrence count without scrubbing. Presence has no numeric
+    /// value to sonify honestly, so this summary + the per-tick date labels ARE the parity (no Audio Graph
+    /// — a value axis would imply a "1" the data does not carry).
+    private var summaryText: String {
+        let inWindow = days.filter { xDomain.contains($0) }.count
+        return ExploreCopy.eventLaneSummary(name: series.displayName, occurrences: inWindow)
+    }
+
     var body: some View {
         Chart {
             // One occurrence tick per logged-present day — a day with NO occurrence has NO mark
@@ -84,7 +94,9 @@ struct EventLaneChart: View {
         .chartXSelection(value: $selectedDate)   // SHARED scrub binding (same on every lane)
         .frame(height: 44)                       // lane-event-height / ≥44pt touch floor (UI-SPEC)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text(series.displayName))
+        // WR-03: a text SUMMARY (series + occurrence count in the window), not just the bare name — the
+        // non-gesture VoiceOver path, parity with the quantitative lane's Audio Graph + summary.
+        .accessibilityLabel(Text(summaryText))
         .accessibilityIdentifier("explore.lane.\(series.id).event")
     }
 }

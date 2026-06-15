@@ -59,6 +59,18 @@ enum ExploreCopy {
     /// `InsightsCopy.scrubNotLogged`. Never "0", never "No data", never an error tone. Absence != zero.
     static let notLogged = InsightsCopy.scrubNotLogged
 
+    // MARK: Event-lane a11y summary (WR-03 — the non-gesture VoiceOver path for an event-marker lane)
+
+    /// The a11y text-summary for an event-marker lane. A presence series has NO numeric value, so an
+    /// Audio Graph (which implies a value axis) would be LESS honest than a plain count — the summary
+    /// plus the per-tick date labels ARE the non-gesture parity with the quantitative lane's Audio
+    /// Graph. `{name}` is a catalog `displayName` (already audit-safe); the connective is substring-clean
+    /// ("logged on … days" hosts no forbidden token). The count digit is a factual tally, legal exactly
+    /// like `InsightsCopy.supportingEvidence`'s "Seen across {n} logged days".
+    static func eventLaneSummary(name: String, occurrences: Int) -> String {
+        "\(name) — logged on \(occurrences) days"
+    }
+
     // MARK: Range-preset labels (EXPL-06 — maps TrendWindow, reusing the dashboard vocabulary)
 
     /// Map a `TrendWindow` to its plain-language label. Mirrors `InsightsCopy.windowLabel` EXACTLY so the
@@ -85,6 +97,9 @@ enum ExploreCopy {
             eventTagged, notLogged,
         ]
         strings += TrendWindow.allCases.map(windowLabel)
+        // A representative event-lane summary (the static prefix/suffix is what we audit; the name +
+        // count are interpolated — same posture as InsightsCopy.supportingEvidence).
+        strings.append(eventLaneSummary(name: "Series", occurrences: 3))
         return strings
     }
 }
