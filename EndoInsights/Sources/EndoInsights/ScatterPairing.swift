@@ -57,12 +57,16 @@ public enum ScatterPairing {
     /// suppression carries through from the Plan-01 accessor (a suppressed bleeding axis yields no pair).
     /// Output is sorted by `(x, y)` for deterministic fixtures.
     ///
-    /// - Precondition: BOTH axes are quantitative (`scaleKind.isQuantitative`) — a presence factor has
-    ///   no numeric value and cannot be a scatter axis (RESEARCH OQ3).
+    /// - Note: BOTH axes MUST be quantitative (`scaleKind.isQuantitative`) — a presence factor has no
+    ///   numeric value and cannot be a scatter axis (RESEARCH OQ3). A misrouted (wrong-kind) axis
+    ///   DEGRADES GRACEFULLY to an empty result rather than trapping: this is a pure library for a
+    ///   privacy-first, must-not-crash health app, so a Phase-15/16 picker bug or future catalog edit
+    ///   that hands in a presence axis returns "no data", never a release crash.
     public static func pairs(_ snapshots: [DaySnapshot], x: ExploreSeries, y: ExploreSeries,
                              calendar: Calendar) -> [ScatterPoint] {
-        precondition(x.scaleKind.isQuantitative && y.scaleKind.isQuantitative,
-                     "Scatter axes are quantitative-only; a presence factor has no numeric value (RESEARCH OQ3).")
+        // Wrong-kind (presence) axis → no numeric value to pair. Degrade to [] rather than trap;
+        // a routing bug must never crash a shipping health app (WR-01).
+        guard x.scaleKind.isQuantitative, y.scaleKind.isQuantitative else { return [] }
 
         // Bit-pattern-exact key: integer-valued ordinals (0…10, 1…5, 1…4, continuous hours/minutes)
         // aggregate exactly. NO jitter, NO rounding, NO fractional fabrication (RESEARCH Code Examples).

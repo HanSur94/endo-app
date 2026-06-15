@@ -36,6 +36,21 @@ struct ScatterPairingTests {
     private var bleedingIntensitySeries: ExploreSeries {
         ExploreSeriesCatalog.all.first { $0.id == "bleeding.intensity" }!
     }
+    private var dairySeries: ExploreSeries {
+        ExploreSeriesCatalog.all.first { $0.id == "food.dairy" }!
+    }
+
+    // MARK: wrong-axis routing degrades gracefully, never crashes (WR-01 / IN-03 cross-routing)
+
+    /// A presence series passed as a scatter axis (the wrong door) DEGRADES to an empty result — never
+    /// a release crash — EVEN when both factors are logged (WR-01). Scatter axes are quantitative-only;
+    /// a routing bug must yield "no data", not a trap. Covers both the x-axis and y-axis positions.
+    @Test func presenceAxis_degradesToEmpty_notCrash() {
+        let cal = utcCalendar()
+        let snap = daySnapshot(day: day(2026, 6, 1), foodTags: [.dairy], stress: 5)
+        #expect(ScatterPairing.pairs([snap], x: dairySeries, y: stressSeries, calendar: cal).isEmpty)
+        #expect(ScatterPairing.pairs([snap], x: stressSeries, y: dairySeries, calendar: cal).isEmpty)
+    }
 
     // MARK: count-aggregation, no jitter (SCAT-02 / T-14-06)
 

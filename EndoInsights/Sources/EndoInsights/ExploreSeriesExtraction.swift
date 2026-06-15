@@ -32,11 +32,13 @@ public enum ExploreSeriesExtraction {
     /// bleeding yields no points (the accessor gates on `!snap.suppressed`). Emits the existing
     /// `InsightPoint` so the shipped `ChartSeriesGrouping`/`ChartScrubSelection` are reused unchanged.
     ///
-    /// - Precondition: `series.scaleKind.isQuantitative` — presence series route via `occurrenceDays`.
+    /// - Note: `series.scaleKind.isQuantitative` MUST hold — presence series route via `occurrenceDays`.
+    ///   A misrouted presence series DEGRADES GRACEFULLY to `[]` rather than trapping: a routing bug in
+    ///   a privacy-first, must-not-crash health app must yield "no data", never a release crash (WR-01).
     public static func quantitativePoints(_ snapshots: [DaySnapshot], series: ExploreSeries,
                                           calendar: Calendar) -> [InsightPoint] {
-        precondition(series.scaleKind.isQuantitative,
-                     "quantitativePoints requires a quantitative series; presence routes via occurrenceDays.")
+        // Wrong-kind (presence) series → no quantitative value. Degrade to [] rather than trap (WR-01).
+        guard series.scaleKind.isQuantitative else { return [] }
         return snapshots.compactMap { snap in
             guard let value = series.quantitativeValue(from: snap) else { return nil }
             return InsightPoint(date: calendar.startOfDay(for: snap.day), value: value)
@@ -49,11 +51,13 @@ public enum ExploreSeriesExtraction {
     /// logged day WITHOUT the thing emits NO occurrence — presence-absent ≠ logged-absent). The
     /// `bleeding.event` accessor already gates on `!snap.suppressed`, so a suppressed user emits nothing.
     ///
-    /// - Precondition: `series.scaleKind == .presenceEvent` — quantitative series route via `quantitativePoints`.
+    /// - Note: `series.scaleKind == .presenceEvent` MUST hold — quantitative series route via
+    ///   `quantitativePoints`. A misrouted quantitative series DEGRADES GRACEFULLY to `[]` rather than
+    ///   trapping: a routing bug must yield "no data", never a release crash in a health app (WR-01).
     public static func occurrenceDays(_ snapshots: [DaySnapshot], series: ExploreSeries,
                                       calendar: Calendar) -> [Date] {
-        precondition(series.scaleKind == .presenceEvent,
-                     "occurrenceDays requires a presence/event series; quantitative routes via quantitativePoints.")
+        // Wrong-kind (quantitative) series → no presence/occurrence. Degrade to [] rather than trap (WR-01).
+        guard series.scaleKind == .presenceEvent else { return [] }
         return snapshots.compactMap { snap in
             series.isPresent(in: snap) ? calendar.startOfDay(for: snap.day) : nil
         }

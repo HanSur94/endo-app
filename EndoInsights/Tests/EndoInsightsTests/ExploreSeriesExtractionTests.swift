@@ -31,6 +31,9 @@ struct ExploreSeriesExtractionTests {
     private var dairySeries: ExploreSeries {
         ExploreSeriesCatalog.all.first { $0.id == "food.dairy" }!
     }
+    private var moodSeries: ExploreSeries {
+        ExploreSeriesCatalog.all.first { $0.id == "mood" }!
+    }
     private var bleedingIntensitySeries: ExploreSeries {
         ExploreSeriesCatalog.all.first { $0.id == "bleeding.intensity" }!
     }
@@ -93,6 +96,26 @@ struct ExploreSeriesExtractionTests {
                                foodTags: [],
                                stress: 3) // logged something else, but NOT dairy
         #expect(ExploreSeriesExtraction.occurrenceDays([snap], series: dairySeries, calendar: cal).isEmpty)
+    }
+
+    // MARK: wrong-door routing degrades gracefully, never crashes (WR-01 / IN-03 cross-routing)
+
+    /// A presence series handed to `quantitativePoints` (the wrong door) DEGRADES to an empty result —
+    /// never a release crash — EVEN when the underlying presence thing is logged (WR-01). Locks the
+    /// graceful-degrade contract so a Phase-15/16 picker bug returns "no data", not a trap.
+    @Test func presenceSeriesIntoQuantitativePoints_degradesToEmpty_notCrash() {
+        let cal = utcCalendar()
+        let snap = daySnapshot(day: day(2026, 6, 7), foodTags: [.dairy]) // dairy IS logged
+        #expect(ExploreSeriesExtraction.quantitativePoints([snap], series: dairySeries, calendar: cal).isEmpty)
+    }
+
+    /// A quantitative series handed to `occurrenceDays` (the wrong door) DEGRADES to an empty result —
+    /// never a release crash — EVEN when the underlying value is logged (WR-01). The quantitative-into-
+    /// presence cross case (IN-03), locked directly rather than left to code inspection.
+    @Test func quantitativeSeriesIntoOccurrenceDays_degradesToEmpty_notCrash() {
+        let cal = utcCalendar()
+        let snap = daySnapshot(day: day(2026, 6, 8), mood: 3) // mood IS logged
+        #expect(ExploreSeriesExtraction.occurrenceDays([snap], series: moodSeries, calendar: cal).isEmpty)
     }
 
     // MARK: suppression — no leak (T-14-02 / SC3), and the gate only suppresses (mirror)
