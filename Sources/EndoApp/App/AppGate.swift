@@ -65,6 +65,15 @@ private struct ConsentedShell: View {
     /// `TabView(selection:)` so the scatter deep-link affordance can programmatically switch to `.explore`.
     @State private var selectedTab: ConsentedTab = .log
 
+    // Apply the Bloom palette to the stock tab bar ONCE (petal-tinted appearance + plum selection) so
+    // the chrome matches the reskin while the native tab items — and the `tab.insights` id on the
+    // Insights tab-item label — stay exactly as the XCUITest queries expect (quick task 260615-wld).
+    init() {
+        let appearance = BloomTabBarAppearance.make()
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView()
@@ -94,5 +103,6 @@ private struct ConsentedShell: View {
                 }
                 .tag(ConsentedTab.explore)
         }
+        .tint(Color.plum)
     }
 }

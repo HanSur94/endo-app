@@ -165,6 +165,9 @@ struct SettingsView: View {
                     )
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.canvas)
+            .tint(Color.plum)
             .navigationTitle("Settings")
             .onAppear {
                 displayName = terminologyStore.preference.displayName ?? ""

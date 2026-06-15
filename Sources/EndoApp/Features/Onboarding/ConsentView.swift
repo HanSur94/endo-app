@@ -12,7 +12,7 @@ struct ConsentView: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("Ready when you are")
-                .font(.title3.weight(.semibold))
+                .bloomH2()
 
             Text(
                 "To use Endo-App, you consent to it processing the health information you log "
@@ -22,14 +22,13 @@ struct ConsentView: View {
             )
             .font(.body)
             .multilineTextAlignment(.center)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.inkSecondary)
 
             Button("I consent") {
                 // The ONLY place consent is granted (ONBD-01, D-02). No health data before this.
                 consent.grant(at: .now)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .bloomPrimaryButton()
             .accessibilityIdentifier("consent.grantButton")
         }
         .padding()

@@ -68,6 +68,9 @@ struct InsightCardView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .bloomCard()
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
         // The whole card is one VoiceOver element reading headline + confidence + detail.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(idRoot)
@@ -85,8 +88,7 @@ struct InsightCardView: View {
     private var fullCard: some View {
         // 1. Headline (verbatim, non-truncating so honest framing never hides).
         Text(insight.headline)
-            .font(.headline)
-            .foregroundStyle(.primary)
+            .bloomH3()
             .fixedSize(horizontal: false, vertical: true)
 
         // 2. Confidence pill — text word + per-level symbol (never a number, never color alone).
@@ -95,7 +97,7 @@ struct InsightCardView: View {
         // 3. Detail (verbatim).
         Text(insight.detail)
             .font(.body)
-            .foregroundStyle(.primary)
+            .foregroundStyle(Color.ink)
             .fixedSize(horizontal: false, vertical: true)
 
         // 4. Supporting data — kind-appropriate.
@@ -104,7 +106,7 @@ struct InsightCardView: View {
         // 5. Basis note.
         Text(InsightsCopy.basisNote)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.inkSecondary)
     }
 
     // MARK: - 2. Confidence pill (text + shape, color never the sole signal — T-08-11)
@@ -127,10 +129,12 @@ struct InsightCardView: View {
             } icon: {
                 Image(systemName: confidenceSymbol(insight.confidence))
             }
-            .foregroundStyle(.secondary)
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .background(.quaternary.opacity(0.5), in: Capsule())
+            .font(.subheadline)
+            .foregroundStyle(Color.plum)
+            .padding(.vertical, 5)
+            .padding(.horizontal, 10)
+            .background(Color.petal, in: Capsule())
+            .overlay(Capsule().stroke(Color.petalLine, lineWidth: 1))
             // The symbol is part of the pill's meaning — do NOT hide it from VoiceOver wholesale; the
             // pill's text already reads the level, so mark just the icon decorative to avoid a double-read.
             .accessibilityElement(children: .combine)
@@ -180,6 +184,7 @@ struct InsightCardView: View {
                 window: insight.window,
                 directionWord: directionWord,
                 headline: insight.headline,
+                inkColor: Color.plum,                        // ← Bloom: tint the LIVE chart on-brand
                 allowsSelection: true,                       // ← Phase 13: the dashboard switch-on
                 selectionA11yIDRoot: "\(idRoot).chart"       //   tooltip a11y ids hang off this
             )

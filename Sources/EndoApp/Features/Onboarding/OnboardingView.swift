@@ -21,10 +21,10 @@ struct OnboardingView: View {
                     VStack(spacing: 10) {
                         Image(systemName: "heart.text.square")
                             .font(.system(size: 44))
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(Color.rose)
                             .accessibilityHidden(true)
                         Text("Welcome to Endo-App")
-                            .font(.title.weight(.bold))
+                            .bloomTitle()
                             .multilineTextAlignment(.center)
                         // Warm, validating, non-clinical (D-01). Copy routes through Terminology.
                         Text(
@@ -34,7 +34,7 @@ struct OnboardingView: View {
                         )
                         .font(.body)
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkSecondary)
                     }
                     .padding(.top, 24)
 
@@ -49,6 +49,7 @@ struct OnboardingView: View {
                         Label("Read how your data stays private", systemImage: "lock.shield")
                             .font(.subheadline)
                     }
+                    .foregroundStyle(Color.plum)
                     .accessibilityIdentifier("onboarding.privacyLink")
 
                     // Final step: the explicit consent action (ONBD-01, D-02).
@@ -56,8 +57,11 @@ struct OnboardingView: View {
                 }
                 .padding()
             }
+            .background(Color.canvas)
+            .scrollContentBackground(.hidden)
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .tint(Color.plum)
             .sheet(isPresented: $showingPrivacy) {
                 NavigationStack { PrivacyPolicyView() }
             }

@@ -68,6 +68,29 @@ struct InsightsView: View {
     var body: some View {
         NavigationStack {
             List {
+                // Serif header + honest subtitle (presentational chrome). The subtitle reuses neutral,
+                // ClaimsPolicy-clean vocabulary ("patterns in your own data") — no forbidden verb,
+                // gendered token, imperative, or alarmist term.
+                Section {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Insights").bloomTitle()
+                        Text("Patterns in your own data, as they build over time.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.inkSecondary)
+                    }
+                    .listRowBackground(Color.clear)
+                }
+
+                // At-a-glance stat strip — presentational chrome derived from the already-loaded
+                // coordinator.insights (no new data source, no fabricated stats).
+                if !coordinator.insights.isEmpty {
+                    Section {
+                        statStrip
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets())
+                    }
+                }
+
                 // Pinned not-medical-advice disclaimer (D-12) — always visible with the insights.
                 Section {
                     DisclaimerBanner()
@@ -112,6 +135,8 @@ struct InsightsView: View {
                         kind: .recommendation)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.canvas)
             .navigationTitle("Insights")
             .accessibilityIdentifier("insights.screen")
             .toolbar {
@@ -173,6 +198,34 @@ struct InsightsView: View {
             }
             .accessibilityIdentifier(identifier)
         }
+    }
+
+    // MARK: - At-a-glance stat strip (presentational; derived from coordinator.insights)
+
+    /// A small strip of derived counts (total surfaced + distinct kinds). Purely presentational chrome
+    /// over the already-loaded `coordinator.insights` — no new data source, no fabricated values.
+    private var statStrip: some View {
+        let total = coordinator.insights.filter { !$0.isInsufficiencyNotice }.count
+        let kinds = Set(coordinator.insights.filter { !$0.isInsufficiencyNotice }.map(\.kind)).count
+        return HStack(spacing: 12) {
+            statTile(value: "\(total)", label: total == 1 ? "Insight" : "Insights")
+            statTile(value: "\(kinds)", label: kinds == 1 ? "Category" : "Categories")
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func statTile(value: String, label: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.system(size: 26, weight: .semibold))
+                .fontDesign(.serif)
+                .foregroundStyle(Color.plum)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(Color.inkSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .bloomCard(padding: 14)
     }
 
     // MARK: - Empty state (UI-SPEC §C — warm, full-screen, NOT empty sections)

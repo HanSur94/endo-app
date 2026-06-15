@@ -25,15 +25,19 @@ struct DisclaimerBanner: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "info.circle")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.plum)
                 .accessibilityHidden(true)
             Text(Disclaimer.text)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
         }
-        .padding(12)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+        .background(Color.petal, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.petalLine, lineWidth: 1)
+        )
         .accessibilityElement(children: .combine)
     }
 }
