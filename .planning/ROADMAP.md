@@ -88,7 +88,7 @@ Plans:
 
 - [x] 14-01-PLAN.md — ExploreSeries catalog + ScaleKind taxonomy + field-discriminator accessors + shared test harness (wave 1, keystone)
 - [x] 14-02-PLAN.md — ExploreSeriesExtraction: two-return-type honesty move ([InsightPoint] quantitative / [Date] presence) + suppression gate (wave 2)
-- [ ] 14-03-PLAN.md — ScatterPairing: both-logged-only intersection + count-encoded ScatterPoint, no jitter/imputation (wave 2)
+- [x] 14-03-PLAN.md — ScatterPairing: both-logged-only intersection + count-encoded ScatterPoint, no jitter/imputation (wave 2)
 - [ ] 14-04-PLAN.md — SeriesNormalization: fixed honest per-scale domain + real-unit readout round-trip (wave 2)
 
 **Notes**: No UI in this phase — verification is the EndoInsights Swift Testing suite (the v1.0 `ChartSeriesGrouping` playbook: honesty properties become unit tests before rendering exists). Deliverables per research: `ExploreSeries` catalog, `ExploreSeriesExtraction`, `ScatterPairing`, `SeriesNormalization` (round-tripping real-unit readouts). New EndoInsights package files need no `project.yml` change; any app-target files go through `xcodegen generate`.
@@ -132,7 +132,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 13. Trend-Chart Scrubbing | 3/3 | Complete | 2026-06-15 |
-| 14. Series Catalog & Pure Extraction Layer | 2/4 | In Progress|  |
+| 14. Series Catalog & Pure Extraction Layer | 3/4 | In Progress|  |
 | 15. Explore Tab & Overlay Lanes | 0/TBD | Not started | - |
 | 16. Scatter View & Correlation Deep-Link | 0/TBD | Not started | - |
 
