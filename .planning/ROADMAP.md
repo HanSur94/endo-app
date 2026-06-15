@@ -106,7 +106,16 @@ Plans:
   4. User can scrub the Explore chart and read every visible series' value — or a per-series "not logged" — for the selected day
   5. User can switch the time range with the familiar dashboard presets (absolute dates, gap breaks), and Explore shows honest empty ("pick a series") and sparse ("not enough data") states, with unlogged days staying gaps in every lane
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 15-01-PLAN.md — Lane-alignment prototype (A2 central-risk): 3 sibling lanes + shared RuleMark, screenshot, record the inset mechanism
+- [ ] 15-02-PLAN.md — ExploreSelection pure value type + ExploreSelectionTests (3–4 quantitative cap, toggle, suppression filter)
+- [ ] 15-03-PLAN.md — ExploreCopy audited enum + CopyAuditTests registration (empty/sparse/cap copy, windowLabel, "Not logged" pinned)
+- [ ] 15-04-PLAN.md — Lane stack: ExploreLaneChart + EventLaneChart + ExploreLanesView (shared X domain + shared scrub + single multi-series tooltip + a11y proxy)
+- [ ] 15-05-PLAN.md — SeriesPickerView + range presets + ExploreView (empty/sparse states) + third Explore tab in ConsentedShell
+- [ ] 15-06-PLAN.md — -uitest-seed-explore seam + ExploreUITests E2E (EXPL-01..07) + regression gates (Report/PDF untouched, dashboard, copy)
+
 **UI hint**: yes
 **Research**: true — contains the milestone's central mixed-scale design decision (aligned per-scale lanes vs a loudly-labeled normalized panel — prototype/decide before building; recovery cost is a full UI rework), the multi-series tooltip layout, and the bleeding-series-under-suppression product call (architecture supports either; record the decision in the phase plan)
 **Notes**: `ExploreCopy` is created with `auditableStrings` and registered in `CopyAuditTests` BEFORE any copy is written (an unregistered copy enum silently escapes the scans; curate against substring collisions — "together", "whether", "higher", "other", "treatment"). Lanes re-key `series:` per (data-series × contiguous-run) via `ChartSeriesGrouping` so no lane interpolates across gaps, with `.foregroundStyle(by:)` carrying legend/color independently. Series colors colorblind-safe + grayscale/sparse-fixture screenshot checks; text summary parity. Series-selection state is view-local and ephemeral (persisting series keys would leak health-interest metadata outside the consent-gated store). Seeded E2E variant; `xcodegen generate` for new app files; PDF path untouched; scroll-vs-scrub OS-matrix check.
