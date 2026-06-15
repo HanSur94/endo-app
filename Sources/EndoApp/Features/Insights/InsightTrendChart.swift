@@ -273,6 +273,11 @@ struct InsightTrendChart: View {
                 .foregroundStyle(.secondary)
             if let point = sel.point {
                 // Logged day (incl. literal severity-0): the payload, semibold primary.
+                // IN-03 integer-domain assumption: severities are integers 0...10 (TrendsEngine
+                // emits `Double(sev)`), so `rounded()` is LOSSLESS here. If a future series ever
+                // carries a fractional value (e.g. a smoothed/averaged trend), this would silently
+                // round (6.5 → "Severity 7 of 10") — surface it honestly (e.g. one decimal) rather
+                // than rounding, to preserve the "never fabricate a value" contract.
                 Text(InsightsCopy.scrubSeverity(Int(point.value.rounded())))
                     .font(.caption)
                     .fontWeight(.semibold)
@@ -335,6 +340,9 @@ struct InsightTrendChart: View {
     private func selectionReadout(_ sel: ChartScrubSelection.Resolution) -> String {
         let date = sel.day.formatted(.dateTime.month().day())
         if let point = sel.point {
+            // IN-03 integer-domain assumption: severities are integers 0...10, so `rounded()` is
+            // lossless here. A future fractional value would silently round — surface it honestly
+            // rather than rounding (see the tooltip() note) to keep the no-fabrication contract.
             return "\(date) — \(InsightsCopy.scrubSeverity(Int(point.value.rounded())))"
         }
         return "\(date) — \(InsightsCopy.scrubNotLogged)"
