@@ -288,6 +288,12 @@ struct InsightTrendChart: View {
             Color.clear
                 .frame(width: 8, height: 8)
                 .accessibilityElement(children: .ignore)
+                // WR-01: an element carrying only `.accessibilityValue` reads malformed to live
+                // VoiceOver ("label, value" with an empty label slot). Give it an explicit label
+                // (the selected date) so VoiceOver announces label + value coherently. The `.value`
+                // slot keeps the FULL combined readout unchanged, so ChartScrubUITests — which assert
+                // on `.value` by identifier — stay byte-identical.
+                .accessibilityLabel(Text(sel.day.formatted(.dateTime.month().day())))
                 .accessibilityValue(Text(selectionReadout(sel)))
                 .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip" })
             if sel.point == nil {
@@ -296,6 +302,8 @@ struct InsightTrendChart: View {
                 Color.clear
                     .frame(width: 8, height: 8)
                     .accessibilityElement(children: .ignore)
+                    // WR-01: same rationale — a label-less, value-only element reads malformed.
+                    .accessibilityLabel(Text(sel.day.formatted(.dateTime.month().day())))
                     .accessibilityValue(Text(InsightsCopy.scrubNotLogged))
                     .scrubAccessibilityID(selectionA11yIDRoot.map { "\($0).tooltip.notLogged" })
             }
