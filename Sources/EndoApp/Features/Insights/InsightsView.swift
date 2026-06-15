@@ -52,6 +52,19 @@ struct InsightsView: View {
     /// A default `.constant(.insights)` keeps previews/tests that omit it compiling.
     var selectedTab: Binding<ConsentedTab> = .constant(.insights)
 
+    /// The per-view repository seam (mirrors `ExploreView`/`HomeView`'s construction) for the ONE
+    /// suppression read that gates the scatter deep-link affordance (SCAT-04).
+    @Environment(\.modelContext) private var modelContext
+
+    /// The bleeding-suppression flag driving the `.correlation` card's scatter-deep-link gate (SCAT-04) —
+    /// the latest snapshot's `suppressed` (defaults to `false` when there is no data, matching the accessor
+    /// posture). A `(try? …) ?? false` per-view read mirroring `ExploreView.suppressed`; a read failure
+    /// degrades to "not suppressed" (the resolver still HIDES a bleeding axis only when suppressed, so a
+    /// failure can never EXPOSE a bleeding axis it should hide — it just keeps the normal gate).
+    private var suppressed: Bool {
+        ((try? SwiftDataRepository(context: modelContext).daySnapshots())?.last?.suppressed) ?? false
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -138,11 +151,24 @@ struct InsightsView: View {
     private func section(title: String, identifier: String, kind: InsightKind) -> some View {
         let kindInsights = coordinator.insights.filter { $0.kind == kind }
         if !kindInsights.isEmpty {
+            // Read the suppression flag ONCE per section render (not per card) — the same value gates every
+            // card's scatter affordance (SCAT-04).
+            let isSuppressed = suppressed
             Section(title) {
                 ForEach(kindInsights) { insight in
-                    InsightCardView(insight: insight) {
-                        dismiss(insight)
-                    }
+                    InsightCardView(
+                        insight: insight,
+                        onDismiss: { dismiss(insight) },
+                        suppressed: isSuppressed,
+                        onOpenScatter: { pending in
+                            // SCAT-04: carry the resolver's TYPED axes to the router, then switch to the
+                            // Explore tab so the consented-branch `ExploreView` consumes the payload (prefill
+                            // + mode=.scatter). Order: set payload BEFORE selecting the tab so the value is
+                            // present the moment ExploreView observes the router on appear/onChange.
+                            scatterRouter.pendingScatter = pending
+                            selectedTab.wrappedValue = .explore
+                        }
+                    )
                 }
             }
             .accessibilityIdentifier(identifier)

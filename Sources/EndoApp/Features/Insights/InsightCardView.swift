@@ -29,8 +29,30 @@ struct InsightCardView: View {
     /// not know about persistence — it only signals intent. Optional so previews/tests can omit it.
     var onDismiss: () -> Void = {}
 
+    /// The bleeding-suppression flag (SCAT-04). The SCREEN supplies the latest snapshot's `suppressed`; it
+    /// gates the scatter deep-link resolver so a suppressed user never reaches a bleeding axis. Defaults to
+    /// `false` so previews/tests compile without it.
+    var suppressed: Bool = false
+
+    /// The scatter deep-link action the SCREEN wires (SCAT-04, the `onDismiss` precedent): tapping the
+    /// `.correlation` card's "See the days behind this" affordance hands the SCREEN the resolved typed
+    /// `(x, y)` axes; the screen sets the router payload + selects the Explore tab. This view carries the
+    /// resolver's TYPED value — it NEVER re-derives axes from `headline`/`detail` copy (T-16-14). Optional
+    /// so previews/tests can omit it.
+    var onOpenScatter: (PendingScatter) -> Void = { _ in }
+
     /// The stable, value-INDEPENDENT a11y id root — the dismissal key (survives recomputation, D-09).
     private var idRoot: String { "insights.card.\(insight.signalKey)" }
+
+    /// The resolved scatter axes for THIS card, computed ONCE (SCAT-04). A non-`.correlation` card never
+    /// resolves; a `.correlation` card whose `signalKey` maps to two quantitative axes (and whose bleeding
+    /// target survives suppression) yields the typed pair the affordance carries — otherwise `nil` and the
+    /// affordance is HIDDEN. Keys off the STRUCTURAL `signalKey` only (never audited prose, T-16-14).
+    private var scatterAxes: (x: ExploreSeries, y: ExploreSeries)? {
+        insight.kind == .correlation
+            ? ScatterDeepLink.resolve(signalKey: insight.signalKey, suppressed: suppressed)
+            : nil
+    }
 
     /// Drives the confidence-explainer popover (the ⓘ next to the pill — in-app transparency for
     /// what Low/Medium/High mean; copy from the audited `InsightsCopy` surface).
@@ -172,6 +194,26 @@ struct InsightCardView: View {
                 Text(InsightsCopy.windowLabel(insight.window))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                // SCAT-04: the "See the days behind this" scatter deep-link affordance — shown ONLY when the
+                // resolver returns a quantitative `(x, y)` pair (a `.correlation` card whose BOTH factors map
+                // to a quantitative axis, bleeding gated by suppression). A presence-only / sleep-quality /
+                // suppressed-bleeding correlation resolves to `nil` → NO affordance (HIDDEN, not disabled).
+                // The button carries the resolver's TYPED axes — it NEVER reads `insight.headline`/`detail`
+                // (T-16-14). Accent-tinted, ≥44pt hit area, value-independent a11y id `\(idRoot).scatterLink`.
+                if let axes = scatterAxes {
+                    Button {
+                        onOpenScatter(PendingScatter(x: axes.x, y: axes.y))
+                    } label: {
+                        Label(ExploreCopy.scatterLinkLabel, systemImage: "arrow.up.forward.square")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.borderless)
+                    .tint(.accentColor)
+                    // ≥44pt touch floor (HIG) — the borderless label is text-height, so pad the hit area.
+                    .frame(minHeight: 44, alignment: .leading)
+                    .accessibilityIdentifier("\(idRoot).scatterLink")
+                }
             }
             .accessibilityIdentifier("\(idRoot).evidence")
         }
