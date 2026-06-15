@@ -530,4 +530,114 @@ struct CopyAuditTests {
         // The insufficiency notice carries the honest "not enough data" framing (mirror the sparse title).
         #expect(FlareCopy.insufficientTitle.lowercased().contains("not enough data"))
     }
+
+    // MARK: - Phase-15 Explore chrome copy (Plan 15-03): ExploreCopy (the Explore tab chrome)
+    //
+    // Explore BYPASSES the InsightsEngine/HonestyGate — it shows RAW descriptive data with no confidence
+    // pills, no associations, no causal framing. So every NEW chrome string must be DESCRIPTIVE-ONLY and
+    // escape NONE of the scans. This block REGISTERS `ExploreCopy.auditableStrings` in the SAME change
+    // that introduces the enum (UI-SPEC honesty constraint 5 / RESEARCH Pitfall 3 — an unregistered copy
+    // surface silently escapes the ClaimsPolicy substring scans, BEFORE any 15-04/15-05 view renders a
+    // string). Clones the `insightsCopy_*` suite PLUS the imperative/alarmist scans (Explore is
+    // descriptive-only), and pins the "Not logged" gap line verbatim like the dashboard's scrub posture.
+
+    /// Every fixed string `ExploreCopy` can render, the surface CopyAuditTests scans.
+    private var allExploreCopy: [String] { ExploreCopy.auditableStrings }
+
+    // No Explore chrome string contains a forbidden medical-purpose / causal verb (incl. "will"/"trigger").
+    @Test func exploreCopy_containsNoForbiddenVerb() {
+        for copy in allExploreCopy {
+            let lower = copy.lowercased()
+            for verb in ClaimsPolicy.forbiddenVerbs {
+                #expect(!lower.contains(verb.lowercased()),
+                        "Explore copy \"\(copy)\" must not contain forbidden verb \"\(verb)\".")
+            }
+        }
+    }
+
+    // No Explore chrome string contains a gendered token (incl. the "her" ⊂ "another"/"other"/"there"
+    // trap — the cap helper uses "a new one", never "another").
+    @Test func exploreCopy_containsNoGenderedToken() {
+        for copy in allExploreCopy {
+            let lower = copy.lowercased()
+            for token in ClaimsPolicy.forbiddenGenderedTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Explore copy \"\(copy)\" must not contain gendered token \"\(token)\".")
+            }
+        }
+    }
+
+    // No Explore string contains an imperative substring (Explore chrome is descriptive, not an order).
+    @Test func exploreCopy_containsNoImperative() {
+        for copy in allExploreCopy {
+            #expect(firstImperative(in: copy) == nil,
+                    "Explore copy \"\(copy)\" must contain NO imperative substring.")
+        }
+    }
+
+    // No Explore string contains an alarmist / diagnostic / certainty term (Explore is calm, descriptive).
+    @Test func exploreCopy_containsNoAlarmistTerm() {
+        for copy in allExploreCopy {
+            #expect(firstAlarmist(in: copy) == nil,
+                    "Explore copy \"\(copy)\" must contain NO alarmist/diagnostic term.")
+        }
+    }
+
+    // No Explore string carries a numeric-confidence / false-precision token (words-only chrome, D-11).
+    // Explore has NO confidence chrome at all — it bypasses the gate; this asserts the posture stays so.
+    @Test func exploreCopy_hasNoNumericConfidence() {
+        let forbiddenPrecisionTokens = ["%", "p =", "p=", "r =", "r=", "p-value", "p value"]
+        for copy in allExploreCopy {
+            let lower = copy.lowercased()
+            for token in forbiddenPrecisionTokens {
+                #expect(!lower.contains(token.lowercased()),
+                        "Explore copy \"\(copy)\" must not contain false-precision token \"\(token)\" (D-11).")
+            }
+        }
+    }
+
+    // The audited surface is non-empty and every string is a non-empty string.
+    @Test func exploreCopy_isNonEmpty() {
+        #expect(!allExploreCopy.isEmpty)
+        for copy in allExploreCopy {
+            #expect(!copy.trimmingCharacters(in: .whitespaces).isEmpty,
+                    "Every ExploreCopy string must be non-empty.")
+        }
+        // The empty-state heading invites the user to pick a series (EXPL-07).
+        #expect(ExploreCopy.emptyHeading.lowercased().contains("pick a series"))
+        // The sparse line is the honest "not enough data" framing, never a fabricated value (EXPL-07).
+        #expect(ExploreCopy.sparseHeading.lowercased().contains("not enough data"))
+    }
+
+    // EXPL-06: `windowLabel` maps every TrendWindow to the dashboard's audited "last N days"/"all time"
+    // wording, and those labels are registered in the audited surface.
+    @Test func exploreCopy_windowLabel_mapsEveryTrendWindow() {
+        #expect(ExploreCopy.windowLabel(.last7) == "last 7 days")
+        #expect(ExploreCopy.windowLabel(.last30) == "last 30 days")
+        #expect(ExploreCopy.windowLabel(.last90) == "last 90 days")
+        #expect(ExploreCopy.windowLabel(.allTime) == "all time")
+        for window in TrendWindow.allCases {
+            #expect(ExploreCopy.auditableStrings.contains(ExploreCopy.windowLabel(window)),
+                    "windowLabel(\(window)) must be registered in ExploreCopy.auditableStrings.")
+        }
+    }
+
+    // The tooltip gap line is LOCKED verbatim to "Not logged" (reusing the dashboard posture) — pinned
+    // like `insightsCopy_scrubTooltipStrings_areLockedVerbatim` so a later reword can't dodge the scans.
+    // The gap reads "Not logged" (never "0", never "No data"); both gap + event "Logged" are registered.
+    @Test func exploreCopy_gapLine_isLockedVerbatim() {
+        #expect(ExploreCopy.notLogged == "Not logged",
+                "The gap-day tooltip wording is LOCKED (UI-SPEC Copywriting Contract).")
+        #expect(ExploreCopy.notLogged == InsightsCopy.scrubNotLogged,
+                "Explore reuses the LOCKED dashboard gap posture verbatim.")
+        #expect(ExploreCopy.eventTagged == "Logged",
+                "The event-lane presence value is LOCKED to \"Logged\".")
+        // Both strings are registered in the audited surface (RESEARCH Pitfall 3 — an unregistered
+        // string silently escapes the scans).
+        #expect(ExploreCopy.auditableStrings.contains("Not logged"))
+        #expect(ExploreCopy.auditableStrings.contains(ExploreCopy.eventTagged))
+        // The cap-reached helper avoids the "another" ⊃ "her" substring trap (the "a new one" fix).
+        #expect(!ExploreCopy.capReached.lowercased().contains("another"),
+                "The cap helper must use \"a new one\", never \"another\" (\"another\" ⊃ \"her\").")
+    }
 }
