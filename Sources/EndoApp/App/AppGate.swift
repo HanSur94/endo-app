@@ -41,27 +41,48 @@ struct AppGate: View {
     }
 }
 
+/// The three consented-shell tabs, used as the `TabView(selection:)` tag values (SCAT-04). A typed enum
+/// (NOT an `Int`) so the `.correlation` card affordance can programmatically select `.explore` to drive the
+/// scatter deep-link, and the selection stays an obvious symbol at every call site. NEVER persisted — the
+/// selected tab is ephemeral UI state.
+enum ConsentedTab {
+    case log, insights, explore
+}
+
 /// The consented-only main shell (T-08-12): a bottom `TabView` with the "Log" (Home) tab, the
 /// "Insights" dashboard tab (`tab.insights`, UI-SPEC §D), and the "Explore" overlay-lanes tab
 /// (`tab.explore`, UI-SPEC §A — Phase 15). Constructed EXCLUSIVELY in AppGate's `.consented` branch —
 /// the dashboard AND Explore, like the logging UI, are never built before opt-in (T-15-10:
 /// consent-by-construction — the Explore tab is unreachable before opt-in because the `TabView` itself
 /// exists only in this branch).
+///
+/// SCAT-04: the bare `TabView` becomes `TabView(selection:)` over a `ConsentedTab` `@State`, with a per-tab
+/// `.tag`, so the `.correlation` card's "See the days behind this" affordance can switch to the Explore tab.
+/// The `selectedTab` binding is threaded into `InsightsView` so the affordance closure selects `.explore`
+/// after setting the router payload. The selected tab is ephemeral view `@State` — never persisted.
 private struct ConsentedShell: View {
+    /// The active tab. Ephemeral view `@State`, defaulting to `.log` (the shipped landing tab). Drives the
+    /// `TabView(selection:)` so the scatter deep-link affordance can programmatically switch to `.explore`.
+    @State private var selectedTab: ConsentedTab = .log
+
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
                     Label("Log", systemImage: "square.and.pencil")
                 }
+                .tag(ConsentedTab.log)
 
-            InsightsView()
+            // The Insights dashboard observes the scatter router (via the env) and, on the affordance tap,
+            // selects the Explore tab through this binding (SCAT-04).
+            InsightsView(selectedTab: $selectedTab)
                 .tabItem {
                     // The id MUST live on the tab-item label: a `.accessibilityIdentifier` on the tab's
                     // CONTENT view does not propagate to the tab-bar button XCUITest queries (UI-SPEC §D).
                     Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
                         .accessibilityIdentifier("tab.insights")
                 }
+                .tag(ConsentedTab.insights)
 
             ExploreView()
                 .tabItem {
@@ -71,6 +92,7 @@ private struct ConsentedShell: View {
                     Label("Explore", systemImage: "square.stack.3d.up")
                         .accessibilityIdentifier("tab.explore")
                 }
+                .tag(ConsentedTab.explore)
         }
     }
 }

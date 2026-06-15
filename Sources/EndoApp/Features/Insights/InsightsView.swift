@@ -42,6 +42,16 @@ struct InsightsView: View {
     /// The integration brain (08-02): `insights` + `isUpdating`, driven by `loadCached()`/`dataChanged()`.
     @Environment(\.insightsCoordinator) private var coordinator
 
+    /// The cross-tab scatter deep-link router (SCAT-04). The `.correlation` card affordance sets its
+    /// `pendingScatter` payload; the consented-branch `ExploreView` consumes it. Observed ONLY here in the
+    /// consented shell (consent-by-construction). Wired into the card in Task 2.
+    @Environment(\.exploreScatterRouter) private var scatterRouter
+
+    /// The consented shell's active-tab binding (SCAT-04). The `.correlation` card affordance selects
+    /// `.explore` through this after setting the router payload, so the deep-link switches to the scatter.
+    /// A default `.constant(.insights)` keeps previews/tests that omit it compiling.
+    var selectedTab: Binding<ConsentedTab> = .constant(.insights)
+
     var body: some View {
         NavigationStack {
             List {

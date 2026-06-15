@@ -27,6 +27,11 @@ final class AppDependencies {
     /// The notification deep-link router (D-16). The `UNUserNotificationCenterDelegate` flips its flag
     /// on a reminder tap; the consented-branch UI presents `DailyCheckInView`. Injected at the App root.
     let checkInRouter: CheckInRouter
+    /// The cross-tab scatter deep-link router (SCAT-04). The `.correlation` card affordance sets its
+    /// non-sensitive `PendingScatter` payload; the consented-branch `ExploreView` consumes it to prefill the
+    /// scatter + switch mode. Carries only catalog series ids (public) — no health data; ephemeral, never
+    /// persisted. Injected at the App root alongside `checkInRouter`.
+    let exploreScatterRouter: ExploreScatterRouter
     /// The insights integration coordinator (D-01/D-04/D-13). Reads snapshots+dismissed on the main actor,
     /// runs the pure `InsightsEngine` off-main, caches by fingerprint, and publishes `[Insight]` for the
     /// dashboard (08-03/08-04). Constructed AFTER the container resolves so it can capture a live
@@ -223,6 +228,7 @@ final class AppDependencies {
         self.terminologyStore = TerminologyStore()
         self.notificationScheduler = SystemNotificationScheduler()
         self.checkInRouter = CheckInRouter()
+        self.exploreScatterRouter = ExploreScatterRouter()
 
         // Build the insights coordinator over a live `SwiftDataRepository` (D-13). A dedicated
         // `ModelContext(modelContainer)` backs the coordinator's main-actor reads/writes; the seams wrap

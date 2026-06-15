@@ -38,6 +38,7 @@ struct EndoAppApp: App {
                 .environment(\.notificationScheduler, dependencies.notificationScheduler)
                 .environment(\.accountAvailability, dependencies.accountAvailability)
                 .environment(\.checkInRouter, dependencies.checkInRouter)
+                .environment(\.exploreScatterRouter, dependencies.exploreScatterRouter)
                 .environment(\.insightsCoordinator, dependencies.insightsCoordinator)
                 .environment(\.healthImportService, dependencies.healthImportService)
                 .environment(\.uiTestScrubDay, dependencies.uiTestScrubDay)
