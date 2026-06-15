@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
-status: verifying
-stopped_at: Completed 15-05-PLAN.md
-last_updated: "2026-06-15T21:47:10.951Z"
-last_activity: 2026-06-15 -- Phase 15 execution started
+status: phase-15-complete
+stopped_at: Phase 15 complete (verified 7/7 + code-reviewed, all 7 findings fixed) — advancing to Phase 16
+last_updated: "2026-06-16T00:30:00.000Z"
+last_activity: 2026-06-16 -- Phase 15 closed (Explore tab + per-scale lanes + event lanes + multi-series scrub; ExploreUITests 8/8; 3 device-gated items to pre-release checklist)
 progress:
   total_phases: 4
   completed_phases: 3
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 15 — Explore Tab & Overlay Lanes
+**Current focus:** Phase 16 — Scatter View & Correlation Deep-Link
 
 ## Current Position
 
-Phase: 15 (Explore Tab & Overlay Lanes) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Progress: [x] 13 [x] 14 [ ] 15 [ ] 16 — 50% (2/4 phases)
-Last activity: 2026-06-15 -- Phase 15 execution started
+Phase: 16 (Scatter View & Correlation Deep-Link) — next (the FINAL v1.1 phase); 13/14/15 complete
+Plan: not yet planned
+Status: Phase 15 ✅ complete (verified 7/7 human_needed → all automated green; code review 0 critical + all 7 findings fixed; ExploreUITests 8/8). EXPL-01..07 delivered. 3 device-gated Explore items (lane-alignment feel, VoiceOver multi-lane, colorblind distinction) carried to the pre-release checklist. Phase 16 composes the shipped ScatterPairing (Phase 14) into the scatter view + the correlation-card deep-link.
+Progress: [x] 13 [x] 14 [x] 15 [ ] 16 — 75% (3/4 phases)
+Last activity: 2026-06-16 -- Phase 15 closed; advancing to Phase 16
 
 ## Performance Metrics
 
