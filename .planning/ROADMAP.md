@@ -42,7 +42,7 @@ All v1.0 honesty invariants carry over: unlogged days stay gaps (absence ≠ 0),
 
 - [x] **Phase 13: Trend-Chart Scrubbing** - Scrub/tap any dashboard trend chart to read the exact day + value, gap-honest and accessible, with the PDF path untouched
 - [x] **Phase 14: Series Catalog & Pure Extraction Layer** - Pure, unit-tested Foundation helpers (series catalog, extraction, scatter pairing) that lock the honesty invariants before any Explore pixel exists (completed 2026-06-15)
-- [ ] **Phase 15: Explore Tab & Overlay Lanes** - A consent-gated Explore tab where users overlay multiple logged series as honest per-scale lanes + event lanes on one shared time axis
+- [x] **Phase 15: Explore Tab & Overlay Lanes** - A consent-gated Explore tab where users overlay multiple logged series as honest per-scale lanes + event lanes on one shared time axis (completed 2026-06-15)
 - [ ] **Phase 16: Scatter View & Correlation Deep-Link** - A descriptive-only factor-vs-factor scatter, reachable directly from a "Possible association" card
 
 ## Phase Details
@@ -115,7 +115,7 @@ Plans:
 - [x] 15-03-PLAN.md — ExploreCopy audited enum + CopyAuditTests registration (empty/sparse/cap copy, windowLabel, "Not logged" pinned)
 - [x] 15-04-PLAN.md — Lane stack: ExploreLaneChart + EventLaneChart + ExploreLanesView (shared X domain + shared scrub + single multi-series tooltip + a11y proxy)
 - [x] 15-05-PLAN.md — SeriesPickerView + range presets + ExploreView (empty/sparse states) + third Explore tab in ConsentedShell
-- [ ] 15-06-PLAN.md — -uitest-seed-explore seam + ExploreUITests E2E (EXPL-01..07) + regression gates (Report/PDF untouched, dashboard, copy)
+- [x] 15-06-PLAN.md — -uitest-seed-explore seam + ExploreUITests E2E (EXPL-01..07) + regression gates (Report/PDF untouched, dashboard, copy)
 
 **UI hint**: yes
 **Research**: true — contains the milestone's central mixed-scale design decision (aligned per-scale lanes vs a loudly-labeled normalized panel — prototype/decide before building; recovery cost is a full UI rework), the multi-series tooltip layout, and the bleeding-series-under-suppression product call (architecture supports either; record the decision in the phase plan)
@@ -143,7 +143,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 13. Trend-Chart Scrubbing | 3/3 | Complete | 2026-06-15 |
 | 14. Series Catalog & Pure Extraction Layer | 4/4 | Complete   | 2026-06-15 |
-| 15. Explore Tab & Overlay Lanes | 5/6 | In Progress|  |
+| 15. Explore Tab & Overlay Lanes | 6/6 | Complete   | 2026-06-15 |
 | 16. Scatter View & Correlation Deep-Link | 0/TBD | Not started | - |
 
 ---

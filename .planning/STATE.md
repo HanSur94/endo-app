@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
-status: executing
+status: verifying
 stopped_at: Completed 15-05-PLAN.md
-last_updated: "2026-06-15T21:15:45.249Z"
+last_updated: "2026-06-15T21:47:10.951Z"
 last_activity: 2026-06-15 -- Phase 15 execution started
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 13
-  completed_plans: 12
-  percent: 50
+  completed_plans: 13
+  percent: 75
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 Phase: 15 (Explore Tab & Overlay Lanes) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Progress: [x] 13 [x] 14 [ ] 15 [ ] 16 — 50% (2/4 phases)
 Last activity: 2026-06-15 -- Phase 15 execution started
 
@@ -98,6 +98,7 @@ Last activity: 2026-06-15 -- Phase 15 execution started
 | Phase 15 P03 | 2min | 1 tasks | 2 files |
 | Phase 15 P04 | 5min | 2 tasks | 4 files |
 | Phase 15 P05 | 9min | 2 tasks | 3 files |
+| Phase 15 P06 | 27min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -155,6 +156,7 @@ Recent decisions affecting current work:
 - [Phase 15]: Explore selection is ephemeral @State (no persistence wrapper) — health-interest metadata never leaves the consent-gated store (T-15-12)
 - [Phase 15]: Explore tab is consent-by-construction: built only inside the .consented ConsentedShell branch (T-15-10), unreachable before opt-in
 - [Phase 15]: 'Too sparse' = fewer than 2 logged points across all selected series in the window; gaps stay gaps, never a fabricated value (EXPL-07)
+- [Phase ?]: 15-06: Cloned -uitest-seed-scrub into a DEBUG -uitest-seed-explore (+ -suppressed variant) fixture, -uitest-reset-paired (in-memory only); reused -uitest-select-day unchanged; EXPL-01..07 proven E2E via a11y ids (no scrub-gesture coordinates); Report/PDF path byte-untouched across Phase 15
 
 ### Pending Todos
 
@@ -186,7 +188,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T21:15:45.242Z
+Last session: 2026-06-15T21:46:45.907Z
 Stopped at: Completed 15-05-PLAN.md
 Resume file: None
 
