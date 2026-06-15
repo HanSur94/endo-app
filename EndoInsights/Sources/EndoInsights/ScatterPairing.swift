@@ -19,7 +19,8 @@
 //     statistic (T-14-07). This is enforced by the type's shape, not a runtime check.
 //
 // Scatter axes are QUANTITATIVE-ONLY (RESEARCH OQ3 RESOLVED): a presence factor has no numeric value,
-// so it cannot be a scatter axis. Enforced at the API boundary via a precondition on `isQuantitative`.
+// so it cannot be a scatter axis. Enforced at the API boundary by a kind guard that GRACEFULLY DEGRADES
+// to an empty result on a wrong-kind axis (WR-01: a library returns empty, never traps a release build).
 // Pure value-in / value-out, provable in unit tests without rendering — mirrors `ExploreSeriesExtraction`.
 import Foundation
 
