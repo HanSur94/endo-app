@@ -9,7 +9,9 @@
 //   • An unlogged day resolves to `(day, nil)` — the explicit "Not logged" gap, never a zero.
 //   • A literal logged severity-0 day resolves to a REAL point with value 0 (absence ≠ 0).
 //
-// Pure Foundation (the `ChartSeriesGrouping` playbook): calendar-injected day math
+// Pure Foundation (the v1.0 grouping-helper playbook — `ChartSeriesGrouping`, which lives in the
+// app target, NOT this package; named here only as a design precedent, no compile dependency):
+// calendar-injected day math
 // (`startOfDay` + `isDate(_:inSameDayAs:)`, never epoch arithmetic), value-in / value-out,
 // provable in unit tests without rendering. Phases 15–16 reuse this resolver unchanged.
 import Foundation
