@@ -402,7 +402,11 @@ if seedExplore && uiTestReset { Self.seedExploreFixture(into: insightsRepo) }
 
 > The planner / discuss-phase should treat A2 as the one item warranting an early prototype task before the full lane build commits.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Autonomous decider resolutions (2026-06-15), binding for the planner:
+> 1. **A2 lane alignment:** KEEP it as a Wave-0 "prototype lane alignment + screenshot" task (the one genuine runtime unknown). Recommended DEFAULT to prototype first: hide each lane's numeric Y-axis labels (`.chartYAxis(.hidden)`) and carry the unit + honest min/max in the per-lane TITLE/legend (the UI-SPEC already specifies per-lane titles) — this guarantees identical plot leading insets so the shared `RuleMark` aligns across lanes. Fall back to a fixed-width Y axis ONLY if the prototype shows the scale reference is genuinely needed inline. Decide from the screenshot before building the picker/tooltip.
+> 2. **`ExploreSelection` lives in the APP TARGET** with a Swift Testing (or XCTest) unit suite — the cap/selection/suppression-filter logic is presentation policy, kept out of the pure EndoInsights package so the package surface stays narrow. It is a pure value type (testable without UI).
 
 1. **Fixed plot inset mechanism (A2).**
    - What we know: identical `chartXScale(domain:)` is necessary but not sufficient; Y-label width shifts the plot leading edge.
