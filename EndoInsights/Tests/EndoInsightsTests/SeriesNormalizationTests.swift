@@ -69,13 +69,19 @@ struct SeriesNormalizationTests {
     }
 
     @Test func readoutReportsRealValueAndUnit_notNormalized() {
+        // A whole-number ordinal renders WITHOUT a trailing ".0" (IN-01).
         let readout = SeriesNormalization.readout(7, kind: .ordinal0to10, unit: "of 10")
-        #expect(readout == "7.0 of 10")
-        // Honesty guard — the readout must NEVER surface the normalized number (0.7).
-        #expect(!readout.contains("0.7"))
+        #expect(readout == "7 of 10")
+        // Honesty guard, coupled to the REAL normalized number rather than a hardcoded "0.7" (IN-04):
+        // compute normalize(7) and assert its string form is genuinely absent from the readout, so the
+        // test actually proves the readout never surfaces the normalized [0,1] coordinate.
+        let normalized = SeriesNormalization.normalize(7, in: .ordinal0to10)!
+        #expect(normalized == 0.7)
+        #expect(!readout.contains("\(normalized)"))
 
         #expect(SeriesNormalization.readout(6.5, kind: .continuousHours, unit: "h") == "6.5 h")
         // Presence carries an empty unit — readout is the bare real value, never the normalized form.
-        #expect(SeriesNormalization.readout(1, kind: .presenceEvent, unit: "") == "1.0")
+        // A whole number renders without the trailing ".0" (IN-01).
+        #expect(SeriesNormalization.readout(1, kind: .presenceEvent, unit: "") == "1")
     }
 }

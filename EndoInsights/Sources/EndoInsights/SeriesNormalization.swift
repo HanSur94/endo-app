@@ -68,7 +68,14 @@ public enum SeriesNormalization {
     /// The honest readout: ALWAYS the REAL `value` + `unit`, NEVER the normalized [0,1] number (T-14-08).
     /// An empty `unit` (presence) yields the bare real value. Final chrome copy routes through the
     /// Phase-15 ExploreCopy audit; this is the descriptive, honesty-preserving default.
+    ///
+    /// A whole-number value renders WITHOUT the trailing `.0` ("7 of 10", not "7.0 of 10") so ordinal/
+    /// integer-domain readouts read cleanly (IN-01); a genuine fractional (e.g. 6.5 h) keeps its decimals.
+    /// This is formatting only — the real logged value is preserved exactly, never the normalized number.
     public static func readout(_ value: Double, kind: ScaleKind, unit: String) -> String {
-        unit.isEmpty ? "\(value)" : "\(value) \(unit)"
+        let valueString = (value.rounded() == value)
+            ? String(Int(value))   // whole number → no trailing ".0"
+            : "\(value)"           // genuine fractional → keep decimals (e.g. "6.5")
+        return unit.isEmpty ? valueString : "\(valueString) \(unit)"
     }
 }
