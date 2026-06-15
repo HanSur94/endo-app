@@ -32,25 +32,6 @@ struct EndoAppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            #if DEBUG
-            // Phase 15-01 (Wave 0) THROWAWAY probe host: a DEBUG-only `-probe-lane-alignment` launch
-            // arg renders `_LaneAlignmentProbe` as the root so its 3-lane alignment can be screenshotted
-            // on the simulator (the probe is otherwise preview-only and unreachable in-app). Removed
-            // together with the probe in 15-04. Gated `#if DEBUG` + behind a launch arg → unreachable
-            // in Release and on any normal launch.
-            if ProcessInfo.processInfo.arguments.contains("-probe-lane-alignment") {
-                _LaneAlignmentProbe()
-            } else {
-                appRoot
-            }
-            #else
-            appRoot
-            #endif
-        }
-    }
-
-    @ViewBuilder
-    private var appRoot: some View {
             AppGate()
                 .environment(\.consentStore, dependencies.consentStore)
                 .environment(\.terminologyStore, dependencies.terminologyStore)
@@ -61,6 +42,7 @@ struct EndoAppApp: App {
                 .environment(\.healthImportService, dependencies.healthImportService)
                 .environment(\.uiTestScrubDay, dependencies.uiTestScrubDay)
                 .modelContainer(dependencies.modelContainer)
+        }
     }
 }
 
