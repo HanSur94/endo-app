@@ -18,7 +18,29 @@ findings:
   warning: 2
   info: 3
   total: 5
-status: findings_found
+status: fixed
+fixed:
+  fixed_at: 2026-06-15
+  fix_scope: all
+  findings_fixed: 5
+  findings_deferred: 0
+  commits:
+    WR-01: 215533d
+    WR-02: 3d8a369
+    IN-01: 60809ae
+    IN-02: 902a622
+    IN-03: 06fb8ec
+  verification:
+    swift_test_endoinsights: pass (124 tests, 14 suites)
+    chartscrub_uitests: pass (3/3, a11y value assertions unaffected by WR-01)
+    copyaudit_tests: pass (32/32)
+    insightsdashboard_uitests: pass when runner launches; host-level simulator
+      runner install/launch flakiness on this machine (signal kill/term, Mach -308,
+      FBSApplicationLibrary nil) — NOT a code regression. Every test passed in at
+      least one run; no assertion failure observed. These tests do not assert on the
+      per-mark accessibilityValue casing changed by IN-02.
+    pdf_path_untouched: confirmed (ReportPDFRenderer.swift empty in v1.0..HEAD, zero
+      working-tree diff)
 ---
 
 # Phase 13: Code Review Report
