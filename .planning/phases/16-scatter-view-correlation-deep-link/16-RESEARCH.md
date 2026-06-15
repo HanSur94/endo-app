@@ -390,7 +390,11 @@ struct ScatterDeepLink {
 | A3 | Sparse threshold `< 5` both-logged days (count-sum) | Code Examples / Validation | A different threshold is a one-line constant change; the UI-SPEC says "~5" |
 | A4 | `Factor.swift` threshold constants (`highStressThreshold`, etc.) are correct as shipped | Deep-Link grammar | Tagged `[ASSUMED]` in source itself; does not affect the resolver (it keys on the factor.key string, not the threshold) |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Autonomous decider resolutions (2026-06-16), binding for the planner:
+> 1. **`sleep.poor` deep-link → resolve to `nil`** (conservative). Only `stress.high`→`stress` and `mood.low`→`mood` map cleanly to a quantitative axis; the categorical poor-sleep factor does NOT bridge to `sleep.hours` in v1.1 — the affordance is simply HIDDEN for sleep-quality correlations (cheap to add later if asked). Presence-only factors (food/activity/medication/PRN) and suppressed bleeding likewise resolve to `nil` (affordance hidden).
+> 2. **A11y path = the worded `scatterSummary` element is PRIMARY** (point count + both axis names + both-logged-day basis); per-mark `accessibilityLabel`/`accessibilityValue` are attached but secondary. NO Audio Graph (a 2-axis cloud has no single honest value axis to sonify). This is the locked non-gesture path.
 
 1. **Should `sleep.poor` deep-link to `sleep.hours`?**
    - What we know: the engine's `sleep.poor` factor is categorical (`sleepQuality == .poor`); the quantitative sleep axis is hours.
