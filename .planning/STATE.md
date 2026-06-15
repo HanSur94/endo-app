@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
 status: executing
-stopped_at: Completed 15-03-PLAN.md
-last_updated: "2026-06-15T21:06:44.265Z"
+stopped_at: Completed 15-05-PLAN.md
+last_updated: "2026-06-15T21:15:45.249Z"
 last_activity: 2026-06-15 -- Phase 15 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 50
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 ## Current Position
 
 Phase: 15 (Explore Tab & Overlay Lanes) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Progress: [x] 13 [x] 14 [ ] 15 [ ] 16 — 50% (2/4 phases)
 Last activity: 2026-06-15 -- Phase 15 execution started
@@ -97,6 +97,7 @@ Last activity: 2026-06-15 -- Phase 15 execution started
 | Phase 15 P02 | 4min | 1 tasks | 2 files |
 | Phase 15 P03 | 2min | 1 tasks | 2 files |
 | Phase 15 P04 | 5min | 2 tasks | 4 files |
+| Phase 15 P05 | 9min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,9 @@ Recent decisions affecting current work:
 - [15-02]: ExploreSelection (app-target pure value type) ships the EXPL-02 cap/toggle/suppression policy WITHOUT UI — the 4-cap counts ONLY quantitative series (scaleKind.isQuantitative); presence/event series are uncapped; canAddQuantitative exempts already-selected series so a re-tap to remove is never blocked. offered(suppressed:) is a STATIC catalog filter stripping BOTH bleeding.intensity + bleeding.event for a suppressed user (defense-in-depth over the Phase-14 accessor gate). NO @AppStorage/@SceneStorage + no persistence-wrapper token anywhere in the file (token-based grep gate, so even the privacy comment avoids the substring) — ephemeral privacy invariant T-15-03; 15-05's picker holds it in @State. Fixtures pulled from ExploreSeriesCatalog.all by id so the 8-test suite cannot drift. EXPL-02 stays Pending — delivered when the picker UI lands in 15-05.
 - [Phase ?]: 15-04: single multi-series tooltip over the whole lane stack (not per-lane); event lines resolve via series.isPresent(in:) not ChartScrubSelection (Pitfall 2)
 - [Phase ?]: 15-04: retired the 15-01 _LaneAlignmentProbe + DEBUG -probe-lane-alignment host; the real ExploreLaneChart/ExploreLanesView stack supersedes it
+- [Phase 15]: Explore selection is ephemeral @State (no persistence wrapper) — health-interest metadata never leaves the consent-gated store (T-15-12)
+- [Phase 15]: Explore tab is consent-by-construction: built only inside the .consented ConsentedShell branch (T-15-10), unreachable before opt-in
+- [Phase 15]: 'Too sparse' = fewer than 2 logged points across all selected series in the window; gaps stay gaps, never a fabricated value (EXPL-07)
 
 ### Pending Todos
 
@@ -182,8 +186,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T21:06:19.402Z
-Stopped at: Completed 15-03-PLAN.md
+Last session: 2026-06-15T21:15:45.242Z
+Stopped at: Completed 15-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
