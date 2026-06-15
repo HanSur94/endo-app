@@ -118,12 +118,22 @@ extension ExploreSeries {
     /// NEVER a `> 0`/truthiness filter). Presence-kind fields return `nil` here — they route via
     /// `isPresent(in:)`, so a presence series can never be coerced to a number (Pitfall 1).
     /// Bleeding-derived series gate on `!snap.suppressed` first (no leak — Pitfall 4 / Task 2).
+    ///
+    /// Symptom/pain severity RELIES on the Repository one-entry-per-type/region-per-day invariant
+    /// (Plan 03, app-side upsert): `DaySnapshot.symptoms`/`.pain` carry at most one entry per
+    /// `SymptomType`/`BodyRegion`. The accessor does NOT trust that blindly — instead of a positional
+    /// `.first` (which would silently DROP the higher logged severity if a fixture or repository bug
+    /// ever produced a duplicate-type day), it takes the MAX logged severity among any same-type/region
+    /// entries, so it can never under-report what the user logged (WR-03).
     public func quantitativeValue(from snap: DaySnapshot) -> Double? {
         switch field {
         case .symptomSeverity(let type):
-            return snap.symptoms.first { $0.type == type }?.severity.map(Double.init)
+            // Repository invariant: one entry per type per day. Take max (never positional-first) so a
+            // duplicate-type day can never silently drop the higher logged severity (WR-03).
+            return snap.symptoms.filter { $0.type == type }.compactMap(\.severity).map(Double.init).max()
         case .painSeverity(let region):
-            return snap.pain.first { $0.region == region }?.severity.map(Double.init)
+            // Same one-entry-per-region invariant; max-not-first so a duplicate never under-reports (WR-03).
+            return snap.pain.filter { $0.region == region }.compactMap(\.severity).map(Double.init).max()
         case .stress:
             return snap.stress.map(Double.init)
         case .mood:

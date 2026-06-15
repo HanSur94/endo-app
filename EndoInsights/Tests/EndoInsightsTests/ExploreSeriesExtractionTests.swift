@@ -76,6 +76,20 @@ struct ExploreSeriesExtractionTests {
         #expect(points.first?.date == cal.startOfDay(for: snap.day))
     }
 
+    /// Defensive against a duplicate-type day (a fixture or repository bug that violates the one-entry-
+    /// per-type-per-day invariant): the accessor takes the MAX logged severity, never positional-first, so
+    /// it can never silently drop the higher logged value (WR-03). Two pelvicPain entries (severity 2 and
+    /// 8) on one day → the extracted point is the max (8), not whichever happened to be first.
+    @Test func duplicateTypeDay_keepsMaxSeverity_neverDropsHigher() {
+        let cal = utcCalendar()
+        let snap = daySnapshot(day: day(2026, 6, 9),
+                               symptoms: [SymptomPoint(type: .pelvicPain, severity: 2),
+                                          SymptomPoint(type: .pelvicPain, severity: 8)])
+        let points = ExploreSeriesExtraction.quantitativePoints([snap], series: pelvicPainSymptomSeries, calendar: cal)
+        #expect(points.count == 1)
+        #expect(points.first?.value == 8)
+    }
+
     // MARK: presence path returns [Date], unrepresentable as 0/1 (T-14-03 / SC3)
 
     /// A present food tag emits that day's startOfDay occurrence Date. Type-level note: occurrenceDays
