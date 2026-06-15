@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
-status: phase-15-complete
-stopped_at: Phase 15 complete (verified 7/7 + code-reviewed, all 7 findings fixed) — advancing to Phase 16
-last_updated: "2026-06-16T00:30:00.000Z"
-last_activity: 2026-06-16 -- Phase 15 closed (Explore tab + per-scale lanes + event lanes + multi-series scrub; ExploreUITests 8/8; 3 device-gated items to pre-release checklist)
+status: executing
+stopped_at: Completed 15-05-PLAN.md
+last_updated: "2026-06-15T23:20:02.531Z"
+last_activity: 2026-06-15 -- Phase 16 execution started
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
+  total_plans: 17
+  completed_plans: 14
   percent: 75
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: 16 (Scatter View & Correlation Deep-Link) — next (the FINAL v1.1 phase); 13/14/15 complete
-Plan: not yet planned
-Status: Phase 15 ✅ complete (verified 7/7 human_needed → all automated green; code review 0 critical + all 7 findings fixed; ExploreUITests 8/8). EXPL-01..07 delivered. 3 device-gated Explore items (lane-alignment feel, VoiceOver multi-lane, colorblind distinction) carried to the pre-release checklist. Phase 16 composes the shipped ScatterPairing (Phase 14) into the scatter view + the correlation-card deep-link.
+Phase: 16 (Scatter View & Correlation Deep-Link) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
 Progress: [x] 13 [x] 14 [x] 15 [ ] 16 — 75% (3/4 phases)
-Last activity: 2026-06-16 -- Phase 15 closed; advancing to Phase 16
+Last activity: 2026-06-15 -- Phase 16 execution started
 
 ## Performance Metrics
 
@@ -99,6 +99,7 @@ Last activity: 2026-06-16 -- Phase 15 closed; advancing to Phase 16
 | Phase 15 P04 | 5min | 2 tasks | 4 files |
 | Phase 15 P05 | 9min | 2 tasks | 3 files |
 | Phase 15 P06 | 27min | 3 tasks | 4 files |
+| Phase 16 P01 | 7min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,8 @@ Recent decisions affecting current work:
 - [Phase 15]: Explore tab is consent-by-construction: built only inside the .consented ConsentedShell branch (T-15-10), unreachable before opt-in
 - [Phase 15]: 'Too sparse' = fewer than 2 logged points across all selected series in the window; gaps stay gaps, never a fabricated value (EXPL-07)
 - [Phase ?]: 15-06: Cloned -uitest-seed-scrub into a DEBUG -uitest-seed-explore (+ -suppressed variant) fixture, -uitest-reset-paired (in-memory only); reused -uitest-select-day unchanged; EXPL-01..07 proven E2E via a11y ids (no scrub-gesture coordinates); Report/PDF path byte-untouched across Phase 15
+- [Phase ?]: ScatterDeepLink resolves ONLY stress.high/mood.low to a quantitative axis; sleep.poor + presence factors + suppressed bleeding -> nil
+- [Phase ?]: Scatter signalKey resolver parses by known suffix (.bleeding/.symptom.<rawValue> from SymptomType.allCases), never prose, never a naive split; malformed -> nil (ASVS V5)
 
 ### Pending Todos
 
@@ -188,7 +191,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T21:46:45.907Z
+Last session: 2026-06-15T23:19:37.552Z
 Stopped at: Completed 15-05-PLAN.md
 Resume file: None
 

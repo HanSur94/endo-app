@@ -137,7 +137,7 @@ Plans:
 
 Plans:
 
-- [ ] 16-01-PLAN.md — ScatterDeepLink pure resolver (signalKey → optional quantitative axis pair) + ScatterDeepLinkTests + audited ExploreCopy scatter strings registered in CopyAuditTests (foundations, no UI)
+- [x] 16-01-PLAN.md — ScatterDeepLink pure resolver (signalKey → optional quantitative axis pair) + ScatterDeepLinkTests + audited ExploreCopy scatter strings registered in CopyAuditTests (foundations, no UI)
 - [ ] 16-02-PLAN.md — ScatterPlotView (count-encoded PointMark, fixed real-unit domains, neutral caption, a11y summary) + quantitative-only ScatterAxisPicker + the Lanes|Scatter mode toggle + empty/sparse states in ExploreView
 - [ ] 16-03-PLAN.md — ExploreScatterRouter (@Observable PendingScatter, env-injected like CheckInRouter) + ConsentedShell TabView(selection:) + the .correlation card "see the days behind this" affordance (resolver-gated) + ExploreView router-read prefill
 - [ ] 16-04-PLAN.md — -uitest-seed-scatter-link (stress.high→pelvicPain) seam + ScatterUITests E2E (render, count, caption, sparse, positive deep-link prefill + dairy negative, suppressed-no-bleeding) + regression gates (Explore/Insights/Report)
@@ -152,7 +152,7 @@ Plans:
 | 13. Trend-Chart Scrubbing | 3/3 | Complete | 2026-06-15 |
 | 14. Series Catalog & Pure Extraction Layer | 4/4 | Complete   | 2026-06-15 |
 | 15. Explore Tab & Overlay Lanes | 6/6 | Complete   | 2026-06-15 |
-| 16. Scatter View & Correlation Deep-Link | 0/4 | Planned (4 plans, 4 waves) | - |
+| 16. Scatter View & Correlation Deep-Link | 1/4 | In Progress|  |
 
 ---
 *Roadmap updated: 2026-06-16 — Phase 16 planned (4 plans, 4 waves)*
