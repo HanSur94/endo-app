@@ -29,7 +29,7 @@ Phase: 15 (Explore Tab & Overlay Lanes) — next; 13 & 14 complete
 Plan: not yet planned
 Status: Phase 14 ✅ complete (verified passed 5/5, code review 0 critical + all 7 findings fixed, 156/156 package tests green). The pure honesty layer (ExploreSeries catalog · ExploreSeriesExtraction · ScatterPairing · SeriesNormalization) is locked and ready for the UI phases to compose on. Phase 15 is the research-flagged one (mixed-scale lanes-vs-normalization design decision).
 Progress: [x] 13 [x] 14 [ ] 15 [ ] 16 — 50% (2/4 phases)
-Last activity: 2026-06-15 -- Phase 14 closed; advancing to Phase 15
+Last activity: 2026-06-15 -- Phase 14 closed; advancing to Phase 15. Merged quick tasks 260610-sng (Bloom app icon) + 260615-erj (BodyMapView silhouette pain map, accessible, SYMP-02 contract preserved) from claude/jovial-rubin-23cae8
 
 ## Performance Metrics
 
@@ -164,6 +164,13 @@ Items acknowledged and carried forward from previous milestone close:
 | Phase 4 setup | Set DEVELOPMENT_TEAM + deploy CloudKit schema Development→Production (04-HUMAN-UAT Part A) | Pending user (before release) | 04-03 |
 | Phase 4 caveat | Explicit P-1 iCloud sign-out data-loss acknowledgement for v1 | Auto-approved under AUTO_MODE; user-confirm at phase gate | 04-03 |
 | Phase 4 review | Paste 5.1.3(ii) review note into App Store Connect (04-HUMAN-UAT A4) | Pending (before submission) | 04-03 |
+
+## Quick Tasks Completed
+
+| ID | Task | Status | Date |
+|----|------|--------|------|
+| 260610-sng | Wire the "Bloom" app icon into the iOS app (alpha-stripped 1024 single-size asset catalog + `ASSETCATALOG_COMPILER_APPICON_NAME` wiring) | complete ✓ | 2026-06-10 |
+| 260615-erj | Replace the BodyMapView region-tile grid with an accessible human-silhouette pain map (SwiftUI `Path` silhouette + one ≥44pt accessible hotspot per `BodyRegion`; SYMP-02 contract + all `bodymap.*` ids preserved). Commit `b535f6c`; build green; `testLoggingFlow` UI contract verified (passed) | complete ✓ (verified) | 2026-06-15 |
 
 ## Session Continuity
 

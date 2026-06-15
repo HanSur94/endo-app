@@ -51,6 +51,8 @@ Deferred. Tracked but not in the current roadmap.
 - **EXPL-10**: Landscape-optimized Explore layout
 - **EXPL-11**: Lag-shifted comparison (factor day N vs symptom day N+1)
 - **EXPL-12**: Explore chart export into the PDF report
+- **CHART-05 (candidate)**: Horizontal scroll/pan on trend-chart time axes (`chartScrollableAxes`; plain drag pans, long-press-drag keeps scrub) — would consciously override the "Pinch-zoom / free pan" out-of-scope entry below. Decision deferred until Explore (Phases 15–16) ships (user call, 2026-06-12)
+- **BODY-01 (candidate)**: Human-silhouette body map replacing the region-tile grid in `BodyMapView` — same 10 `BodyRegion` regions as silhouette hotspots, same accessibility contract (≥44pt targets, labels+values, list fallback). Design mocked in Pencil ("Endo-App — Body Map Pain Selection"), awaiting sign-off (2026-06-12)
 
 ## Out of Scope
 
