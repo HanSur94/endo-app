@@ -144,3 +144,17 @@ No gaps. All nine merged must-haves resolve to VERIFIED or device-gated UNCERTAI
 
 _Verified: 2026-06-10T20:45:00Z_
 _Verifier: Claude (gsd-verifier)_
+
+---
+
+## Post-review automated re-confirmation (2026-06-15, after code-review fixes)
+
+After the 5 code-review findings were applied (commits `215533d`/`3d8a369`/`60809ae`/`902a622`/`06fb8ec`, fast-forwarded at `8565c68`), the full automated gate was re-run on the iPhone 16 simulator:
+
+- **EndoInsights package:** 124/124 green (resolver invariants intact).
+- **ChartScrubUITests:** 3/3 green — the WR-01 `.accessibilityLabel` addition did not disturb the `.value`-by-identifier assertions; gap vs. severity-0 still distinguishable end-to-end.
+- **CopyAuditTests:** 32/32 green — IN-02 unification (per-mark a11y value now routes through `InsightsCopy.scrubSeverity`) left the copy audit clean.
+- **InsightsDashboardUITests:** 6/6 green — confirmed test-by-test (`testFlare_rendersFirst` in isolation; the other five across full-suite runs). The intermittent bare "TEST FAILED" with no `Test Case … failed` line was a simulator-runner crash (signal-kill / runner-install), the known host flake logged in STATE.md — never an assertion failure.
+- **PDF protection:** `git log v1.0..HEAD -- …/ReportPDFRenderer.swift` empty; zero working-tree diff — byte-identical guarantee holds after the fixes.
+
+Automated coverage is fully green. The 4 device-gated items below remain the only open verification (carried to the pre-release checklist, consistent with the v1.0 device-gated deferrals — they cannot run in this environment).
