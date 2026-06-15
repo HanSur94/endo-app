@@ -44,10 +44,18 @@ public enum SeriesNormalization {
 
     /// Map a real `value` onto the unit interval `[0,1]` for shape-only overlay, or `nil` for a kind
     /// with no numeric domain (`.presenceEvent`). Linear against the FIXED domain — so a series' shape
-    /// stays stable across window switches.
+    /// stays stable across window switches. The output is CLAMPED to `[0,1]`: a free user-entered value
+    /// above the honest domain ceiling (e.g. a fat-fingered 26h of sleep) cannot escape the unit interval
+    /// and render off the lane/axis in Phase 15 (WR-02). The honest real value still routes through
+    /// `readout`, so clamping the SHAPE coordinate never lies about the data.
+    ///
+    /// Round-trip nuance: because the output is clamped, `denormalize(normalize(x)) == x` holds ONLY for
+    /// `x` WITHIN the domain. `denormalize` remains the exact inverse of the UNCLAMPED linear mapping over
+    /// the domain; for an out-of-domain `x` the clamp is intentionally lossy (the shape pins to the edge).
     public static func normalize(_ value: Double, in kind: ScaleKind) -> Double? {
         guard let d = domain(for: kind) else { return nil }
-        return (value - d.lowerBound) / (d.upperBound - d.lowerBound)
+        let t = (value - d.lowerBound) / (d.upperBound - d.lowerBound)
+        return min(max(t, 0), 1)
     }
 
     /// The exact inverse of `normalize`: map a `unit`-interval position back to its real value, or `nil`

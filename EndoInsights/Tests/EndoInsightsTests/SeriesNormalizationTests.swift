@@ -55,6 +55,19 @@ struct SeriesNormalizationTests {
         #expect(SeriesNormalization.normalize(5, in: .ordinal0to10) == 0.5)
     }
 
+    /// An out-of-domain logged value CLAMPS to the unit interval rather than escaping it (WR-02): a
+    /// user-logged 26h of sleep (above the 0…24 ceiling) pins to 1.0, a value below the floor pins to
+    /// 0.0. Phase-15 overlay positioning relies on the [0,1] guarantee holding for ALL inputs.
+    @Test func normalizeClampsOutOfDomainInputsToUnitInterval() {
+        // Above the ceiling → exactly 1.0 (continuousHours domain is 0…24).
+        #expect(SeriesNormalization.normalize(26, in: .continuousHours) == 1.0)
+        #expect(SeriesNormalization.normalize(1000, in: .continuousMinutes) == 1.0)
+        #expect(SeriesNormalization.normalize(11, in: .ordinal0to10) == 1.0)
+        // Below the floor → exactly 0.0 (ordinal1to5 domain is 1…5; ordinalBleeding is 1…4).
+        #expect(SeriesNormalization.normalize(0, in: .ordinal1to5) == 0.0)
+        #expect(SeriesNormalization.normalize(-3, in: .ordinal0to10) == 0.0)
+    }
+
     @Test func readoutReportsRealValueAndUnit_notNormalized() {
         let readout = SeriesNormalization.readout(7, kind: .ordinal0to10, unit: "of 10")
         #expect(readout == "7.0 of 10")
