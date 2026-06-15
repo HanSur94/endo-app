@@ -33,6 +33,12 @@ struct ExploreView: View {
     /// `SwiftDataRepository(context: modelContext)` is built on the main actor to read `daySnapshots()`.
     @Environment(\.modelContext) private var modelContext
 
+    /// The cross-tab scatter deep-link router (SCAT-04). The Insights `.correlation` card affordance sets a
+    /// non-sensitive `PendingScatter(x, y)` payload; this screen consumes it on appear / on change to prefill
+    /// the scatter X/Y + switch to scatter mode, then CLEARS it (so a later identical tap re-triggers). The
+    /// payload lands in the existing EPHEMERAL `mode`/`scatterX`/`scatterY` `@State` — never persisted.
+    @Environment(\.exploreScatterRouter) private var scatterRouter
+
     /// The EPHEMERAL Explore selection (series Set + window). Plain view `@State`, never a persistent
     /// property-wrapper store — a LOCKED privacy invariant (T-15-12).
     @State private var selection = ExploreSelection()
@@ -105,12 +111,35 @@ struct ExploreView: View {
             // Read the data source ONCE (mirror the dashboard's per-view repository seam) then prepare.
             snapshots = loadSnapshots()
             recompute()
+            // SCAT-04: a deep-link that lands the user on the Explore tab BEFORE this view observes the
+            // router change still prefills — consume any pending payload already present on appear.
+            consumePendingScatter()
         }
         // Recompute the prepared lanes ONCE per selection change (series add/remove or window switch) —
         // NOT per scrub frame. The scrub binding is deliberately NOT a trigger here.
         .onChange(of: selection) { _, _ in
             recompute()
         }
+        // SCAT-04: when the Insights `.correlation` affordance sets a non-nil `PendingScatter`, prefill the
+        // scatter (mode + X/Y) and CLEAR the payload so an identical later tap re-triggers.
+        .onChange(of: scatterRouter.pendingScatter) { _, _ in
+            consumePendingScatter()
+        }
+    }
+
+    // MARK: - Scatter deep-link consume (SCAT-04 — prefill + switch to scatter, then clear)
+
+    /// Consume a pending scatter deep-link (SCAT-04): if the router carries a non-`nil` `PendingScatter`,
+    /// switch to scatter mode, prefill the X/Y axes from the typed payload, then CLEAR the payload so a
+    /// later identical tap (same x/y) re-triggers. The payload lands ONLY in the existing ephemeral
+    /// `mode`/`scatterX`/`scatterY` `@State` — never persisted. A no-op when there is no pending payload
+    /// (so the default open stays `.lanes`).
+    private func consumePendingScatter() {
+        guard let pending = scatterRouter.pendingScatter else { return }
+        mode = .scatter
+        scatterX = pending.x
+        scatterY = pending.y
+        scatterRouter.pendingScatter = nil
     }
 
     // MARK: - Lanes mode content (the shipped Explore behavior — UNCHANGED, just lifted into a property)
