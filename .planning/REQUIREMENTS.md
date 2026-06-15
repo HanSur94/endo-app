@@ -19,7 +19,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Explore
 
 - [ ] **EXPL-01**: User can open a new Explore screen as a third tab (consent-gated like the rest of the app)
-- [ ] **EXPL-02**: User can toggle series on/off via chips from a unified series catalog (symptoms, sleep hours, activity minutes, stress, mood, bleeding, food tags) — capped at 3–4 quantitative series with a clear remove-to-add affordance
+- [x] **EXPL-02**: User can toggle series on/off via chips from a unified series catalog (symptoms, sleep hours, activity minutes, stress, mood, bleeding, food tags) — capped at 3–4 quantitative series with a clear remove-to-add affordance
 - [ ] **EXPL-03**: Selected quantitative series render as aligned per-scale lanes sharing ONE time axis, each in its real unit (no dual y-axis, no silent normalization)
 - [ ] **EXPL-04**: Binary food tags (and bleeding, treated as events) render as event-marker lanes (date-aligned ticks), never as fake 0/1 lines
 - [ ] **EXPL-05**: User can scrub the Explore chart and read every visible series' value — or "not logged" per series — for the selected day
@@ -28,7 +28,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Scatter
 
-- [ ] **SCAT-01**: User can switch Explore to a scatter view: one factor against another, each point = one day where BOTH factors were logged
+- [x] **SCAT-01**: User can switch Explore to a scatter view: one factor against another, each point = one day where BOTH factors were logged
 - [ ] **SCAT-02**: Identical day-pairs stack honestly via count-encoded point size/opacity (no jitter fabricating non-integer values)
 - [ ] **SCAT-03**: The scatter stays descriptive-only: no fitted line, no correlation number, a neutral caption, and an honest sparse state when too few both-logged days exist
 - [ ] **SCAT-04**: User can open a prefilled scatter from a "Possible association" card ("see the days behind this")
@@ -78,18 +78,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHART-03 | Phase 13 | Complete (13-02 day-change-only haptic; device feel + dismiss-on-release at the phase-gate manual checkpoint) |
 | CHART-04 | Phase 13 | Complete (13-02 AXChartDescriptor Audio Graph + kept per-mark labels; VoiceOver playback at the phase-gate manual checkpoint) |
 | EXPL-01 | Phase 15 | Pending |
-| EXPL-02 | Phase 15 | Pending |
+| EXPL-02 | Phase 15 | Complete |
 | EXPL-03 | Phase 15 | Pending |
 | EXPL-04 | Phase 15 | Pending |
 | EXPL-05 | Phase 15 | Pending |
 | EXPL-06 | Phase 15 | Pending |
 | EXPL-07 | Phase 15 | Pending |
-| SCAT-01 | Phase 16 | Pending |
+| SCAT-01 | Phase 16 | Complete |
 | SCAT-02 | Phase 16 | Pending |
 | SCAT-03 | Phase 16 | Pending |
 | SCAT-04 | Phase 16 | Pending |
 
 **Coverage:**
+
 - v1.1 requirements: 15 total
 - Mapped to phases: 15 ✓
 - Unmapped: 0
