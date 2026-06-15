@@ -137,6 +137,21 @@ final class AppDependencies {
         // launches.
         let seedExploreSuppressed = ProcessInfo.processInfo.arguments.contains("-uitest-seed-explore-suppressed")
 
+        // Test-only, launch-arg-guarded SCATTER-LINK seed (used by ScatterUITests' POSITIVE deep-link case,
+        // Plan 16-04). When present we insert a deterministic STRONG stress.high→pelvicPain QUANTITATIVE
+        // correlation (~22 consecutive days) — high stress (8) on high-pain days, low stress (2) on low-pain
+        // days — so the engine gates ONE `.correlation` whose signalKey is `correlation.stress.high.symptom.
+        // pelvicPain`. The `ScatterDeepLink` resolver maps that key to two QUANTITATIVE axes (stress 0…10,
+        // pelvicPain severity 0…10), so the `.correlation` card's "See the days behind this" scatter-link
+        // affordance APPEARS (the shipped `-uitest-seed-recommendations` dairy seed stays the NEGATIVE,
+        // affordance-absent case because dairy is presence-only → the resolver returns nil → the link is
+        // HIDDEN; RESEARCH Pitfall 2). The repeated `(8,7)` / `(2,2)` day-pairs also give the scatter a dense
+        // both-logged cell (count-encoding, SCAT-02). Mirrors `seedRecommendationCorrelation` but logs STRESS
+        // via `setStress` (not a food tag) so BOTH sides are quantitative. PAIRED with `-uitest-reset`
+        // (mirrors `-uitest-seed-recommendations`): the seed only ever touches the in-memory store, so it can
+        // NEVER write to the user's real local/CloudKit store. Unreachable in normal launches.
+        let seedScatterLink = ProcessInfo.processInfo.arguments.contains("-uitest-seed-scatter-link")
+
         // Test-only, launch-arg-guarded deterministic SCRUB-SELECTION day (Phase 13 E2E seam, T-13-02).
         // Parsed ONLY when `-uitest-reset` is present (in-memory store — the same unreachable-in-production
         // pairing as every seed above) and ONLY in DEBUG builds (belt-and-suspenders compile-out). The
@@ -282,6 +297,17 @@ final class AppDependencies {
         if (seedExplore || seedExploreSuppressed) && uiTestReset {
             Self.seedExploreFixture(into: insightsRepo, suppressed: seedExploreSuppressed)
         }
+
+        // Plan 16-04 safety (T-16-16 / T-16-17): the scatter-link seed is inserted ONLY when BOTH
+        // `-uitest-seed-scatter-link` AND the in-memory `-uitest-reset` store are active, AND only in DEBUG
+        // builds (`#if DEBUG` belt-and-suspenders — the whole seam compiles out of release entirely,
+        // mirroring the `-uitest-select-day` guard above). So a stress.high→pelvicPain correlation fixture
+        // can never leak to a real local/CloudKit store nor exist in a shipped build.
+        #if DEBUG
+        if seedScatterLink && uiTestReset {
+            Self.seedScatterCorrelation(into: insightsRepo)
+        }
+        #endif
 
         self.insightsCoordinator = InsightsCoordinator(
             loadSnapshots: { try insightsRepo.daySnapshots() },
@@ -505,6 +531,40 @@ final class AppDependencies {
                 try? repo.upsertSymptom(type: .pelvicPain, severity: 7, on: day)
             } else {
                 try? repo.setFood(tags: [.caffeine], freeText: nil, on: day)
+                try? repo.upsertSymptom(type: .pelvicPain, severity: 2, on: day)
+            }
+        }
+    }
+
+    /// Test-only fixture seam (Plan 16-04, SCAT-04 POSITIVE deep-link case): insert a deterministic, STRONG
+    /// `stress.high → pelvicPain` QUANTITATIVE correlation so the engine gates ONE `.correlation` whose
+    /// signalKey is `correlation.stress.high.symptom.pelvicPain` — which the `ScatterDeepLink` resolver maps
+    /// to two QUANTITATIVE axes (stress 0…10, pelvicPain severity 0…10), so the `.correlation` card's "See the
+    /// days behind this" scatter-link affordance APPEARS (RESEARCH Pitfall 2 — the shipped dairy seed resolves
+    /// to nil because dairy is presence-only, so it stays the NEGATIVE, affordance-absent case).
+    ///
+    /// Mirrors `seedRecommendationCorrelation`'s shape (22 consecutive days, alternating high/low by parity,
+    /// n=22 ≥ `minSample(.correlation)==10`, large |δ| → gated) but logs STRESS via `setStress` instead of a
+    /// food tag, so BOTH sides are quantitative rather than presence↔severity:
+    ///   • EVEN offsets — `setStress(8)` (≥ `Factor.highStressThreshold == 7` ⇒ `stressHigh` PRESENT) +
+    ///     `pelvicPain` severity 7 (a high-pain day).
+    ///   • ODD offsets — `setStress(2)` (< 7 ⇒ `stressHigh` ABSENT, a day-with-any-log, honestly `.absent`) +
+    ///     `pelvicPain` severity 2 (a low-pain day).
+    /// The repeated `(stress 8, pain 7)` / `(stress 2, pain 2)` day-pairs ALSO give the scatter a dense
+    /// both-logged cell (count-encoding — SCAT-02). PAIRED with the in-memory `-uitest-reset` store + DEBUG;
+    /// it can never touch a real store. Best-effort; a seed failure must not crash a UI-test launch. Does NOT
+    /// modify `seedRecommendationCorrelation` (the dairy NEGATIVE case depends on its exact shape).
+    private static func seedScatterCorrelation(into repo: SwiftDataRepository) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        // 22 consecutive days ending today: alternate high-stress/high-pain vs low-stress/low-pain by parity.
+        for offset in 0..<22 {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            if offset % 2 == 0 {
+                try? repo.setStress(8, on: day)   // ≥ highStressThreshold (7) ⇒ stress.high PRESENT
+                try? repo.upsertSymptom(type: .pelvicPain, severity: 7, on: day)
+            } else {
+                try? repo.setStress(2, on: day)   // < 7 ⇒ stress.high ABSENT (a logged, honest .absent day)
                 try? repo.upsertSymptom(type: .pelvicPain, severity: 2, on: day)
             }
         }
