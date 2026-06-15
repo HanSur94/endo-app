@@ -1,11 +1,12 @@
 ---
 phase: 15
 slug: explore-tab-overlay-lanes
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 platform: ios-swiftui
 created: 2026-06-15
+reviewed_at: 2026-06-15
 ---
 
 # Phase 15 — UI Design Contract
@@ -268,7 +269,7 @@ early, per RESEARCH Phase-3 flag).
   of the view-local selection. Selected chip = accent fill + checkmark + semibold; unselected = secondary
   surface + `plus.circle`-style affordance + regular weight (color-independent).
 - **Quantitative cap = 3–4 simultaneously.** When the quantitative cap is reached, further unselected
-  quantitative chips are **disabled** with a clear **"remove one to add another"** helper line
+  quantitative chips are **disabled** with a clear **"remove one to add a new one"** helper line
   (`ExploreCopy.capReached…`); event-marker series are a SEPARATE small allowance (not counted against the
   quantitative cap). The remove-to-add affordance is a tap on a selected chip's `xmark` (low-stakes,
   reversible — never destructive red).
@@ -335,7 +336,7 @@ is curated to host NONE of these.
 | Empty-state body | **"Choose one or more of your logged series from the chips above to plot them on a shared timeline. Each series keeps its own real scale."** *(no "her"/"treat"/"will"/"cause" host words)* |
 | Sparse-state heading ("not enough data") | **"Not enough data yet."** *(matches the dashboard sparse wording, audit-clean)* |
 | Sparse-state body | **"Keep logging and these lanes fill in over time. Unlogged days stay as gaps — a gap is honest, not a zero."** |
-| Cap-reached helper | **"Up to four series at once. Tap a selected chip to remove one, then add another."** *(states the remove-to-add affordance; "four"/"another" host no trap)* |
+| Cap-reached helper | **"Up to four series at once. Tap a selected chip to remove one, then add a new one."** *(states the remove-to-add affordance; substring-verified clean — note "another" ⊃ "her" was REJECTED and replaced with "a new one")* |
 | Remove-chip action (a11y label) | **"Remove series"** |
 | Add-chip affordance (a11y hint) | **"Add to the timeline."** |
 | Range-preset labels | **"last 7 days" / "last 30 days" / "last 90 days" / "all time"** (maps `TrendWindow`, reusing the dashboard vocabulary) |
