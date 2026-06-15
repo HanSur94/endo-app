@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
-status: phase-14-complete
-stopped_at: Phase 14 complete (verified passed 5/5 + code-reviewed, all 7 findings fixed) — advancing to Phase 15
-last_updated: "2026-06-15T11:55:00.000Z"
-last_activity: 2026-06-15 -- Phase 14 closed (pure layer: catalog + extraction + scatter + normalization; 156/156 package tests green; verification passed, no human items)
+status: executing
+stopped_at: Completed 14-04-PLAN.md
+last_updated: "2026-06-15T20:43:24.888Z"
+last_activity: 2026-06-15 -- Phase 15 execution started
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 13
+  completed_plans: 8
   percent: 50
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: 15 (Explore Tab & Overlay Lanes) — next; 13 & 14 complete
-Plan: not yet planned
-Status: Phase 14 ✅ complete (verified passed 5/5, code review 0 critical + all 7 findings fixed, 156/156 package tests green). The pure honesty layer (ExploreSeries catalog · ExploreSeriesExtraction · ScatterPairing · SeriesNormalization) is locked and ready for the UI phases to compose on. Phase 15 is the research-flagged one (mixed-scale lanes-vs-normalization design decision).
+Phase: 15 (Explore Tab & Overlay Lanes) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
 Progress: [x] 13 [x] 14 [ ] 15 [ ] 16 — 50% (2/4 phases)
-Last activity: 2026-06-15 -- Phase 14 closed; advancing to Phase 15. Merged quick tasks 260610-sng (Bloom app icon) + 260615-erj (BodyMapView silhouette pain map, accessible, SYMP-02 contract preserved) from claude/jovial-rubin-23cae8
+Last activity: 2026-06-15 -- Phase 15 execution started
 
 ## Performance Metrics
 
@@ -93,6 +93,7 @@ Last activity: 2026-06-15 -- Phase 14 closed; advancing to Phase 15. Merged quic
 | Phase 14 P02 | ~10min | 2 tasks | 2 files |
 | Phase 14 P03 | 4min | 2 tasks | 2 files |
 | Phase 14 P04 | 5min | 2 tasks | 2 files |
+| Phase 15 P01 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,7 @@ Recent decisions affecting current work:
 - [Phase ?]: ExploreSeriesExtraction has TWO return types: quantitativePoints -> [InsightPoint], occurrenceDays -> [Date] (presence path has no value field, so 0/1 coercion is unrepresentable by construction)
 - [Phase ?]: Suppression enforced upstream in Plan-01 accessors; both bleeding extraction paths emit nothing for a suppressed snapshot (no leak)
 - [Phase 14]: SeriesNormalization domain is FIXED per ScaleKind (never per-window min/max); readout always reports real value+unit, never the normalized number (Phase 14 Plan 04)
+- [Phase ?]: A2 lane alignment RESOLVED: .chartYAxis(.hidden) + unit-in-lane-title gives sibling Charts on different Y scales identical plot insets (15-01 probe screenshot); 15-04 consumes this, no fixed-width-Y fallback needed
 
 ### Pending Todos
 
@@ -174,7 +176,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T10:15:04.946Z
+Last session: 2026-06-15T20:43:08.097Z
 Stopped at: Completed 14-04-PLAN.md
 Resume file: None
 
