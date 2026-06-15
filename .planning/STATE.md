@@ -29,7 +29,7 @@ Phase: 13 (Trend-Chart Scrubbing) — EXECUTING
 Plan: 3 of 3 (13-01, 13-02 complete)
 Status: Executing Phase 13
 Progress: [ ] 13 [ ] 14 [ ] 15 [ ] 16 — 0% (13: 2/3 plans)
-Last activity: 2026-06-10 -- Phase 13 plan 02 complete (allowsSelection layer + lollipop chrome + haptic + Audio Graph; dashboard switch-on)
+Last activity: 2026-06-15 -- Completed quick task 260615-erj: BodyMapView silhouette pain map (accessible, SYMP-02 contract preserved)
 
 ## Performance Metrics
 
@@ -161,6 +161,7 @@ Items acknowledged and carried forward from previous milestone close:
 | ID | Task | Status | Date |
 |----|------|--------|------|
 | 260610-sng | Wire the "Bloom" app icon into the iOS app (alpha-stripped 1024 single-size asset catalog + `ASSETCATALOG_COMPILER_APPICON_NAME` wiring) | complete ✓ | 2026-06-10 |
+| 260615-erj | Replace the BodyMapView region-tile grid with an accessible human-silhouette pain map (SwiftUI `Path` silhouette + one ≥44pt accessible hotspot per `BodyRegion`; SYMP-02 contract + all `bodymap.*` ids preserved). Commit `b535f6c`; build green; `testLoggingFlow` UI contract verified (passed) | complete ✓ (verified) | 2026-06-15 |
 
 ## Session Continuity
 
