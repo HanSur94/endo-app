@@ -49,7 +49,7 @@ created: 2026-06-16
 >    count-encoding is the ONLY honest overplotting fix.
 > 3. **DESCRIPTIVE-ONLY** — NO fitted/trend/regression line, NO correlation coefficient/r-value, NO
 >    "% impact"/numeric confidence/p-value, NO shaded confidence band. A NEUTRAL caption only
->    ("Based on N days where both were logged"). The gated correlation engine remains the ONLY thing
+>    ("Based on N days when both were logged"). The gated correlation engine remains the ONLY thing
 >    allowed to say "possible association"; the scatter shows raw points.
 > 4. **Axes in REAL units with FIXED honest domains** — both axes carry their `SeriesNormalization.domain`
 >    + real-unit labels (`0…10`, `1…5`, `1…4`, `0…24`, `0…240`); a logged literal 0 on both axes IS a real
@@ -123,7 +123,7 @@ sizes are introduced.
 | Screen title | `.title2` (nav title) | semibold (style default) | "Explore" navigation title (UNCHANGED from Phase 15) |
 | Mode-toggle / axis-picker label | `.subheadline` | regular | The `Lanes` / `Scatter` segment labels; the "X" / "Y" axis-selector labels + the chosen series `displayName` |
 | Axis title (X / Y) | `.subheadline` | semibold | Each axis's series name + unit shown beside the plot (e.g. "Pelvic pain severity — of 10", "Stress — of 10") so the real scale is legible without reading the tick labels |
-| Neutral caption | `.caption` | regular | "Based on {N} days where both were logged" beneath the plot — `.secondary` chrome, descriptive-only |
+| Neutral caption | `.caption` | regular | "Based on {N} days when both were logged" beneath the plot — `.secondary` chrome, descriptive-only |
 | Per-point readout (date-free) | `.caption` | regular | The count + both-axis real-unit values for a cell (e.g. "4 days — pelvic pain severity 7 of 10, stress 2 of 10") via `SeriesNormalization.readout` — a factual tally, never a statistic |
 | Honest-state heading | `.headline` | semibold (style default) | The scatter empty ("pick two factors") + sparse ("not enough overlapping days") headings — reuses the Phase-15 `honestState` heading role |
 | Honest-state body | `.body` | regular | The empty/sparse body copy — `.secondary`, `.fixedSize(…, vertical: true)` so honest framing never truncates |
@@ -235,7 +235,7 @@ a dense fixture (RESEARCH "Looks Done But Isn't": seed 10 days at the same `(x,y
 ### Chart accessibility (REQUIRED — the scatter is never the sole carrier of meaning)
 
 - A **one-line text summary** accompanies the plot via `ExploreCopy.scatterSummary(x:y:days:)` →
-  "{X displayName} compared with {Y displayName}, {N} days where both were logged." This is the non-gesture
+  "{X displayName} compared with {Y displayName}, {N} days when both were logged." This is the non-gesture
   parity: a VoiceOver user gets the point count + both axis names + the both-logged basis without seeing the
   cloud. (An Audio Graph implies a single value axis and would be LESS honest for a 2-axis cell cloud than a
   plain summary — the worded summary IS the a11y path here, mirroring the Phase-15 event-lane decision.)
@@ -352,17 +352,17 @@ token-by-token in the table notes.
 | Axis-picker — X label | **"X"** (+ the chosen series `displayName`, itself catalog copy) |
 | Axis-picker — Y label | **"Y"** (+ the chosen series `displayName`) |
 | Axis-picker placeholder (no series chosen) | **"Pick a factor"** *(no "her"/"treat"/"will"/"cause" host; "factor" is clean)* |
-| Neutral caption | **"Based on {N} days where both were logged."** *(the LOCKED caption; `{N}` is a factual tally — same posture as `eventLaneSummary`; "where both were logged" hosts no forbidden token — note "where" has no "her" substring, "both" is clean)* |
+| Neutral caption | **"Based on {N} days when both were logged."** *(the LOCKED caption; `{N}` is a factual tally — same posture as `eventLaneSummary`; "when both were logged" hosts no forbidden token — "when both were logged" — "when" hosts no "her" (the "where" form was REJECTED: w-her-e ⊃ "her"))* |
 | Per-point readout | **"{N} days — {X displayName} {X readout}, {Y displayName} {Y readout}"** via `SeriesNormalization.readout` (e.g. "4 days — pelvic pain severity 7 of 10, stress 2 of 10") — a factual cell tally, never a statistic |
-| Scatter text-summary (a11y) | **"{X displayName} compared with {Y displayName}, {N} days where both were logged."** *("compared with" is descriptive, non-causal; hosts no forbidden token — "compared" has no "her"/"treat", "with" is clean; NEVER "{X} against {Y}" framing that reads as cause→effect)* |
+| Scatter text-summary (a11y) | **"{X displayName} compared with {Y displayName}, {N} days when both were logged."** *("compared with" is descriptive, non-causal; hosts no forbidden token — "compared" has no "her"/"treat", "with" is clean; NEVER "{X} against {Y}" framing that reads as cause→effect)* |
 | Empty-state heading ("pick two factors") | **"Pick two factors to compare."** *(no forbidden host; "compare" is clean)* |
-| Empty-state body | **"Choose a factor for each axis. Each dot is one day where both were logged — days missing either factor are left out, never counted as zero."** *(curated: "either" hosts no "her" — e·i·t·h·e·r has no "h-e-r" run; "left out" / "never counted as zero" are descriptive; no "will"/"cause"/"treat"/"she")* |
+| Empty-state body | **"Choose a factor for each axis. Each dot is one day when both were logged — days missing a factor are left out, never counted as zero."** *(curated: "either" was REJECTED (eit-her ⊃ "her") → "missing a factor" is clean; "left out" / "never counted as zero" are descriptive; no "will"/"cause"/"treat"/"she")* |
 | Sparse-state heading ("not enough overlapping days") | **"Not enough overlapping days yet."** *(matches the Phase-15 "Not enough data yet." posture; "overlapping" is clean — o·v·e·r·l·a·p has no "her" run since "ver" precedes "lap", and there is no "h")* |
-| Sparse-state body | **"These two factors were logged together on too few days to plot. Keep logging and this fills in over time."** *("together" hosts "her" → REJECTED candidate "shown together" replaced; FINAL wording uses "logged together"… — see note below)* |
+| Sparse-state body | **"These two factors were logged on too few of the same days to plot. Keep logging and this fills in over time."** *("together" ⊃ "her" was REJECTED — FINAL wording is "on too few of the same days", substring-clean)* |
 | Deep-link affordance (label + a11y) | **"See the days behind this"** *("behind" hosts no "her" — b·e·h·i·n·d has no "h-e-r" run; "this" is clean; non-causal — points at evidence, not a claim)* |
 
-> **SUBSTRING NOTE — "together".** The word **"together"** CONTAINS "her" (to·**get·her**) and is a
-> `forbiddenGenderedTokens` host. The sparse-state body above MUST NOT ship the literal "together". The
+> **SUBSTRING NOTE — the `together` token.** The word `together` CONTAINS "her" (to·**get·her**) and is a
+> `forbiddenGenderedTokens` host. The sparse-state body above MUST NOT ship the literal `together`. The
 > LOCKED replacement wording is: **"These two factors were logged on too few of the same days to plot. Keep
 > logging and this fills in over time."** ("on the same days" carries the both-logged meaning with no
 > forbidden host — "same" / "days" are clean). The executor uses THIS replacement; "together" is a rejected
