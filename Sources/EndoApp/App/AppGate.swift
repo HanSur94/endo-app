@@ -41,9 +41,12 @@ struct AppGate: View {
     }
 }
 
-/// The consented-only main shell (T-08-12): a bottom `TabView` with the "Log" (Home) tab and the
-/// "Insights" dashboard tab (`tab.insights`, UI-SPEC §D). Constructed EXCLUSIVELY in AppGate's
-/// `.consented` branch — the dashboard, like the logging UI, is never built before opt-in.
+/// The consented-only main shell (T-08-12): a bottom `TabView` with the "Log" (Home) tab, the
+/// "Insights" dashboard tab (`tab.insights`, UI-SPEC §D), and the "Explore" overlay-lanes tab
+/// (`tab.explore`, UI-SPEC §A — Phase 15). Constructed EXCLUSIVELY in AppGate's `.consented` branch —
+/// the dashboard AND Explore, like the logging UI, are never built before opt-in (T-15-10:
+/// consent-by-construction — the Explore tab is unreachable before opt-in because the `TabView` itself
+/// exists only in this branch).
 private struct ConsentedShell: View {
     var body: some View {
         TabView {
@@ -58,6 +61,15 @@ private struct ConsentedShell: View {
                     // CONTENT view does not propagate to the tab-bar button XCUITest queries (UI-SPEC §D).
                     Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
                         .accessibilityIdentifier("tab.insights")
+                }
+
+            ExploreView()
+                .tabItem {
+                    // Mirror the id-on-Label pattern (Pitfall 5): the id MUST be on the `Label`, not the
+                    // content view, to reach the tab-bar button. Symbol `square.stack.3d.up` (lanes-
+                    // evocative — DISTINCT from Insights' `chart.line.uptrend.xyaxis`, UI-SPEC §A).
+                    Label("Explore", systemImage: "square.stack.3d.up")
+                        .accessibilityIdentifier("tab.explore")
                 }
         }
     }
