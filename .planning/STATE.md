@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: — Interactive Charts & Explore
 status: executing
 stopped_at: Completed 14-04-PLAN.md
-last_updated: "2026-06-15T20:43:24.888Z"
+last_updated: "2026-06-15T20:50:47.889Z"
 last_activity: 2026-06-15 -- Phase 15 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 8
+  completed_plans: 9
   percent: 50
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 ## Current Position
 
 Phase: 15 (Explore Tab & Overlay Lanes) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Progress: [x] 13 [x] 14 [ ] 15 [ ] 16 — 50% (2/4 phases)
 Last activity: 2026-06-15 -- Phase 15 execution started
@@ -94,6 +94,7 @@ Last activity: 2026-06-15 -- Phase 15 execution started
 | Phase 14 P03 | 4min | 2 tasks | 2 files |
 | Phase 14 P04 | 5min | 2 tasks | 2 files |
 | Phase 15 P01 | 5min | 2 tasks | 2 files |
+| Phase 15 P02 | 4min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Suppression enforced upstream in Plan-01 accessors; both bleeding extraction paths emit nothing for a suppressed snapshot (no leak)
 - [Phase 14]: SeriesNormalization domain is FIXED per ScaleKind (never per-window min/max); readout always reports real value+unit, never the normalized number (Phase 14 Plan 04)
 - [Phase ?]: A2 lane alignment RESOLVED: .chartYAxis(.hidden) + unit-in-lane-title gives sibling Charts on different Y scales identical plot insets (15-01 probe screenshot); 15-04 consumes this, no fixed-width-Y fallback needed
+- [15-02]: ExploreSelection (app-target pure value type) ships the EXPL-02 cap/toggle/suppression policy WITHOUT UI — the 4-cap counts ONLY quantitative series (scaleKind.isQuantitative); presence/event series are uncapped; canAddQuantitative exempts already-selected series so a re-tap to remove is never blocked. offered(suppressed:) is a STATIC catalog filter stripping BOTH bleeding.intensity + bleeding.event for a suppressed user (defense-in-depth over the Phase-14 accessor gate). NO @AppStorage/@SceneStorage + no persistence-wrapper token anywhere in the file (token-based grep gate, so even the privacy comment avoids the substring) — ephemeral privacy invariant T-15-03; 15-05's picker holds it in @State. Fixtures pulled from ExploreSeriesCatalog.all by id so the 8-test suite cannot drift. EXPL-02 stays Pending — delivered when the picker UI lands in 15-05.
 
 ### Pending Todos
 
@@ -176,7 +178,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T20:43:08.097Z
+Last session: 2026-06-15T20:50:11.884Z
 Stopped at: Completed 14-04-PLAN.md
 Resume file: None
 
