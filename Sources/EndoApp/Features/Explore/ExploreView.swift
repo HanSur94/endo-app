@@ -37,6 +37,17 @@ struct ExploreView: View {
     /// property-wrapper store — a LOCKED privacy invariant (T-15-12).
     @State private var selection = ExploreSelection()
 
+    /// The EPHEMERAL view mode — `.lanes` (the shipped Explore behavior, the default) or `.scatter` (the
+    /// Phase-16 second mode). Plain view `@State`, NEVER persisted — persisting a Scatter-interest would
+    /// leak health-interest metadata outside the consent-gated store (T-16-06, the same LOCKED privacy
+    /// invariant as `selection`).
+    @State private var mode: ExploreMode = .lanes
+
+    /// The EPHEMERAL scatter X / Y axis selection (a quantitative `ExploreSeries?` each). Plain view
+    /// `@State`, NEVER persisted (same privacy invariant — T-16-06).
+    @State private var scatterX: ExploreSeries?
+    @State private var scatterY: ExploreSeries?
+
     /// The ONE shared scrub date driving every lane — owned here, passed by `@Binding` into the lane
     /// stack so a single `RuleMark` crosses every lane at the same day (EXPL-05).
     @State private var selectedDate: Date?
@@ -65,24 +76,24 @@ struct ExploreView: View {
                     DisclaimerBanner()
                         .accessibilityIdentifier("explore.disclaimer")
 
-                    // The control surface: the suppression-filtered chip picker + the range presets.
-                    SeriesPickerView(selection: $selection, suppressed: suppressed)
+                    // The `Lanes | Scatter` mode toggle, pinned at the TOP of the content column (above the
+                    // picker block). Default `.lanes` so the shipped Explore behavior is unchanged until the
+                    // user opts into Scatter. Mode is EPHEMERAL view `@State`, never persisted (T-16-06).
+                    Picker("Mode", selection: $mode) {
+                        Label(ExploreCopy.modeLanes, systemImage: "square.stack.3d.up")
+                            .tag(ExploreMode.lanes)
+                            .accessibilityIdentifier("explore.mode.lanes")
+                        Label(ExploreCopy.modeScatter, systemImage: "chart.dots.scatter")
+                            .tag(ExploreMode.scatter)
+                            .accessibilityIdentifier("explore.mode.scatter")
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("explore.mode")
 
-                    // The lanes OR an honest state. EMPTY keys off what actually RENDERS (the prepared
-                    // lanes), NOT the raw selection — so a suppressed user who carries only a (filtered)
-                    // bleeding id sees the "pick a series" invitation, never an empty lane (WR-01).
-                    if prepared.quantitativeLanes.isEmpty && prepared.eventLanes.isEmpty {
-                        emptyState
-                    } else if isTooSparse {
-                        sparseState
+                    if mode == .lanes {
+                        lanesContent
                     } else {
-                        ExploreLanesView(
-                            quantitativeLanes: prepared.quantitativeLanes,
-                            eventLanes: prepared.eventLanes,
-                            snapshotsByDay: prepared.snapshotsByDay,
-                            xDomain: prepared.xDomain,
-                            selectedDate: $selectedDate
-                        )
+                        scatterContent
                     }
                 }
                 .padding()
@@ -99,6 +110,71 @@ struct ExploreView: View {
         // NOT per scrub frame. The scrub binding is deliberately NOT a trigger here.
         .onChange(of: selection) { _, _ in
             recompute()
+        }
+    }
+
+    // MARK: - Lanes mode content (the shipped Explore behavior — UNCHANGED, just lifted into a property)
+
+    /// The Lanes-mode body: the suppression-filtered chip picker + the range presets, then the lanes OR an
+    /// honest state. EMPTY keys off what actually RENDERS (the prepared lanes), NOT the raw selection — so a
+    /// suppressed user who carries only a (filtered) bleeding id sees the "pick a series" invitation, never
+    /// an empty lane (WR-01). This is the Phase-15 block verbatim — the scatter mode does not touch it.
+    @ViewBuilder
+    private var lanesContent: some View {
+        // The control surface: the suppression-filtered chip picker + the range presets.
+        SeriesPickerView(selection: $selection, suppressed: suppressed)
+
+        if prepared.quantitativeLanes.isEmpty && prepared.eventLanes.isEmpty {
+            emptyState
+        } else if isTooSparse {
+            sparseState
+        } else {
+            ExploreLanesView(
+                quantitativeLanes: prepared.quantitativeLanes,
+                eventLanes: prepared.eventLanes,
+                snapshotsByDay: prepared.snapshotsByDay,
+                xDomain: prepared.xDomain,
+                selectedDate: $selectedDate
+            )
+        }
+    }
+
+    // MARK: - Scatter mode content (SCAT-01/03 — the axis picker + the empty/sparse/plot split)
+
+    /// The minimum BOTH-logged days the scatter needs to plot meaningfully. Below this the cloud is too
+    /// few dots to read as anything but noise, so the honest sparse state shows instead (UI-SPEC §D — the
+    /// count-sum sparse check, mirroring the Phase-15 per-lane minimum).
+    private static let minScatterDays = 5
+
+    /// The Scatter-mode body: the two quantitative-only axis selectors, then the empty / sparse / plot
+    /// split. The both-logged cells are recomputed from `snapshots` + X/Y ONLY (no scrub coupling — the
+    /// scatter has no scrub) — never per scrub frame.
+    @ViewBuilder
+    private var scatterContent: some View {
+        ScatterAxisPicker(xSeries: $scatterX, ySeries: $scatterY, suppressed: suppressed)
+
+        // The both-logged cells — recomputed from snapshots + the chosen X/Y only (empty until both chosen).
+        let scatterPoints: [ScatterPairing.ScatterPoint] = {
+            guard let x = scatterX, let y = scatterY else { return [] }
+            return ScatterPairing.pairs(snapshots, x: x, y: y, calendar: calendar)
+        }()
+
+        if scatterX == nil || scatterY == nil {
+            // EMPTY — neither (or only one) axis chosen yet → "pick two factors" (never empty axes).
+            honestState(
+                heading: ExploreCopy.scatterEmptyHeading,
+                body: ExploreCopy.scatterEmptyBody,
+                identifier: "explore.scatter.empty"
+            )
+        } else if scatterPoints.reduce(0, { $0 + $1.count }) < Self.minScatterDays {
+            // SPARSE — both chosen, but too few both-logged days to plot meaningfully (count-sum check).
+            honestState(
+                heading: ExploreCopy.scatterSparseHeading,
+                body: ExploreCopy.scatterSparseBody,
+                identifier: "explore.scatter.sparse"
+            )
+        } else {
+            ScatterPlotView(points: scatterPoints, xSeries: scatterX!, ySeries: scatterY!)
         }
     }
 
@@ -251,6 +327,17 @@ struct ExploreView: View {
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(identifier)
     }
+}
+
+// MARK: - ExploreMode (the ephemeral Lanes|Scatter view mode — SCAT-01)
+
+/// The Explore view mode: `.lanes` (the shipped overlay-lanes behavior, the default) or `.scatter` (the
+/// Phase-16 two-axis scatter). Held in EPHEMERAL view `@State` — NEVER persisted (T-16-06, the LOCKED
+/// privacy invariant: persisting a Scatter-interest would leak health-interest metadata outside the
+/// consent-gated store). `String`-raw + `CaseIterable` mirrors the `TrendWindow` posture for stable tags.
+private enum ExploreMode: String, CaseIterable {
+    case lanes
+    case scatter
 }
 
 // MARK: - PreparedLanes (the cached lane inputs — recomputed once per selection/window change)
