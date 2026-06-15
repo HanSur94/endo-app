@@ -19,16 +19,16 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Explore
 
 - [ ] **EXPL-01**: User can open a new Explore screen as a third tab (consent-gated like the rest of the app)
-- [x] **EXPL-02**: User can toggle series on/off via chips from a unified series catalog (symptoms, sleep hours, activity minutes, stress, mood, bleeding, food tags) — capped at 3–4 quantitative series with a clear remove-to-add affordance
-- [x] **EXPL-03**: Selected quantitative series render as aligned per-scale lanes sharing ONE time axis, each in its real unit (no dual y-axis, no silent normalization)
-- [x] **EXPL-04**: Binary food tags (and bleeding, treated as events) render as event-marker lanes (date-aligned ticks), never as fake 0/1 lines
-- [x] **EXPL-05**: User can scrub the Explore chart and read every visible series' value — or "not logged" per series — for the selected day
+- [ ] **EXPL-02**: User can toggle series on/off via chips from a unified series catalog (symptoms, sleep hours, activity minutes, stress, mood, bleeding, food tags) — capped at 3–4 quantitative series with a clear remove-to-add affordance
+- [ ] **EXPL-03**: Selected quantitative series render as aligned per-scale lanes sharing ONE time axis, each in its real unit (no dual y-axis, no silent normalization)
+- [ ] **EXPL-04**: Binary food tags (and bleeding, treated as events) render as event-marker lanes (date-aligned ticks), never as fake 0/1 lines
+- [ ] **EXPL-05**: User can scrub the Explore chart and read every visible series' value — or "not logged" per series — for the selected day
 - [ ] **EXPL-06**: User can switch the Explore time range with the familiar presets (same axis vocabulary as the dashboard: absolute dates, gap breaks)
-- [x] **EXPL-07**: Explore shows honest empty/sparse states ("pick a series", "not enough data") and unlogged days stay gaps in every lane
+- [ ] **EXPL-07**: Explore shows honest empty/sparse states ("pick a series", "not enough data") and unlogged days stay gaps in every lane
 
 ### Scatter
 
-- [x] **SCAT-01**: User can switch Explore to a scatter view: one factor against another, each point = one day where BOTH factors were logged
+- [ ] **SCAT-01**: User can switch Explore to a scatter view: one factor against another, each point = one day where BOTH factors were logged
 - [ ] **SCAT-02**: Identical day-pairs stack honestly via count-encoded point size/opacity (no jitter fabricating non-integer values)
 - [ ] **SCAT-03**: The scatter stays descriptive-only: no fitted line, no correlation number, a neutral caption, and an honest sparse state when too few both-logged days exist
 - [ ] **SCAT-04**: User can open a prefilled scatter from a "Possible association" card ("see the days behind this")
@@ -78,13 +78,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHART-03 | Phase 13 | Complete (13-02 day-change-only haptic; device feel + dismiss-on-release at the phase-gate manual checkpoint) |
 | CHART-04 | Phase 13 | Complete (13-02 AXChartDescriptor Audio Graph + kept per-mark labels; VoiceOver playback at the phase-gate manual checkpoint) |
 | EXPL-01 | Phase 15 | Pending |
-| EXPL-02 | Phase 15 | Complete |
-| EXPL-03 | Phase 15 | Complete |
-| EXPL-04 | Phase 15 | Complete |
-| EXPL-05 | Phase 15 | Complete |
+| EXPL-02 | Phase 15 | Pending |
+| EXPL-03 | Phase 15 | Pending |
+| EXPL-04 | Phase 15 | Pending |
+| EXPL-05 | Phase 15 | Pending |
 | EXPL-06 | Phase 15 | Pending |
-| EXPL-07 | Phase 15 | Complete |
-| SCAT-01 | Phase 16 | Complete |
+| EXPL-07 | Phase 15 | Pending |
+| SCAT-01 | Phase 16 | Pending |
 | SCAT-02 | Phase 16 | Pending |
 | SCAT-03 | Phase 16 | Pending |
 | SCAT-04 | Phase 16 | Pending |
@@ -95,8 +95,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 - Mapped to phases: 15 ✓
 - Unmapped: 0
 
-Note: Phase 14 (Series Catalog & Pure Extraction Layer) carries no direct requirement mapping — it is the foundational pure-helper keystone (per research) that unblocks EXPL-02–05, EXPL-07, SCAT-01, and SCAT-02 in Phases 15–16.
+Note: Phase 14 (Series Catalog & Pure Extraction Layer) carries no direct requirement mapping — it is the foundational pure-helper keystone (per research) that unblocks EXPL-02–05, EXPL-07, SCAT-01, and SCAT-02 in Phases 15–16. Phase 14 being complete does NOT mark any EXPL/SCAT requirement complete — those flip to Complete only when the Phase 15/16 UI that delivers them ships.
+
+**Status (2026-06-15):** Phase 13 ✅ complete (CHART-01..04 delivered). Phase 14 ✅ complete (pure layer — no direct IDs). Phases 15 (EXPL-01..07) and 16 (SCAT-01..04) remain Pending.
 
 ---
 *Requirements defined: 2026-06-10*
-*Last updated: 2026-06-10 — traceability mapped to roadmap phases 13–16 (milestone v1.1)*
+*Last updated: 2026-06-15 — corrected EXPL/SCAT to Pending (Phase 14 enables but does not deliver them); Phase 13 CHART-01..04 complete*
