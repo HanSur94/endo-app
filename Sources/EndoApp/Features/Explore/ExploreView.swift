@@ -68,8 +68,10 @@ struct ExploreView: View {
                     // The control surface: the suppression-filtered chip picker + the range presets.
                     SeriesPickerView(selection: $selection, suppressed: suppressed)
 
-                    // The lanes OR an honest state.
-                    if selection.series.isEmpty {
+                    // The lanes OR an honest state. EMPTY keys off what actually RENDERS (the prepared
+                    // lanes), NOT the raw selection — so a suppressed user who carries only a (filtered)
+                    // bleeding id sees the "pick a series" invitation, never an empty lane (WR-01).
+                    if prepared.quantitativeLanes.isEmpty && prepared.eventLanes.isEmpty {
                         emptyState
                     } else if isTooSparse {
                         sparseState
@@ -114,8 +116,17 @@ struct ExploreView: View {
     /// the current selection + snapshots. Called from `onAppear` and on every selection change — NEVER in
     /// `body` and NEVER per scrub frame.
     private func recompute() {
-        // Selected series split by kind, preserving the catalog's stable display order.
-        let selectedOrdered = ExploreSeriesCatalog.all.filter { selection.series.contains($0) }
+        // The series the picker is currently ALLOWED to offer (suppression removes both bleeding series).
+        // WR-01: a suppressed user who still carries a bleeding id in the selection set must NOT get an
+        // empty titled lane — prune the selection to the offered set BEFORE building lanes, reusing the
+        // single source of truth (`ExploreSelection.offered`). The Phase-14 accessor gates the DATA to
+        // empty; this gates the LANE so it never renders at all.
+        let offered = Set(ExploreSelection.offered(suppressed: suppressed).map(\.id))
+        // Selected series split by kind, preserving the catalog's stable display order; suppressed-gated
+        // series are dropped from what actually renders.
+        let selectedOrdered = ExploreSeriesCatalog.all.filter {
+            selection.series.contains($0) && offered.contains($0.id)
+        }
         let quantSeries = selectedOrdered.filter { $0.scaleKind.isQuantitative }
         let eventSeries = selectedOrdered.filter { !$0.scaleKind.isQuantitative }
 
@@ -155,35 +166,44 @@ struct ExploreView: View {
         eventLanes: [(series: ExploreSeries, days: [Date])]
     ) -> ClosedRange<Date> {
         let end = calendar.startOfDay(for: .now)
+        // IN-04: a guaranteed 30-day-back date that NEVER collapses to `end` — used as the fallback so a
+        // degenerate `calendar.date(byAdding:)` (never with `.current`) can't produce a single-day
+        // `end…end` domain that would render nonsense. 30 days × 86400s is the honest default window span.
+        let safeFallbackStart = end.addingTimeInterval(-30 * 86_400)
         let start: Date
         switch window {
-        case .last7:   start = calendar.date(byAdding: .day, value: -7, to: end) ?? end
-        case .last30:  start = calendar.date(byAdding: .day, value: -30, to: end) ?? end
-        case .last90:  start = calendar.date(byAdding: .day, value: -90, to: end) ?? end
+        case .last7:   start = calendar.date(byAdding: .day, value: -7, to: end) ?? end.addingTimeInterval(-7 * 86_400)
+        case .last30:  start = calendar.date(byAdding: .day, value: -30, to: end) ?? safeFallbackStart
+        case .last90:  start = calendar.date(byAdding: .day, value: -90, to: end) ?? end.addingTimeInterval(-90 * 86_400)
         case .allTime:
             let earliestQuant = quantitativeLanes.flatMap { $0.points.map(\.date) }.min()
             let earliestEvent = eventLanes.flatMap { $0.days }.min()
             let earliest = [earliestQuant, earliestEvent].compactMap { $0 }.min()
-            start = earliest ?? (calendar.date(byAdding: .day, value: -30, to: end) ?? end)
+            start = earliest ?? safeFallbackStart
         }
         return min(start, end) ... end
     }
 
-    /// "Too sparse" (honest, EXPL-07): selected series exist, but fewer than a small threshold of logged
-    /// data points across ALL selected series fall in the window — too few to plot a meaningful lane.
-    /// Gaps stay gaps; this never fabricates a value. Threshold = 2 (a single isolated point can't read as
-    /// a trend; the empty/lanes split is by SELECTION, this split is by logged DENSITY).
+    /// The minimum logged points a SINGLE lane needs to be more than an isolated dot. A lane with one
+    /// point in the window reads as a lone floating mark, not a series — below this, the lane is "sparse".
+    private static let minPointsPerLane = 2
+
+    /// "Too sparse" (honest, EXPL-07): renderable series exist, but NO single lane has enough logged days
+    /// in the window to be more than an isolated dot — so every lane would be a lone floating mark.
+    /// WR-02: this is a PER-LANE test, not a global sum — 2 lanes with 1 point each (global sum 2) is
+    /// still two isolated dots and IS sparse; one lane with ≥2 points is enough to render meaningfully.
+    /// Gaps stay gaps; this never fabricates a value. (The empty/lanes split is by what RENDERS; this
+    /// split is by per-lane logged density.)
     private var isTooSparse: Bool {
         let domain = prepared.xDomain
-        let quantLogged = prepared.quantitativeLanes
-            .flatMap { $0.points.map(\.date) }
-            .filter { domain.contains($0) }
-            .count
-        let eventLogged = prepared.eventLanes
-            .flatMap { $0.days }
-            .filter { domain.contains($0) }
-            .count
-        return (quantLogged + eventLogged) < 2
+        let quantHasEnough = prepared.quantitativeLanes.contains { lane in
+            lane.points.filter { domain.contains($0.date) }.count >= Self.minPointsPerLane
+        }
+        let eventHasEnough = prepared.eventLanes.contains { lane in
+            lane.days.filter { domain.contains($0) }.count >= Self.minPointsPerLane
+        }
+        // Sparse when NO lane clears the per-lane minimum (every lane would be ≤1 isolated mark).
+        return !(quantHasEnough || eventHasEnough)
     }
 
     // MARK: - The two honest states (EXPL-07 — clone InsightsView.emptyState)
