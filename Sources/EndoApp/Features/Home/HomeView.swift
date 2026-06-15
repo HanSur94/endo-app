@@ -4,9 +4,15 @@
 // no logging UI is built before consent. It shows:
 //   - a reverse-chronological day history list (`@Query(sort: \DayEntry.date, order: .reverse)`),
 //     rows id `home.dayRow.<index>`, each a brief symptom/bleeding summary line;
-//   - a prominent "Log today" button (`home.logTodayButton`) presenting `DayLogEditorView` for today;
+//   - a prominent "Log today" affordance (`home.logTodayButton`) presenting `DayLogEditorView` for today;
 //   - the gear -> `SettingsView` toolbar route (`home.settingsButton`, carried from the skeleton);
-//   - a reserved, empty cycle-summary slot (`home.cycleSummary`) Plan 04 fills.
+//   - the cycle-summary slot (`home.cycleSummary`).
+//
+// VISUAL (quick task 260615-wld): restyled to the Bloom design system — a warm canvas, a rose→plum
+// gradient cycle card with a decorative progress ring, a plum primary check-in CTA, a tinted quick-log
+// tile row, an honest "Not medical advice"-tagged insight teaser, and light surface history rows. This
+// is a RESTYLE: every @Query/@State/@Environment, the editingDay/presentingCheckIn sheets, the deep-link
+// router wiring, delete/summaryLine/hasAppleHealthSource, and EVERY accessibility identifier are unchanged.
 //
 // MV pattern (D-12): the view reads `@Query` and presents the editor; no ViewModel.
 // Copy posture (D-14): the bleeding noun resolves through `Terminology`; no hard-coded gendered copy.
@@ -36,59 +42,30 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                // Cycle summary (CYCL-02/03/04): suppressed -> off-state line; sparse -> "not enough
-                // data yet"; else cycle-day + next-period RANGE + confidence. Recomputes via @Query.
-                Section {
-                    CycleSummaryView()
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    header
 
-                // Prominent, accent-tinted fast "Daily check-in" CTA (CHCK-01 / D-16). Above the
-                // detailed "Log today" editor — a few taps to record the day, or just check in.
-                Section {
-                    Button {
-                        presentingCheckIn = true
-                    } label: {
-                        Label(CheckInCopy.title, systemImage: "checkmark.circle")
-                            .font(.headline)
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    .accessibilityIdentifier("home.dailyCheckInButton")
-                }
+                    // Cycle summary (CYCL-02/03/04): the rose→plum gradient card with a decorative ring.
+                    cycleCard
 
-                Section {
-                    Button {
-                        editingDay = Calendar.current.startOfDay(for: .now)
-                    } label: {
-                        Label("Log today", systemImage: "square.and.pencil")
-                    }
-                    .accessibilityIdentifier("home.logTodayButton")
-                }
+                    // Prominent fast "Daily check-in" CTA (CHCK-01 / D-16) — the plum primary button.
+                    checkInCard
 
-                Section("History") {
-                    if days.isEmpty {
-                        Text("No days logged yet. Tap \u{201C}Log today\u{201D} to start.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
-                            Button {
-                                editingDay = Calendar.current.startOfDay(for: day.date)
-                            } label: {
-                                dayRow(day)
-                            }
-                            .accessibilityIdentifier("home.dayRow.\(index)")
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    delete(day.date)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                                .accessibilityIdentifier("home.dayRow.\(index).delete")
-                            }
-                        }
-                    }
+                    // Quick-log tile row — the "Log today" affordance (home.logTodayButton) lives here.
+                    quickLogTiles
+
+                    // Honest insight teaser carrying the "Not medical advice" tag.
+                    insightTeaser
+
+                    historySection
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
+            .background(Color.canvas)
+            .scrollContentBackground(.hidden)
             .navigationTitle("Endo-App")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -96,6 +73,7 @@ struct HomeView: View {
                         SettingsView()
                     } label: {
                         Image(systemName: "gearshape")
+                            .foregroundStyle(Color.plum)
                     }
                     .accessibilityLabel("Settings")
                     .accessibilityIdentifier("home.settingsButton")
@@ -130,6 +108,162 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Sections (visual)
+
+    /// "Good morning" eyebrow + a serif date heading. ("Good morning" passes ClaimsPolicy — no forbidden
+    /// verb/gendered/imperative/alarmist substring.)
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            EyebrowLabel(text: "Good morning")
+            Text(Date.now, format: .dateTime.weekday(.wide).month(.wide).day())
+                .bloomTitle()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The rose→plum gradient cycle card wrapping `CycleSummaryView`, with a decorative progress ring
+    /// and an "Estimate from your cycles" chip. The ring is purely decorative — no fabricated value.
+    private var cycleCard: some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 14) {
+                EyebrowLabel(text: "Your cycle", tint: .white.opacity(0.85))
+                CycleSummaryView()
+                    .environment(\.colorScheme, .dark)   // light text on the gradient (children stay)
+                BloomChip(
+                    text: "Estimate from your cycles",
+                    systemImage: "calendar",
+                    background: .white.opacity(0.18),
+                    foreground: .white,
+                    border: .white.opacity(0.3)
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
+
+            // Decorative ring — neutral when no value is available, never a fabricated reading.
+            Circle()
+                .trim(from: 0, to: 0.62)
+                .stroke(Color.white.opacity(0.65), style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .frame(width: 44, height: 44)
+                .rotationEffect(.degrees(-90))
+                .padding(20)
+                .accessibilityHidden(true)
+        }
+        .background(
+            LinearGradient(
+                colors: [Color.rose, Color.plum],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+        )
+        .shadow(color: Color.plum.opacity(0.22), radius: 18, x: 0, y: 10)
+    }
+
+    /// The daily check-in card with the plum primary CTA (home.dailyCheckInButton unchanged).
+    private var checkInCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Take a moment for today").bloomH3()
+            Text("A quick check-in keeps your patterns rich and personal.")
+                .font(.subheadline)
+                .foregroundStyle(Color.inkSecondary)
+            Button {
+                presentingCheckIn = true
+            } label: {
+                Label(CheckInCopy.title, systemImage: "checkmark.circle")
+            }
+            .bloomPrimaryButton()
+            .accessibilityIdentifier("home.dailyCheckInButton")
+        }
+        .bloomCard()
+    }
+
+    /// A row of tinted quick-log tiles. The "Log today" affordance (home.logTodayButton) is one tile and
+    /// keeps its exact id + action (editingDay = startOfDay).
+    private var quickLogTiles: some View {
+        HStack(spacing: 12) {
+            Button {
+                editingDay = Calendar.current.startOfDay(for: .now)
+            } label: {
+                quickTile(symbol: "square.and.pencil", label: "Log today", tint: .plum)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("home.logTodayButton")
+
+            Button {
+                presentingCheckIn = true
+            } label: {
+                quickTile(symbol: "checkmark.circle", label: "Check in", tint: .rose)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHidden(true)   // mirrors home.dailyCheckInButton; not a new contract id
+        }
+    }
+
+    private func quickTile(symbol: String, label: String, tint: Color) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle().fill(tint.opacity(0.14)).frame(width: 52, height: 52)
+                Image(systemName: symbol)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(tint)
+            }
+            Text(label)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.ink)
+        }
+        .frame(maxWidth: .infinity)
+        .bloomCard(padding: 14)
+    }
+
+    /// An honest insight teaser — presentational chrome carrying the allowed-framing "Not medical advice"
+    /// tag, pointing toward the Insights tab. No fabricated insight content.
+    private var insightTeaser: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                EyebrowLabel(text: "Insights")
+                Spacer()
+                BloomChip(text: "Not medical advice", systemImage: "info.circle")
+            }
+            Text("Your patterns build over time")
+                .bloomH3()
+            Text("As you log, the Insights tab surfaces trends and possible associations in your own data.")
+                .font(.subheadline)
+                .foregroundStyle(Color.inkSecondary)
+        }
+        .bloomCard()
+    }
+
+    private var historySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            EyebrowLabel(text: "History")
+            if days.isEmpty {
+                Text("No days logged yet. Tap \u{201C}Log today\u{201D} to start.")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.inkSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .bloomCard()
+            } else {
+                ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
+                    Button {
+                        editingDay = Calendar.current.startOfDay(for: day.date)
+                    } label: {
+                        dayRow(day)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("home.dayRow.\(index)")
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            delete(day.date)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .accessibilityIdentifier("home.dayRow.\(index).delete")
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Actions
 
     /// Delete a whole day's log (SYMP-04 / D-06). The `@Query` re-renders the list AND any derived
@@ -144,10 +278,10 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(day.date, style: .date)
                 .font(.headline)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.ink)
             Text(summaryLine(for: day.date))
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
             // Provenance (D-03): when ANY field for this day was filled from an imported sample, show the
             // "from Apple Health" badge so the user knows the value came from Apple Health, not their own
             // logging. Manual-wins means a day with only manual data shows NO badge; a denied/empty import
@@ -156,6 +290,13 @@ struct HomeView: View {
                 HealthSourceBadge()
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.strokeSubtle, lineWidth: 1)
+        )
     }
 
     /// Whether any merged field for `date` was sourced from Apple Health (D-03). Reads the SEPARATE

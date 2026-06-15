@@ -101,16 +101,23 @@ struct DailyCheckInView: View {
             bleedingSection
             if checkedInConfirmation { confirmationSection }
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.canvas)
         .accessibilityIdentifier("checkin.sheet")
         .navigationTitle(CheckInCopy.title)
         .navigationBarTitleDisplayMode(.inline)
+        .tint(Color.plum)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button(CheckInCopy.confirm, action: confirm)
-                    .accessibilityIdentifier("checkin.confirmButton")
+                Button(action: confirm) {
+                    Text(CheckInCopy.confirm).fontWeight(.semibold)
+                }
+                .foregroundStyle(Color.plum)
+                .accessibilityIdentifier("checkin.confirmButton")
             }
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }
+                    .foregroundStyle(Color.inkSecondary)
             }
         }
         .onAppear(perform: loadExistingState)
@@ -127,7 +134,7 @@ struct DailyCheckInView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Image(systemName: "arrow.uturn.backward.circle")
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.plum)
                         Text(CheckInCopy.sameAsYesterday)
                             .foregroundStyle(.primary)
                     }
@@ -153,7 +160,7 @@ struct DailyCheckInView: View {
                     } label: {
                         HStack {
                             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                                .foregroundStyle(isSelected ? Color.plum : Color.secondary)
                             Text(type.plainLabel).foregroundStyle(.primary)
                             Spacer()
                         }
@@ -184,7 +191,7 @@ struct DailyCheckInView: View {
                 } label: {
                     HStack {
                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                            .foregroundStyle(isSelected ? Color.plum : Color.secondary)
                         Text(tag.plainLabel).foregroundStyle(.primary)
                         Spacer()
                     }
@@ -213,7 +220,7 @@ struct DailyCheckInView: View {
                         Text(type.plainLabel).foregroundStyle(.primary)
                         Spacer()
                         if activityType == type {
-                            Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                            Image(systemName: "checkmark").foregroundStyle(Color.plum)
                         }
                     }
                 }
@@ -361,7 +368,7 @@ struct DailyCheckInView: View {
                                 .multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                        .foregroundStyle(isSelected ? Color.plum : Color.secondary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("checkin.mood.\(option.value)")
@@ -389,7 +396,7 @@ struct DailyCheckInView: View {
                         Text(intensity.plainLabel).foregroundStyle(.primary)
                         Spacer()
                         if flow == intensity {
-                            Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                            Image(systemName: "checkmark").foregroundStyle(Color.plum)
                         }
                     }
                 }
@@ -409,7 +416,7 @@ struct DailyCheckInView: View {
     private var confirmationSection: some View {
         Section {
             Label(CheckInCopy.checkedIn, systemImage: "checkmark.circle.fill")
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.plum)
                 .accessibilityIdentifier("checkin.checkedInConfirmation")
         }
     }

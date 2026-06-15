@@ -89,13 +89,13 @@ struct CycleSummaryView: View {
             // 1. Suppressed: emit NOTHING cycle-related — only the neutral off-state line (D-09).
             Text(CycleSummaryCopy.suppressed)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Self.softText)
                 .accessibilityIdentifier("home.cycleSummary.suppressed")
         } else if !summary.hasEnoughData {
             // 2. Sparse: honest "not enough data yet" — never a fabricated value (CYCL-04).
             Text(CycleSummaryCopy.notEnoughData)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Self.softText)
                 .accessibilityIdentifier("home.cycleSummary.notEnoughData")
         } else {
             // 3. Derived: cycle-day + a next-period RANGE + a confidence word (D-08/D-10).
@@ -104,23 +104,30 @@ struct CycleSummaryView: View {
         }
     }
 
+    /// Light "primary" text — the summary renders ON the rose→plum gradient card on Home.
+    private static let primaryText = Color.white
+    /// Light "secondary" text for the same gradient context.
+    private static let softText = Color.white.opacity(0.82)
+
     private func derivedSummary(_ summary: CycleSummary) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             if let cycleDay = summary.cycleDay {
                 Text("\(CycleSummaryCopy.cycleDayPrefix) \(cycleDay)")
-                    .font(.headline)
+                    .font(.system(size: 22, weight: .semibold))
+                    .fontDesign(.serif)
+                    .foregroundStyle(Self.primaryText)
                     .accessibilityIdentifier("home.cycleSummary.cycleDay")
             }
             if let range = summary.nextPeriod {
                 // A DATE RANGE — never a single hard date (D-08).
                 Text("\(CycleSummaryCopy.nextWindowLabel): \(formattedRange(range))")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Self.softText)
                     .accessibilityIdentifier("home.cycleSummary.nextWindow")
             }
             Text("\(CycleSummaryCopy.confidenceWord(summary.confidence)) \u{00B7} \(CycleSummaryCopy.basisNote)")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Self.softText)
                 .accessibilityIdentifier("home.cycleSummary.confidence")
         }
     }
