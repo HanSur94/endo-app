@@ -414,7 +414,13 @@ public enum SeriesNormalization {
 
 **If this table is empty:** it is not — but every `[ASSUMED]` row is a low-risk tuning/shape choice, not a locked honesty invariant. The honesty invariants are all `[VERIFIED]` against source.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Autonomous decider adopted the research recommendation for each (2026-06-15). Resolutions, binding for the planner:
+> 1. **Extraction shape:** switch on a small `enum Field` (or `id`) INSIDE the extraction helper; NO closure in stored properties — `ExploreSeries` derives `Hashable`/`Identifiable`/`Sendable` from `id`. This is the FIRST plan task; everything composes on top.
+> 2. **Bleeding:** the catalog carries BOTH `bleeding.intensity` (quantitative-ordinal) AND `bleeding.event` (presence), each suppression-gated. Phase 15 chooses which to surface — Phase 14 ships both, presentation-agnostic.
+> 3. **Scatter axes:** restricted to QUANTITATIVE series (enforced at the `ScatterPairing` API boundary — presence factors have no numeric value and are overlay-only). Documented in the catalog/API.
+> 4. **Tuning defaults (A1–A4):** adopt the research defaults — bleeding ordinal rank order, hours/minutes domain ceilings, presence-series inclusion set.
 
 1. **`ExploreSeries` extraction shape (the load-bearing decision).**
    - What we know: the struct must be `Hashable`/`Identifiable`/`Sendable` for Phase-15 chip `Set` selection (EXPL-02); a stored closure blocks synthesized `Hashable`.
