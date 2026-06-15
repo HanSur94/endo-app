@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
 status: executing
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-06-16T01:30:00.000Z"
-last_activity: 2026-06-16 -- Completed 16-02 (scatter view: mode toggle + axis picker + count-encoded plot)
+stopped_at: Completed 16-03-PLAN.md
+last_updated: "2026-06-16T01:46:00.000Z"
+last_activity: 2026-06-16 -- Completed 16-03 (cross-tab scatter deep-link: ExploreScatterRouter + .correlation card affordance + ExploreView router read)
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 17
-  completed_plans: 15
+  completed_plans: 16
   percent: 75
 ---
 
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 ## Current Position
 
 Phase: 16 (Scatter View & Correlation Deep-Link) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Progress: [x] 13 [x] 14 [x] 15 [ ] 16 — 75% (3/4 phases)
-Last activity: 2026-06-16 -- Completed 16-02 (scatter view: mode toggle + axis picker + count-encoded plot)
+Last activity: 2026-06-16 -- Completed 16-03 (cross-tab scatter deep-link wiring: ExploreScatterRouter + .correlation card affordance + ExploreView router read)
 
 ## Performance Metrics
 
@@ -109,6 +109,7 @@ Last activity: 2026-06-16 -- Completed 16-02 (scatter view: mode toggle + axis p
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [16-03]: Cross-tab scatter deep-link wiring landed (SCAT-04, E2E proof deferred to 16-04). `ExploreScatterRouter` is a `@MainActor @Observable` env-router copied verbatim from `CheckInRouter` (EnvironmentKey + `MainActor.assumeIsolated` default), carrying an `Equatable PendingScatter { x, y: ExploreSeries }` wrapper (NOT a tuple — so `.onChange(of:)` compiles; `ExploreSeries` is Equatable by id) — only public catalog series ids, ephemeral, NO persistence wrapper (grep-gated; the header comment avoids the literal wrapper tokens, the same 16-01 gate-hygiene fix). `ConsentedShell`'s bare `TabView` became `TabView(selection: $selectedTab)` over a typed `ConsentedTab { log, insights, explore }` enum + per-tab `.tag` (id-on-Label `tab.insights`/`tab.explore` preserved); `selectedTab` is ephemeral `@State` threaded into `InsightsView`. `InsightCardView` gained `suppressed: Bool` + `onOpenScatter: (PendingScatter)->Void` (the `onDismiss` screen-supplied-action precedent) and computes `scatterAxes` ONCE via `ScatterDeepLink.resolve` — the "See the days behind this" `Button` (`arrow.up.forward.square`, accent, ≥44pt, id `<idRoot>.scatterLink`) renders ONLY in the `.correlation` arm when non-nil (HIDDEN for presence/sleep-quality/suppressed-bleeding), carrying the resolver's TYPED axes, never reading `insight.headline`/`detail` (T-16-14, grep-confirmed). `InsightsView` reads `suppressed` ONCE per section via a per-view `SwiftDataRepository` (mirrors `ExploreView.suppressed`; failure→false can only KEEP the bleeding gate) and threads `suppressed` + a closure that sets `router.pendingScatter` THEN selects `.explore` (set-before-select, no race). `ExploreView` consumes the payload on BOTH `.onAppear` (deep-link landed pre-observe) AND `.onChange(of: pendingScatter)` → `mode=.scatter` + prefill X/Y + CLEAR (re-trigger safe), into existing ephemeral `@State`. KEY DEVIATION (Rule 3): adding `suppressed`/`onOpenScatter` after `onDismiss` broke trailing-closure label matching — pass `onDismiss:` explicitly. Build clean; InsightsDashboardUITests 6/6 + ExploreUITests 8/8 green; all honesty/privacy grep gates clean. The router is observed ONLY in `AppGate`'s `.consented` branch (T-16-12, the `TabView` exists only there). SCAT-04 left Pending — 16-04 adds the seed + E2E and flips the checkboxes.
 - [13-03]: Phase 13 EXECUTION COMPLETE — the deterministic E2E seam + the closing gates. `-uitest-select-day <yyyy-MM-dd>` is TRIPLE-gated (runtime `-uitest-reset` pairing → in-memory store, `#if DEBUG` compile-out, nil `\.uiTestScrubDay` EnvironmentKey default) with a defensive en_US_POSIX parse (garbage → nil, never a crash, T-13-02b); `-uitest-seed-scrub` = dense severity-6 spine, offset-3 gap, offset-2 severity-0, all assertion days inside last-7 (Pitfall 6); the chart reads the seam in `.onAppear` behind `allowsSelection` + `xDomain.contains`. ChartScrubUITests 3/3 green (logged "Severity 6 of 10" / explicit `.notLogged` gap / "Severity 0 of 10" with `.notLogged` ABSENT — absence ≠ 0 end-to-end), zero coordinates/sleeps. TWO load-bearing a11y discoveries (Rule-1 fixes, carried to Phases 15–16): (1) Swift Charts does NOT expose `.annotation` content in the AX tree — the 13-02 in-annotation tooltip a11y was unreachable by VoiceOver/XCUITest; the readout + `.tooltip`/`.tooltip.notLogged` ids now ride a transparent overlay proxy inside the allowsSelection branch, the visual annotation is `.accessibilityHidden(true)`; (2) a parent `.accessibilityIdentifier` masks bare descendant element ids — shield proxy ids with `.accessibilityElement(children: .contain)` (the Section→cell→.confidence precedent generalized). E2E queries are signalKey-SCOPED (`.severity.chart.tooltip`) — the seed also emits a 0/1 FREQUENCY trend card rendered first whose tooltip reads "Severity 1 of 10" (a generic firstMatch would lie). Closing gates ALL GREEN: ReportPDFRenderer.swift zero commits since v1.0 + clean working tree, ReportFlowUITests 2/2, InsightsDashboardUITests 6/6, EndoInsights 124/124. Four manual checkpoints surfaced to /gsd-verify-work: device haptic, scroll-vs-scrub + release lifecycle, PDF visual compare vs v1.0 export, VoiceOver/Audio Graph.
 - [13-02]: Trend-chart selection LIVE on the dashboard (CHART-01..04 rendered). `InsightTrendChart` gained the additive `allowsSelection: Bool = false` + `selectionA11yIDRoot: String?` params (the `inkColor` precedent): when false, the `chartXSelection` modifier AND the haptic `.onChange` are NOT attached at all (conditional `Group` branch, stable identity) — the PDF path's modifier set is identical to v1.0 and `ReportPDFRenderer.swift` is zero-diff. Every displayed value routes through `ChartScrubSelection.resolve` (grep-gated: no DragGesture/proxy.value(atX:)/nearest-point math). Chrome = secondary-gray RuleMark (zIndex -1) + pinned-top annotation tooltip (overflow .fit) + inkColor symbolSize(100) highlight on LOGGED days only (gap = no point + de-emphasized "Not logged"; severity-0 = point at the zero line + "Severity 0 of 10"); tooltip strings via audited InsightsCopy only; ONE quiet a11y element with "{date} — {value}" accessibilityValue + ids `<root>.tooltip`/`.tooltip.notLogged` (skip-entirely when root nil); zero UIAccessibility.post. Haptic: one UISelectionFeedbackGenerator per view identity, fires on resolved-DAY change only (nil→day/day→nil silent; logged↔gap ticks). CHART-04 dual path: per-mark labels KEPT + `@preconcurrency AXChartDescriptorRepresentable` (Swift 6: View is implicitly MainActor vs the nonisolated protocol — the compiler-suggested fix) building a categorical-day/0…10 descriptor with ONE isContinuous:false series of LOGGED points only (gaps omitted, never zeros), attached in BOTH modes (render-inert; in-source escape hatch for Plan 03's PDF check). InsightsDashboardUITests 6/6 green with selection live. Plan 03 asserts the tooltip ids via the `-uitest-select-day` seam; device haptic/scroll-arbitration/VoiceOver remain phase-gate manual checkpoints.
 - [13-01]: Scrub foundations landed (CHART-01/02 honesty core, unit-proven before any pixel). `ChartScrubSelection.resolve(_:in:calendar:)` lives in the EndoInsights PACKAGE (RESEARCH Pitfall 7 correction — `InsightPoint` is a package type, Phases 15–16 reuse it, no xcodegen, BoundaryLintTests enforces Foundation-only): exact-day match ONLY via `calendar.startOfDay` + `isDate(_:inSameDayAs:)` — gap day → `Resolution(day:, point: nil)` (never nearest-neighbor, never interpolation; grep-gated against `min(by`/`timeIntervalSince`), logged severity-0 → a REAL point with value 0 (absence ≠ 0). `Resolution` is public/Sendable/Equatable with an explicit public init (cross-module construction). 7 invariants pinned incl. 23:59 boundary + Europe/Berlin 2026-03-29 DST spring-forward + unsorted input; package 124/124 green. The two LOCKED tooltip strings (`scrubNotLogged = "Not logged"`, `scrubSeverity(_:) = "Severity {n} of 10"`) registered in `auditableStrings` in the SAME edit (Pitfall 5) + verbatim-pinned in CopyAuditTests (32/32, incl. `scrubSeverity(0)` ≠ gap). Plan 02 MUST route every displayed value through this resolver — it is the only legal raw-date→value path.
@@ -192,8 +193,8 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-15T23:19:37.552Z
-Stopped at: Completed 15-05-PLAN.md
+Last session: 2026-06-16T01:46:00.000Z
+Stopped at: Completed 16-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
