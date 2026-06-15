@@ -137,8 +137,17 @@ struct InsightTrendChart: View {
                         // (RESEARCH Pitfall 6): a day outside THIS card's window must not draw an
                         // out-of-domain RuleMark. Production: the env value is nil (default), so this
                         // branch never runs; the PDF path additionally never has allowsSelection==true.
-                        .onAppear {
-                            if let day = uiTestScrubDay, xDomain.contains(day) {
+                        //
+                        // WR-02: keyed `.task(id:)` over `.onAppear` so the seed is idempotent and
+                        // recompute-safe. `.onAppear` re-fires on List row recycling and is tied to
+                        // view re-appearance, so an edge-of-window miss (e.g. a midnight `.now`
+                        // advance between launch-arg computation and first appear) was never retried,
+                        // silently dropping the selection. Keying off `uiTestScrubDay` re-evaluates
+                        // when the seed resolves and the `rawSelectedDate == nil` guard makes the
+                        // assignment idempotent (it won't clobber a live scrub). Still inert in
+                        // production (the env default is nil) and branch-local to allowsSelection.
+                        .task(id: uiTestScrubDay) {
+                            if let day = uiTestScrubDay, xDomain.contains(day), rawSelectedDate == nil {
                                 rawSelectedDate = day
                             }
                         }
