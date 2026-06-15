@@ -22,6 +22,18 @@
 // from the audited `BodyRegion.plainLabel`; no gendered/medical-purpose tokens.
 import SwiftUI
 
+/// Brand palette for the pain map, matching the approved Pencil design "Endo-App — Body Map Pain
+/// Selection" (warm rose/mauve). Defined here rather than via `Color.accentColor` because the app ships
+/// no AccentColor asset (so `.accentColor` resolves to system blue); the body map wants the brand rose.
+private enum BodyMapPalette {
+    static let rose = Color(red: 0.937, green: 0.431, blue: 0.557)         // #EF6E8E
+    static let plum = Color(red: 0.431, green: 0.129, blue: 0.325)         // #6E2153
+    static let mauveFill = Color(red: 0.918, green: 0.851, blue: 0.894)    // #EAD9E4
+    static let mauveStroke = Color(red: 0.788, green: 0.643, blue: 0.729)  // #C9A4BA
+    static let roseStroke = Color(red: 0.780, green: 0.435, blue: 0.545)   // #C76F8B
+    static let cardBackground = Color(red: 0.953, green: 0.925, blue: 0.941) // #F3ECF0
+}
+
 struct BodyMapView: View {
     /// Draft per-region severities (region → 0...10). `nil`/absent = not marked. Owned by the editor.
     @Binding var severities: [BodyRegion: Int]
@@ -55,20 +67,25 @@ struct BodyMapView: View {
             // 200:440 aspect ratio (never clipped), with one accessible hotspot per region placed
             // anatomically over it. Front and back share the SAME silhouette; only the hotspot set
             // differs (`regionsForSide`).
-            GeometryReader { proxy in
-                ZStack {
-                    BodySilhouette()
-                        .fill(Color(.secondarySystemBackground))
-                    BodySilhouette()
-                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(BodyMapPalette.cardBackground)
+                GeometryReader { proxy in
+                    ZStack {
+                        BodySilhouette()
+                            .fill(BodyMapPalette.mauveFill)
+                        BodySilhouette()
+                            .stroke(BodyMapPalette.mauveStroke, lineWidth: 1.3)
 
-                    ForEach(regionsForSide, id: \.self) { region in
-                        hotspot(region, in: proxy.size)
+                        ForEach(regionsForSide, id: \.self) { region in
+                            hotspot(region, in: proxy.size)
+                        }
                     }
                 }
+                .aspectRatio(200.0/440.0, contentMode: .fit)
+                .padding(12)
             }
-            .aspectRatio(200.0/440.0, contentMode: .fit)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 360)
             .accessibilityElement(children: .contain)
 
             // Non-map LIST fallback (Pitfall 4) — operable without the visual map, sets the SAME point.
@@ -115,16 +132,17 @@ struct BodyMapView: View {
                 if let severity {
                     Circle()
                         .fill(tint(for: severity))
-                        .frame(width: 22, height: 22)
+                        .frame(width: 24, height: 24)
+                        .overlay(Circle().stroke(BodyMapPalette.plum, lineWidth: 1.5))
                     // Severity NOT color-only (Pitfall 4): a centered numeric badge over the dot.
                     Text("\(severity)")
                         .font(.caption2.bold().monospacedDigit())
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(.white)
                 } else {
                     Circle()
-                        .fill(Color.clear)
+                        .fill(BodyMapPalette.rose.opacity(0.14))
                         .frame(width: 22, height: 22)
-                        .overlay(Circle().stroke(Color.secondary.opacity(0.4), lineWidth: 1.5))
+                        .overlay(Circle().stroke(BodyMapPalette.roseStroke, lineWidth: 1))
                 }
             }
             .frame(width: Self.minTarget, height: Self.minTarget)  // ≥44pt effective hit area
@@ -221,11 +239,12 @@ struct BodyMapView: View {
         severities[region].map { "severity \($0) of 10" } ?? "not marked"
     }
 
-    /// Severity tint (paired ALWAYS with the numeric value — never color-only, Pitfall 4).
+    /// Severity tint (paired ALWAYS with the numeric value — never color-only, Pitfall 4). Brand rose,
+    /// opacity ramped by severity so a higher number reads as a deeper dot.
     private func tint(for severity: Int?) -> Color {
-        guard let severity else { return Color(.secondarySystemBackground) }
+        guard let severity else { return BodyMapPalette.rose.opacity(0.14) }
         let intensity = Double(min(10, max(0, severity))) / 10.0
-        return Color.accentColor.opacity(0.12 + 0.5 * intensity)
+        return BodyMapPalette.rose.opacity(0.45 + 0.5 * intensity)
     }
 }
 
