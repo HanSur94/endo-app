@@ -133,8 +133,10 @@ extension ExploreSeries {
         case .activityMinutes:
             return snap.activityMinutes
         case .bleedingIntensity:
-            // Suppression gate FIRST — a suppressed user's bleeding must never produce a value (Task 2).
-            return nil
+            // Suppression gate FIRST — a suppressed user's bleeding must never produce a value
+            // (Pitfall 4 / D-03). nil flow → gap; logged flow → its honest 1…4 ordinal rank.
+            guard !snap.suppressed else { return nil }
+            return snap.flow.map { Double(ExploreSeries.ordinalRank(of: $0)) }
         case .bleedingEvent, .food, .clots, .prn, .medicationTaken:
             // Presence-kind fields have no quantitative value — callers route via `isPresent(in:)`.
             return nil
@@ -155,12 +157,103 @@ extension ExploreSeries {
         case .medicationTaken:
             return !snap.medicationsTaken.isEmpty
         case .bleedingEvent:
-            // Suppression gate — a suppressed user's bleeding event must never surface (Task 2).
-            return false
+            // Suppression gate — a suppressed user's bleeding event must never surface (Pitfall 4).
+            // Present iff NOT suppressed AND bleeding was logged that day.
+            return !snap.suppressed && snap.flow != nil
         case .symptomSeverity, .painSeverity, .stress, .mood,
              .sleepHours, .activityMinutes, .bleedingIntensity:
             // Quantitative fields route via `quantitativeValue(from:)`, never presence.
             return false
         }
     }
+
+    /// The honest ordinal rank of a `FlowIntensity` for the `bleeding.intensity` quantitative series
+    /// (RESEARCH A1): spotting=1, light=2, medium=3, heavy=4 — domain 1…4 (`ScaleKind.ordinalBleeding`).
+    static func ordinalRank(of flow: FlowIntensity) -> Int {
+        switch flow {
+        case .spotting: return 1
+        case .light:    return 2
+        case .medium:   return 3
+        case .heavy:    return 4
+        }
+    }
+}
+
+/// The single source of truth for "what series exist" (Pattern 2 / EXPL-02 + SCAT-01). Built by
+/// enumerating the existing `CaseIterable` enum domains (`SymptomType`/`BodyRegion`/`FoodTag`) so it
+/// stays in sync with them BY CONSTRUCTION — no hand-maintained case list to drift. Bleeding appears
+/// as BOTH a quantitative ordinal series (`bleeding.intensity`) AND a presence event series
+/// (`bleeding.event`), each suppression-gated downstream (RESEARCH OQ2 RESOLVED).
+public enum ExploreSeriesCatalog {
+
+    /// Every loggable series, in a stable order: per-symptom severity (11) → per-pain-region severity
+    /// (10) → per-food-tag presence (9) → the singleton fields. Ids are unique, dotted, and
+    /// value-independent (proven by `catalogIdsAreUnique`).
+    public static let all: [ExploreSeries] = {
+        var series: [ExploreSeries] = []
+
+        // Per-symptom-type severity — a DISTINCT selectable series each (NOT a lumped "symptoms").
+        for type in SymptomType.allCases {
+            series.append(ExploreSeries(
+                id: "symptom.\(type.rawValue).severity",
+                displayName: "\(type.rawValue) severity",
+                unit: "of 10",
+                scaleKind: .ordinal0to10,
+                field: .symptomSeverity(type)
+            ))
+        }
+
+        // Per-pain-region severity — a DISTINCT selectable series each.
+        for region in BodyRegion.allCases {
+            series.append(ExploreSeries(
+                id: "pain.\(region.rawValue).severity",
+                displayName: "\(region.rawValue) pain severity",
+                unit: "of 10",
+                scaleKind: .ordinal0to10,
+                field: .painSeverity(region)
+            ))
+        }
+
+        // Per-food-tag presence/occurrence.
+        for tag in FoodTag.allCases {
+            series.append(ExploreSeries(
+                id: "food.\(tag.rawValue)",
+                displayName: "\(tag.rawValue)",
+                unit: "",
+                scaleKind: .presenceEvent,
+                field: .food(tag)
+            ))
+        }
+
+        // Singleton fields.
+        series.append(ExploreSeries(
+            id: "sleep.hours", displayName: "Sleep", unit: "h",
+            scaleKind: .continuousHours, field: .sleepHours))
+        series.append(ExploreSeries(
+            id: "activity.minutes", displayName: "Activity", unit: "min",
+            scaleKind: .continuousMinutes, field: .activityMinutes))
+        series.append(ExploreSeries(
+            id: "stress", displayName: "Stress", unit: "of 10",
+            scaleKind: .ordinal0to10, field: .stress))
+        series.append(ExploreSeries(
+            id: "mood", displayName: "Mood", unit: "of 5",
+            scaleKind: .ordinal1to5, field: .mood))
+        series.append(ExploreSeries(
+            id: "bleeding.intensity", displayName: "Bleeding intensity", unit: "",
+            scaleKind: .ordinalBleeding, field: .bleedingIntensity))
+        series.append(ExploreSeries(
+            id: "bleeding.event", displayName: "Bleeding", unit: "",
+            scaleKind: .presenceEvent, field: .bleedingEvent))
+        series.append(ExploreSeries(
+            id: "clots", displayName: "Clots", unit: "",
+            scaleKind: .presenceEvent, field: .clots))
+        series.append(ExploreSeries(
+            id: "prn", displayName: "PRN pain relief", unit: "",
+            scaleKind: .presenceEvent, field: .prn))
+        series.append(ExploreSeries(
+            id: "medication.taken", displayName: "Medication taken", unit: "",
+            scaleKind: .presenceEvent, field: .medicationTaken))
+
+        return series
+    }()
 }
