@@ -32,6 +32,7 @@ private enum BodyMapPalette {
     static let mauveStroke = Color(red: 0.788, green: 0.643, blue: 0.729)  // #C9A4BA
     static let roseStroke = Color(red: 0.780, green: 0.435, blue: 0.545)   // #C76F8B
     static let cardBackground = Color(red: 0.953, green: 0.925, blue: 0.941) // #F3ECF0
+    static let pillBackground = Color(red: 0.969, green: 0.890, blue: 0.918) // #F7E3EA
 }
 
 struct BodyMapView: View {
@@ -88,6 +89,26 @@ struct BodyMapView: View {
             .frame(maxWidth: .infinity, minHeight: 360)
             .accessibilityElement(children: .contain)
 
+            // Marked-region summary pills (mock parity). Plain rose pills echoing what's on the body —
+            // label from the audited `plainLabel`, value from the existing `valueText`; no new copy.
+            if !markedRegions.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(markedRegions, id: \.self) { region in
+                        HStack(spacing: 6) {
+                            Text(region.plainLabel)
+                                .font(.subheadline.weight(.semibold))
+                            Text(valueText(for: region))
+                                .font(.subheadline.monospacedDigit())
+                        }
+                        .foregroundStyle(BodyMapPalette.plum)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(BodyMapPalette.pillBackground, in: Capsule())
+                    }
+                }
+                .accessibilityIdentifier("bodymap.markedSummary")
+            }
+
             // Non-map LIST fallback (Pitfall 4) — operable without the visual map, sets the SAME point.
             DisclosureGroup("All areas (list)") {
                 ForEach(BodyRegion.allCases, id: \.self) { region in
@@ -130,11 +151,16 @@ struct BodyMapView: View {
         } label: {
             ZStack {
                 if let severity {
+                    // Rose severity-tinted halo conveys intensity by tint…
                     Circle()
                         .fill(tint(for: severity))
-                        .frame(width: 24, height: 24)
+                        .frame(width: 26, height: 26)
                         .overlay(Circle().stroke(BodyMapPalette.plum, lineWidth: 1.5))
-                    // Severity NOT color-only (Pitfall 4): a centered numeric badge over the dot.
+                    // …a solid plum badge gives the number a legible (high-contrast) ground (mock parity)…
+                    Circle()
+                        .fill(BodyMapPalette.plum)
+                        .frame(width: 17, height: 17)
+                    // …and the number itself (severity NOT color-only, Pitfall 4).
                     Text("\(severity)")
                         .font(.caption2.bold().monospacedDigit())
                         .foregroundStyle(.white)
@@ -214,6 +240,11 @@ struct BodyMapView: View {
         side == .front ? Self.frontRegions : Self.backRegions
     }
 
+    /// Every marked region (both sides), in stable `allCases` order — drives the summary pills.
+    private var markedRegions: [BodyRegion] {
+        BodyRegion.allCases.filter { severities[$0] != nil }
+    }
+
     /// Front-facing regions (the abdomen/pelvic/bladder cluster + referred shoulder).
     private static let frontRegions: [BodyRegion] = [
         .lowerAbdomenPelvis, .lowerQuadrantLeft, .lowerQuadrantRight,
@@ -240,9 +271,9 @@ struct BodyMapView: View {
     }
 
     /// Severity tint (paired ALWAYS with the numeric value — never color-only, Pitfall 4). Brand rose,
-    /// opacity ramped by severity so a higher number reads as a deeper dot.
-    private func tint(for severity: Int?) -> Color {
-        guard let severity else { return BodyMapPalette.rose.opacity(0.14) }
+    /// opacity ramped by severity so a higher number reads as a deeper dot. Only called for a marked
+    /// region, so it takes a non-optional severity.
+    private func tint(for severity: Int) -> Color {
         let intensity = Double(min(10, max(0, severity))) / 10.0
         return BodyMapPalette.rose.opacity(0.45 + 0.5 * intensity)
     }
@@ -272,8 +303,7 @@ private struct BodySilhouette: Shape {
         //   M 79 26 a 21 23 0 1 0 42 0  a 21 23 0 1 0 -42 0  Z
         // The first relative arc sweeps from (79,26) to (121,26); the second back to (79,26).
         // Modeled as an ellipse in a 42×46 bounding box (the exact closed head outline).
-        p.move(to: CGPoint(x: 79, y: 26))
-        p.addEllipse(in: CGRect(x: 79, y: 3, width: 42, height: 46))
+        p.addEllipse(in: CGRect(x: 79, y: 3, width: 42, height: 46))   // addEllipse opens its own subpath
 
         // Torso + arms + legs: the cubic-bezier body outline.
         //   M 92 46 C ... Z   (transcribed cubic-for-cubic from the SVG `d`).
