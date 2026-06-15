@@ -21,7 +21,7 @@ findings:
   warning: 3
   info: 4
   total: 7
-status: findings_found
+status: fixed
 ---
 
 # Phase 15: Code Review Report
@@ -175,3 +175,19 @@ already does) rather than `end`.
 _Reviewed: 2026-06-15T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+
+---
+
+## Fix log (2026-06-16) — all 7 findings applied (status: fixed)
+
+| Finding | Commit | Resolution |
+|---|---|---|
+| WR-01 | `39189a5` | `recompute()` prunes the selection to `ExploreSelection.offered(suppressed:)`; the empty-state check keys off rendered lanes — a suppressed user never sees an empty bleeding lane. |
+| WR-02 | `39189a5` | `isTooSparse` is per-lane (`minPointsPerLane = 2`), not a global sum — two 1-point lanes correctly read as sparse. |
+| WR-03 | `8a3af7c` | Event lane exposes an audited `ExploreCopy.eventLaneSummary` (series + occurrence count) as its a11y label — non-gesture VoiceOver parity; new copy registered + substring-clean. |
+| IN-01 | `f734e20` | `var rows` → `let` in FlowLayout. |
+| IN-02 | `f734e20` | FlowLayout cache-seam omission documented as an intentional v1 deferral. |
+| IN-03 | `f734e20` | Tooltip/proxy double-resolve documented as an intentional v1 deferral (extraction is cached; resolve is cheap, scrub-day only). |
+| IN-04 | `39189a5` | `xDomain` fallbacks use a guaranteed 30d-back date — never a degenerate `end…end` single-day domain. |
+
+**Verification after fixes:** BUILD SUCCEEDED · CopyAuditTests + ExploreSelectionTests 48/48 green (the new `eventLaneSummary` passes the substring scans) · all 8 ExploreUITests pass individually (the bare "TEST FAILED" was the known host runner-crash flake, never an assertion). PDF/Report path untouched.
