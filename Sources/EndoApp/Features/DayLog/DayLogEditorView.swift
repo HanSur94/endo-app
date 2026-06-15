@@ -85,11 +85,27 @@ struct DayLogEditorView: View {
             noteSection
             deleteSection
         }
+        .scrollContentBackground(.hidden)
+        .background(Color.canvas)
+        .tint(Color.plum)
+        // Keep the title-driven navigation a11y intact; add a serif principal heading on top of it.
         .navigationTitle(day.formatted(date: .abbreviated, time: .omitted))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(day.formatted(date: .abbreviated, time: .omitted))
+                    .font(.system(size: 17, weight: .semibold))
+                    .fontDesign(.serif)
+                    .foregroundStyle(Color.ink)
+            }
             ToolbarItem(placement: .confirmationAction) {
+                // Plum capsule Save pill (mock parity).
                 Button("Save", action: save)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 7)
+                    .background(Color.plum, in: Capsule())
                     .accessibilityIdentifier("daylog.saveButton")
             }
         }
@@ -120,7 +136,7 @@ struct DayLogEditorView: View {
                     } label: {
                         HStack {
                             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                                .foregroundStyle(isSelected ? Color.plum : Color.secondary)
                             Text(type.plainLabel)
                                 .foregroundStyle(.primary)
                             Spacer()
@@ -173,7 +189,7 @@ struct DayLogEditorView: View {
                         Spacer()
                         if flow == intensity {
                             Image(systemName: "checkmark")
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Color.plum)
                         }
                     }
                 }
@@ -199,7 +215,7 @@ struct DayLogEditorView: View {
                 } label: {
                     HStack {
                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                            .foregroundStyle(isSelected ? Color.plum : Color.secondary)
                         Text(tag.plainLabel)
                             .foregroundStyle(.primary)
                         Spacer()
@@ -236,7 +252,7 @@ struct DayLogEditorView: View {
                         Spacer()
                         if activityType == type {
                             Image(systemName: "checkmark")
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Color.plum)
                         }
                     }
                 }
@@ -384,7 +400,7 @@ struct DayLogEditorView: View {
                                 .multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                        .foregroundStyle(isSelected ? Color.plum : Color.secondary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("daylog.factor.mood.\(option.value)")

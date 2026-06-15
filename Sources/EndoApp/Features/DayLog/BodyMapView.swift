@@ -22,17 +22,17 @@
 // from the audited `BodyRegion.plainLabel`; no gendered/medical-purpose tokens.
 import SwiftUI
 
-/// Brand palette for the pain map, matching the approved Pencil design "Endo-App — Body Map Pain
-/// Selection" (warm rose/mauve). Defined here rather than via `Color.accentColor` because the app ships
-/// no AccentColor asset (so `.accentColor` resolves to system blue); the body map wants the brand rose.
+/// Brand palette for the pain map — now thin aliases onto the shared Bloom design tokens
+/// (`Color.rose`/`plum`/`petal`/`surfaceSunken`/`strokeSubtle`/`petalLine`/`roseDeep`) so the silhouette
+/// card matches the rest of the reskin. Visual-only; the SYMP-02 accessibility contract is unchanged.
 private enum BodyMapPalette {
-    static let rose = Color(red: 0.937, green: 0.431, blue: 0.557)         // #EF6E8E
-    static let plum = Color(red: 0.431, green: 0.129, blue: 0.325)         // #6E2153
-    static let mauveFill = Color(red: 0.918, green: 0.851, blue: 0.894)    // #EAD9E4
-    static let mauveStroke = Color(red: 0.788, green: 0.643, blue: 0.729)  // #C9A4BA
-    static let roseStroke = Color(red: 0.780, green: 0.435, blue: 0.545)   // #C76F8B
-    static let cardBackground = Color(red: 0.953, green: 0.925, blue: 0.941) // #F3ECF0
-    static let pillBackground = Color(red: 0.969, green: 0.890, blue: 0.918) // #F7E3EA
+    static let rose = Color.rose                 // #EF6E8E
+    static let plum = Color.plum                 // #6E2153
+    static let mauveFill = Color.petal           // petal tint for the silhouette fill
+    static let mauveStroke = Color.petalLine     // petal line for the silhouette stroke
+    static let roseStroke = Color.roseDeep       // deeper rose for the empty-hotspot ring
+    static let cardBackground = Color.surfaceSunken  // #F3ECF0
+    static let pillBackground = Color.petal      // #F7E3EA
 }
 
 struct BodyMapView: View {
@@ -89,20 +89,24 @@ struct BodyMapView: View {
             .frame(maxWidth: .infinity, minHeight: 360)
             .accessibilityElement(children: .contain)
 
-            // Marked-region summary pills (mock parity). Plain rose pills echoing what's on the body —
-            // label from the audited `plainLabel`, value from the existing `valueText`; no new copy.
+            // Marked-areas list with severity mini-bars (mock parity). Petal pills echoing what's on the
+            // body — label from the audited `plainLabel`, value from the existing `valueText`, plus a
+            // small rose mini-bar derived from the EXISTING severity value (no new copy, no new data).
             if !markedRegions.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(markedRegions, id: \.self) { region in
-                        HStack(spacing: 6) {
+                        HStack(spacing: 8) {
                             Text(region.plainLabel)
                                 .font(.subheadline.weight(.semibold))
+                            severityMiniBar(for: region)
+                            Spacer(minLength: 4)
                             Text(valueText(for: region))
                                 .font(.subheadline.monospacedDigit())
                         }
                         .foregroundStyle(BodyMapPalette.plum)
                         .padding(.vertical, 6)
                         .padding(.horizontal, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .background(BodyMapPalette.pillBackground, in: Capsule())
                     }
                 }
@@ -260,6 +264,25 @@ struct BodyMapView: View {
             get: { severities[region] ?? 6 },                       // moderate default on first mark
             set: { severities[region] = min(10, max(0, $0)) }
         )
+    }
+
+    /// A small decorative severity mini-bar derived from the EXISTING severity value (rose fill ramped
+    /// 0...10). Purely presentational — the numeric `valueText` next to it always carries the meaning,
+    /// so this is `accessibilityHidden` (never color/length-only, Pitfall 4).
+    @ViewBuilder
+    private func severityMiniBar(for region: BodyRegion) -> some View {
+        let severity = min(10, max(0, severities[region] ?? 0))
+        let fraction = Double(severity) / 10.0
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule().fill(BodyMapPalette.plum.opacity(0.12))
+                Capsule()
+                    .fill(BodyMapPalette.rose)
+                    .frame(width: max(4, proxy.size.width * fraction))
+            }
+        }
+        .frame(width: 56, height: 6)
+        .accessibilityHidden(true)
     }
 
     private func valueText(for region: BodyRegion) -> String {

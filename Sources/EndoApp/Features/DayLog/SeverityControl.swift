@@ -29,23 +29,31 @@ struct SeverityControl: View {
             HStack {
                 Text("Severity")
                     .font(.subheadline)
+                    .foregroundStyle(Color.inkSecondary)
                 Spacer()
                 Text("\(min(10, max(0, severity)))/10")
                     .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.plum)
             }
 
             Slider(value: clampedBinding, in: 0...10, step: 1) {
                 Text("Severity")
             }
+            .tint(Color.rose)
             .accessibilityIdentifier("daylog.severitySlider")
             .accessibilityValue("\(min(10, max(0, severity))) of 10")
 
             HStack(spacing: 8) {
                 ForEach(Self.presets, id: \.value) { preset in
+                    let isSelected = min(10, max(0, severity)) == preset.value
                     Button(preset.label) { severity = preset.value }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .buttonStyle(.plain)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(isSelected ? .white : Color.plum)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(isSelected ? Color.plum : Color.petal, in: Capsule())
+                        .overlay(Capsule().stroke(Color.petalLine, lineWidth: 1))
                         .accessibilityIdentifier("daylog.severityPreset.\(preset.label.lowercased())")
                 }
             }
