@@ -1,11 +1,12 @@
 ---
 phase: 16
 slug: scatter-view-correlation-deep-link
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 platform: ios-swiftui
 created: 2026-06-16
+reviewed_at: 2026-06-16
 ---
 
 # Phase 16 — UI Design Contract
