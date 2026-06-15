@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
 status: executing
-stopped_at: Completed 15-05-PLAN.md
-last_updated: "2026-06-15T23:20:02.531Z"
-last_activity: 2026-06-15 -- Phase 16 execution started
+stopped_at: Completed 16-02-PLAN.md
+last_updated: "2026-06-16T01:30:00.000Z"
+last_activity: 2026-06-16 -- Completed 16-02 (scatter view: mode toggle + axis picker + count-encoded plot)
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 15
   percent: 75
 ---
 
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 ## Current Position
 
 Phase: 16 (Scatter View & Correlation Deep-Link) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Progress: [x] 13 [x] 14 [x] 15 [ ] 16 — 75% (3/4 phases)
-Last activity: 2026-06-15 -- Phase 16 execution started
+Last activity: 2026-06-16 -- Completed 16-02 (scatter view: mode toggle + axis picker + count-encoded plot)
 
 ## Performance Metrics
 
@@ -100,6 +100,7 @@ Last activity: 2026-06-15 -- Phase 16 execution started
 | Phase 15 P05 | 9min | 2 tasks | 3 files |
 | Phase 15 P06 | 27min | 3 tasks | 4 files |
 | Phase 16 P01 | 7min | 2 tasks | 3 files |
+| Phase 16 P02 | 7min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
