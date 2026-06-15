@@ -90,6 +90,12 @@ struct ExploreLanesView: View {
                 }
             }
         }
+        // Container boundary: the `explore.lanes` id bleeds down and MASKS each lane's
+        // `explore.lane.<series.id>`(`.event`) id (every lane Chart would otherwise resolve to
+        // `explore.lanes` in the a11y tree), making the per-lane ids untargetable by the E2E. `.contain`
+        // shields the descendant lane ids so they survive — the SAME id-bleed fix the scrub proxy below
+        // applies (the Phase-13 discovery).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("explore.lanes")
         // The SINGLE multi-series tooltip — ONE card over the whole stack (not per-lane), shown only
         // while scrubbing. Pinned at the top so it never clips at window edges / the finger.

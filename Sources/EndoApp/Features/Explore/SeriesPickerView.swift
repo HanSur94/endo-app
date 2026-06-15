@@ -57,6 +57,12 @@ struct SeriesPickerView: View {
                     chip(series)
                 }
             }
+            // Container boundary: the `explore.picker` id bleeds down and MASKS each chip's
+            // `explore.chip.<series.id>` id (every chip Button would otherwise resolve to `explore.picker`
+            // in the a11y tree), making the per-chip ids untargetable by the E2E. `.contain` shields the
+            // descendant chip ids so they survive — the SAME id-bleed fix `ExploreLanesView` applies to its
+            // tooltip proxy ids (the Phase-13 discovery).
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("explore.picker")
 
             // The cap-reached helper line (the remove-to-add affordance) — shown ONLY at the cap.
