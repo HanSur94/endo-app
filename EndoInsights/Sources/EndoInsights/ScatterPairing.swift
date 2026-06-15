@@ -87,6 +87,13 @@ public enum ScatterPairing {
 
     /// Aggregation key for identical `(x, y)` day-pairs — Hashable by the exact value pair so identical
     /// logged ordinals collapse to ONE cell (count-encoded). No jitter, no rounding (RESEARCH).
+    ///
+    /// INVARIANT (IN-02): exact-`Double` keying is correct ONLY while axis values are VERBATIM logged
+    /// integers/doubles — `Double(Int)` ordinals or user-logged hours/minutes carried with NO intervening
+    /// arithmetic. Equal logs then produce bit-identical keys, so no pair is ever silently under-counted.
+    /// A future Phase-16 axis that COMPUTES/scales/rounds/unit-converts a value before keying would break
+    /// this: two "equal" results differing in the last ULP would land in separate cells. Any such axis
+    /// MUST quantize to a canonical key (e.g. round to a fixed grid) before constructing a `PairKey`.
     private struct PairKey: Hashable {
         let x: Double
         let y: Double
