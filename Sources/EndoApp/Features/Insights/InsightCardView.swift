@@ -186,14 +186,20 @@ struct InsightCardView: View {
             .accessibilityIdentifier("\(idRoot).chart")
 
         case .cyclePhase, .correlation, .recommendation, .flare:
-            // Words-only evidence — NEVER a coefficient/percentage/p-value.
             VStack(alignment: .leading, spacing: 4) {
-                Text(InsightsCopy.supportingEvidence(loggedDays: insight.sampleSize))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(InsightsCopy.windowLabel(insight.window))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                // Words-only evidence — NEVER a coefficient/percentage/p-value. The `.evidence` id lives on
+                // THIS text-only block (NOT the outer VStack) so it never masks the scatter-link button's
+                // own id: a container `.accessibilityIdentifier` propagates to a lone interactive descendant,
+                // which would expose the button AS `.evidence` (the bug this scoping fixes).
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(InsightsCopy.supportingEvidence(loggedDays: insight.sampleSize))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(InsightsCopy.windowLabel(insight.window))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityIdentifier("\(idRoot).evidence")
 
                 // SCAT-04: the "See the days behind this" scatter deep-link affordance — shown ONLY when the
                 // resolver returns a quantitative `(x, y)` pair (a `.correlation` card whose BOTH factors map
@@ -215,7 +221,6 @@ struct InsightCardView: View {
                     .accessibilityIdentifier("\(idRoot).scatterLink")
                 }
             }
-            .accessibilityIdentifier("\(idRoot).evidence")
         }
     }
 

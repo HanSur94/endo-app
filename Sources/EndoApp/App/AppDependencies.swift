@@ -9,6 +9,7 @@
 // can read it; the model container is injected via SwiftUI's built-in `.modelContainer(_:)`.
 import SwiftUI
 import SwiftData
+import EndoInsights   // ExploreSeriesCatalog (the -uitest-scatter-axes seam resolves series ids)
 
 /// The app's composition root (D-22). Built once at launch by `EndoAppApp`.
 @MainActor
@@ -244,6 +245,26 @@ final class AppDependencies {
         self.notificationScheduler = SystemNotificationScheduler()
         self.checkInRouter = CheckInRouter()
         self.exploreScatterRouter = ExploreScatterRouter()
+
+        // Test-only deterministic SCATTER-AXES seam (Phase 16, SCAT-01..03 E2E). Parsed from
+        // `-uitest-scatter-axes <xSeriesID>,<ySeriesID>` ONLY when `-uitest-reset` is also present (the
+        // established in-memory-store pairing — unreachable in production) AND only in DEBUG builds. It
+        // PRESETS `exploreScatterRouter.pendingScatter` so `ExploreView.consumePendingScatter()` (already
+        // called on appear) switches to Scatter mode + prefills X/Y — the SAME gesture-free prefill path the
+        // deep-link uses, so the scatter render/count/caption/sparse E2E never has to drive the flaky native
+        // `Menu` axis picker. Inert on every normal launch.
+        #if DEBUG
+        if uiTestReset,
+           let axesIndex = ProcessInfo.processInfo.arguments.firstIndex(of: "-uitest-scatter-axes"),
+           axesIndex + 1 < ProcessInfo.processInfo.arguments.count {
+            let ids = ProcessInfo.processInfo.arguments[axesIndex + 1].split(separator: ",").map(String.init)
+            if ids.count == 2,
+               let xSeries = ExploreSeriesCatalog.all.first(where: { $0.id == ids[0] }),
+               let ySeries = ExploreSeriesCatalog.all.first(where: { $0.id == ids[1] }) {
+                self.exploreScatterRouter.pendingScatter = PendingScatter(x: xSeries, y: ySeries)
+            }
+        }
+        #endif
 
         // Build the insights coordinator over a live `SwiftDataRepository` (D-13). A dedicated
         // `ModelContext(modelContainer)` backs the coordinator's main-actor reads/writes; the seams wrap
