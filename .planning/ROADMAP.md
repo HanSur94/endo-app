@@ -43,7 +43,7 @@ All v1.0 honesty invariants carry over: unlogged days stay gaps (absence ≠ 0),
 - [x] **Phase 13: Trend-Chart Scrubbing** - Scrub/tap any dashboard trend chart to read the exact day + value, gap-honest and accessible, with the PDF path untouched
 - [x] **Phase 14: Series Catalog & Pure Extraction Layer** - Pure, unit-tested Foundation helpers (series catalog, extraction, scatter pairing) that lock the honesty invariants before any Explore pixel exists (completed 2026-06-15)
 - [x] **Phase 15: Explore Tab & Overlay Lanes** - A consent-gated Explore tab where users overlay multiple logged series as honest per-scale lanes + event lanes on one shared time axis (completed 2026-06-15)
-- [ ] **Phase 16: Scatter View & Correlation Deep-Link** - A descriptive-only factor-vs-factor scatter, reachable directly from a "Possible association" card
+- [x] **Phase 16: Scatter View & Correlation Deep-Link** - A descriptive-only factor-vs-factor scatter, reachable directly from a "Possible association" card
 
 ## Phase Details
 
@@ -152,7 +152,7 @@ Plans:
 | 13. Trend-Chart Scrubbing | 3/3 | Complete | 2026-06-15 |
 | 14. Series Catalog & Pure Extraction Layer | 4/4 | Complete   | 2026-06-15 |
 | 15. Explore Tab & Overlay Lanes | 6/6 | Complete   | 2026-06-15 |
-| 16. Scatter View & Correlation Deep-Link | 4/4 | Executed   |  |
+| 16. Scatter View & Correlation Deep-Link | 4/4 | Complete   |  |
 
 ---
 *Roadmap updated: 2026-06-16 — Phase 16 planned (4 plans, 4 waves)*

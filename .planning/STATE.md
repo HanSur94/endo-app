@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Interactive Charts & Explore
-status: executing
-stopped_at: Completed 16-03-PLAN.md
-last_updated: "2026-06-16T01:46:00.000Z"
-last_activity: 2026-06-16 -- Completed 16-03 (cross-tab scatter deep-link: ExploreScatterRouter + .correlation card affordance + ExploreView router read)
+status: milestone-feature-complete
+stopped_at: Phase 16 complete (verified 4/4 + reviewed, all 6 findings fixed) — v1.1 ALL phases done; milestone lifecycle next
+last_updated: "2026-06-17T01:00:00.000Z"
+last_activity: 2026-06-17 -- Phase 16 closed; ALL 15/15 v1.1 requirements complete; ready for milestone audit → complete → cleanup
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 17
-  completed_plans: 16
-  percent: 75
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** Phase 16 — Scatter View & Correlation Deep-Link
+**Current focus:** v1.1 milestone lifecycle (audit → complete → cleanup)
 
 ## Current Position
 
-Phase: 16 (Scatter View & Correlation Deep-Link) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
-Progress: [x] 13 [x] 14 [x] 15 [ ] 16 — 75% (3/4 phases)
-Last activity: 2026-06-16 -- Completed 16-03 (cross-tab scatter deep-link wiring: ExploreScatterRouter + .correlation card affordance + ExploreView router read)
+Phase: ALL 4 v1.1 phases (13–16) complete — milestone feature-complete
+Plan: —
+Status: v1.1 feature-complete. All 15/15 requirements delivered (CHART-01..04, EXPL-01..07, SCAT-01..04), each phase verified + code-reviewed + fixed. Device-gated tone/feel/legibility items + the host-flaky testGeneratePDF re-run carried to the pre-release checklist. Next: milestone audit → complete (archive + tag v1.1) → cleanup.
+Progress: [x] 13 [x] 14 [x] 15 [x] 16 — 100% (4/4 phases)
+Last activity: 2026-06-17 -- Phase 16 closed; ready for the milestone lifecycle
 
 ## Performance Metrics
 

@@ -28,10 +28,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Scatter
 
-- [ ] **SCAT-01**: User can switch Explore to a scatter view: one factor against another, each point = one day where BOTH factors were logged
-- [ ] **SCAT-02**: Identical day-pairs stack honestly via count-encoded point size/opacity (no jitter fabricating non-integer values)
-- [ ] **SCAT-03**: The scatter stays descriptive-only: no fitted line, no correlation number, a neutral caption, and an honest sparse state when too few both-logged days exist
-- [ ] **SCAT-04**: User can open a prefilled scatter from a "Possible association" card ("see the days behind this")
+- [x] **SCAT-01**: User can switch Explore to a scatter view: one factor against another, each point = one day where BOTH factors were logged
+- [x] **SCAT-02**: Identical day-pairs stack honestly via count-encoded point size/opacity (no jitter fabricating non-integer values)
+- [x] **SCAT-03**: The scatter stays descriptive-only: no fitted line, no correlation number, a neutral caption, and an honest sparse state when too few both-logged days exist
+- [x] **SCAT-04**: User can open a prefilled scatter from a "Possible association" card ("see the days behind this")
 
 ### Cross-cutting acceptance criteria (every phase, not separate requirements)
 
@@ -86,10 +86,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPL-05 | Phase 15 | Complete |
 | EXPL-06 | Phase 15 | Complete |
 | EXPL-07 | Phase 15 | Complete |
-| SCAT-01 | Phase 16 | Pending |
-| SCAT-02 | Phase 16 | Pending |
-| SCAT-03 | Phase 16 | Pending |
-| SCAT-04 | Phase 16 | Pending |
+| SCAT-01 | Phase 16 | Complete |
+| SCAT-02 | Phase 16 | Complete |
+| SCAT-03 | Phase 16 | Complete |
+| SCAT-04 | Phase 16 | Complete |
 
 **Coverage:**
 
@@ -99,8 +99,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 Note: Phase 14 (Series Catalog & Pure Extraction Layer) carries no direct requirement mapping — it is the foundational pure-helper keystone (per research) that unblocks EXPL-02–05, EXPL-07, SCAT-01, and SCAT-02 in Phases 15–16. Phase 14 being complete does NOT mark any EXPL/SCAT requirement complete — those flip to Complete only when the Phase 15/16 UI that delivers them ships.
 
-**Status (2026-06-16):** Phase 13 ✅ (CHART-01..04). Phase 14 ✅ (pure layer — no direct IDs). Phase 15 ✅ (EXPL-01..07 delivered + E2E-proven; device-gated tone/feel — lane-alignment feel, VoiceOver multi-lane, colorblind distinction — carried to the pre-release checklist). Phase 16 (SCAT-01..04) remains Pending.
+**Status (2026-06-17):** ALL 15/15 v1.1 requirements complete. Phase 13 ✅ (CHART-01..04), 14 ✅ (pure layer), 15 ✅ (EXPL-01..07), 16 ✅ (SCAT-01..04 — descriptive-only scatter + correlation-card deep-link, E2E-proven). v1.1 feature-complete. Device-gated tone/feel/legibility items (per-phase Manual-Only tables) carried to the pre-release checklist, plus the host-flaky `testGeneratePDF` re-run (PDF code provably untouched).
 
 ---
 *Requirements defined: 2026-06-10*
-*Last updated: 2026-06-16 — EXPL-01..07 complete (Phase 15 shipped); 3 device-gated Explore items carried to the pre-release checklist*
+*Last updated: 2026-06-17 — ALL v1.1 requirements complete (Phase 16 shipped); milestone feature-complete*
