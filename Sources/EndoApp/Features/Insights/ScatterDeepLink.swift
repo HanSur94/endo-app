@@ -101,8 +101,13 @@ struct ScatterDeepLink {
         }
 
         // Symptom target: the body ends in `.symptom.<rawValue>` for a KNOWN SymptomType rawValue.
-        // Enumerate from `SymptomType.allCases` so a multi-dot factor.key can never mis-segment.
-        for type in SymptomType.allCases {
+        // Enumerate from `EndoInsights.SymptomType.allCases` so a multi-dot factor.key can never mis-segment.
+        // QUALIFIED to `EndoInsights.SymptomType` (WR-03): the app target ALSO defines its own
+        // `SymptomType` (same rawValues), so the unqualified same-module name would bind to `EndoApp`'s enum
+        // — but the catalog ids derive from `EndoInsights.SymptomType` rawValues. Iterating the qualified
+        // package enum makes the parse and the catalog id derive from ONE source of truth (and makes
+        // `ScatterDeepLinkTests`' qualified iteration cover the real production path).
+        for type in EndoInsights.SymptomType.allCases {
             let symptomSuffix = ".symptom.\(type.rawValue)"
             if body.hasSuffix(symptomSuffix) {
                 let factorKey = String(body.dropLast(symptomSuffix.count))
