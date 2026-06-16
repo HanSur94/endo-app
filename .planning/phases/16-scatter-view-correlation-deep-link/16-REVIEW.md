@@ -22,7 +22,15 @@ findings:
   warning: 3
   info: 3
   total: 6
-status: issues_found
+status: fixed
+fix_commits:
+  WR-01: c6880f2  # route scatter markLabel through audited ExploreCopy.scatterMarkLabel
+  WR-02: 6f5b884  # cache scatter cells in @State (also resolves IN-01)
+  WR-03: cc08959  # qualify resolver to EndoInsights.SymptomType.allCases
+  IN-01: 6f5b884  # drop force-unwraps via if let x,y (folded into WR-02 rewrite)
+  IN-02: cfddbdd  # skip scatter chart on nil domain instead of guessing 0...10
+  IN-03: d5c6f39  # align scatter-axes seam bounds-check with sibling idiom
+fixed_at: 2026-06-17
 ---
 
 # Phase 16: Code Review Report
