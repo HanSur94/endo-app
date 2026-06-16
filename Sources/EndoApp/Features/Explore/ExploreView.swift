@@ -65,6 +65,12 @@ struct ExploreView: View {
     /// in `body`, never per scrub frame.
     @State private var prepared = PreparedLanes()
 
+    /// The prepared scatter cells, recomputed ONCE per scatterX/scatterY/snapshots change (Pitfall 4,
+    /// mirroring `prepared`) — never in `body`. Holds the both-logged `[ScatterPoint]` plus the precomputed
+    /// count-sum so the sparse check and the plot both read the cached value rather than re-running
+    /// `ScatterPairing.pairs` per render. EPHEMERAL `@State`, never persisted (T-16-06).
+    @State private var scatterPrepared = PreparedScatter()
+
     /// Calendar for day-boundary math + the window span. `.current` for display (the user's local dates).
     private var calendar: Calendar { .current }
 
@@ -111,6 +117,7 @@ struct ExploreView: View {
             // Read the data source ONCE (mirror the dashboard's per-view repository seam) then prepare.
             snapshots = loadSnapshots()
             recompute()
+            recomputeScatter()
             // SCAT-04: a deep-link that lands the user on the Explore tab BEFORE this view observes the
             // router change still prefills — consume any pending payload already present on appear.
             consumePendingScatter()
@@ -119,6 +126,14 @@ struct ExploreView: View {
         // NOT per scrub frame. The scrub binding is deliberately NOT a trigger here.
         .onChange(of: selection) { _, _ in
             recompute()
+        }
+        // Recompute the cached scatter cells ONCE per axis change (Pitfall 4) — NOT in `body`. The
+        // scatter has no scrub, so only the two axes drive it (snapshots load once on appear).
+        .onChange(of: scatterX) { _, _ in
+            recomputeScatter()
+        }
+        .onChange(of: scatterY) { _, _ in
+            recomputeScatter()
         }
         // SCAT-04: when the Insights `.correlation` affordance sets a non-nil `PendingScatter`, prefill the
         // scatter (mode + X/Y) and CLEAR the payload so an identical later tap re-triggers.
@@ -182,28 +197,27 @@ struct ExploreView: View {
     private var scatterContent: some View {
         ScatterAxisPicker(xSeries: $scatterX, ySeries: $scatterY, suppressed: suppressed)
 
-        // The both-logged cells — recomputed from snapshots + the chosen X/Y only (empty until both chosen).
-        let scatterPoints: [ScatterPairing.ScatterPoint] = {
-            guard let x = scatterX, let y = scatterY else { return [] }
-            return ScatterPairing.pairs(snapshots, x: x, y: y, calendar: calendar)
-        }()
-
-        if scatterX == nil || scatterY == nil {
+        // The both-logged cells are read from the CACHED `scatterPrepared` (recomputed ONCE per
+        // scatterX/scatterY/snapshots change via `recomputeScatter()`) — NOT recomputed in `body`
+        // (Pitfall 4). The sparse check and the plot both read the same cached value + count-sum.
+        if let x = scatterX, let y = scatterY {
+            if scatterPrepared.totalDays < Self.minScatterDays {
+                // SPARSE — both chosen, but too few both-logged days to plot meaningfully (count-sum check).
+                honestState(
+                    heading: ExploreCopy.scatterSparseHeading,
+                    body: ExploreCopy.scatterSparseBody,
+                    identifier: "explore.scatter.sparse"
+                )
+            } else {
+                ScatterPlotView(points: scatterPrepared.points, xSeries: x, ySeries: y)
+            }
+        } else {
             // EMPTY — neither (or only one) axis chosen yet → "pick two factors" (never empty axes).
             honestState(
                 heading: ExploreCopy.scatterEmptyHeading,
                 body: ExploreCopy.scatterEmptyBody,
                 identifier: "explore.scatter.empty"
             )
-        } else if scatterPoints.reduce(0, { $0 + $1.count }) < Self.minScatterDays {
-            // SPARSE — both chosen, but too few both-logged days to plot meaningfully (count-sum check).
-            honestState(
-                heading: ExploreCopy.scatterSparseHeading,
-                body: ExploreCopy.scatterSparseBody,
-                identifier: "explore.scatter.sparse"
-            )
-        } else {
-            ScatterPlotView(points: scatterPoints, xSeries: scatterX!, ySeries: scatterY!)
         }
     }
 
@@ -287,6 +301,20 @@ struct ExploreView: View {
             start = earliest ?? safeFallbackStart
         }
         return min(start, end) ... end
+    }
+
+    /// Recompute the cached scatter cells ONCE per axis/snapshots change (Pitfall 4, mirroring
+    /// `recompute()`) — called from `onAppear` and on `scatterX`/`scatterY` change, NEVER in `body`. Empty
+    /// until both axes are chosen. The both-logged `[ScatterPoint]` (one occupied `(x, y)` cell each) and
+    /// its precomputed count-sum are cached so the sparse check and the plot both read the value without
+    /// re-running `ScatterPairing.pairs`.
+    private func recomputeScatter() {
+        guard let x = scatterX, let y = scatterY else {
+            scatterPrepared = PreparedScatter()
+            return
+        }
+        let points = ScatterPairing.pairs(snapshots, x: x, y: y, calendar: calendar)
+        scatterPrepared = PreparedScatter(points: points, totalDays: points.reduce(0) { $0 + $1.count })
     }
 
     /// The minimum logged points a SINGLE lane needs to be more than an isolated dot. A lane with one
@@ -382,4 +410,16 @@ private struct PreparedLanes {
         let day = Calendar.current.startOfDay(for: .now)
         return day ... day
     }()
+}
+
+// MARK: - PreparedScatter (the cached scatter cells — recomputed once per axis/snapshots change)
+
+/// The prepared scatter cells the screen caches and feeds into `ScatterPlotView`. Computed ONCE per
+/// scatterX/scatterY/snapshots change (Pitfall 4, mirroring `PreparedLanes`), never in `body`. Holds the
+/// both-logged `[ScatterPoint]` plus the precomputed count-sum so the sparse check and the plot both read
+/// the cached value rather than re-running `ScatterPairing.pairs` per render.
+private struct PreparedScatter {
+    var points: [ScatterPairing.ScatterPoint] = []
+    /// The both-logged-day total = the sum of every cell's count (the count-sum sparse check reads this).
+    var totalDays: Int = 0
 }
