@@ -129,6 +129,18 @@ enum ExploreCopy {
         "\(days) days — \(xName) \(xReadout), \(yName) \(yReadout)"
     }
 
+    /// The per-mark VoiceOver `.accessibilityLabel` for one occupied `(x, y)` cell (SCAT-02 a11y). Carries
+    /// ONLY the two real-unit readouts; the cell's both-logged-day count rides separately in the mark's
+    /// `.accessibilityValue` (`"{N} days"`), so this label form omits the count by design. `{xName}`/`{yName}`
+    /// are catalog `displayName`s (already audit-safe) and the readouts come from `SeriesNormalization.readout`
+    /// at the call site (real unit, never a normalized number / statistic). The `", "` / `" "` connectives
+    /// host no forbidden token — descriptive-only, no coefficient, no percent-impact. Replaces the previously
+    /// inline `ScatterPlotView.markLabel` literals so the actually-rendered string passes the ClaimsPolicy
+    /// audit instead of bypassing it.
+    static func scatterMarkLabel(xName: String, xReadout: String, yName: String, yReadout: String) -> String {
+        "\(xName) \(xReadout), \(yName) \(yReadout)"
+    }
+
     // MARK: Range-preset labels (EXPL-06 — maps TrendWindow, reusing the dashboard vocabulary)
 
     /// Map a `TrendWindow` to its plain-language label. Mirrors `InsightsCopy.windowLabel` EXACTLY so the
@@ -171,6 +183,8 @@ enum ExploreCopy {
         strings.append(scatterSummary(x: "Stress", y: "Pain", days: 3))
         strings.append(scatterPointReadout(days: 3, xName: "Stress", xReadout: "5 of 10",
                                            yName: "Pain", yReadout: "7 of 10"))
+        strings.append(scatterMarkLabel(xName: "Stress", xReadout: "5 of 10",
+                                        yName: "Pain", yReadout: "7 of 10"))
         return strings
     }
 }

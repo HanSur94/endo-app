@@ -121,9 +121,14 @@ struct ScatterPlotView: View {
 
     /// One cell's per-mark a11y label: the two REAL-unit readouts (via `SeriesNormalization.readout` — the
     /// real value + unit, NEVER the normalized number). The count is carried in `.accessibilityValue`.
+    /// Routed through the AUDITED `ExploreCopy.scatterMarkLabel(...)` so the actually-rendered VoiceOver
+    /// string passes the ClaimsPolicy substring scans — no inline string literals in the scatter views.
     private func markLabel(_ point: ScatterPairing.ScatterPoint) -> String {
         let xReadout = SeriesNormalization.readout(point.x, kind: xSeries.scaleKind, unit: xSeries.unit)
         let yReadout = SeriesNormalization.readout(point.y, kind: ySeries.scaleKind, unit: ySeries.unit)
-        return "\(xSeries.displayName) \(xReadout), \(ySeries.displayName) \(yReadout)"
+        return ExploreCopy.scatterMarkLabel(
+            xName: xSeries.displayName, xReadout: xReadout,
+            yName: ySeries.displayName, yReadout: yReadout
+        )
     }
 }
