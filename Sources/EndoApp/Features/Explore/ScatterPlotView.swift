@@ -80,33 +80,42 @@ struct ScatterPlotView: View {
 
     // MARK: - The square count-encoded scatter (the InsightTrendChart PointMark recipe, adapted)
 
+    @ViewBuilder
     private var chart: some View {
-        Chart {
-            // ONE PointMark per occupied cell — size encodes the cell's both-logged-day count (NEVER
-            // jitter, NEVER hue). Per-mark a11y label = the two real-unit readouts; value = the day count.
-            ForEach(points, id: \.self) { point in
-                PointMark(
-                    x: .value(xSeries.displayName, point.x),
-                    y: .value(ySeries.displayName, point.y)
-                )
-                .symbolSize(by: .value("Days", point.count))
-                .foregroundStyle(Color.accentColor)   // single accent hue — count is size, never color
-                .accessibilityLabel(Text(markLabel(point)))
-                .accessibilityValue(Text("\(point.count) days"))
+        // FIXED real-unit domains per scale kind — NEVER data-driven, NEVER a guessed fallback (IN-02). Both
+        // axes are quantitative-only (the picker filters), and `SeriesNormalization.domain(for:)` returns
+        // non-nil for every quantitative scale kind, so this guard never fails in practice. But rather than
+        // plot the point cloud on an INVENTED `0...10` scale if a future routing bug ever delivered a
+        // nil-domain (e.g. a mood `1…5` or bleeding `1…4`) axis here, we SKIP the chart — a wrong axis domain
+        // would silently mis-place every dot, so an honest absence surfaces the regression instead of hiding
+        // it behind a fabricated scale.
+        if let xDomain = SeriesNormalization.domain(for: xSeries.scaleKind),
+           let yDomain = SeriesNormalization.domain(for: ySeries.scaleKind) {
+            Chart {
+                // ONE PointMark per occupied cell — size encodes the cell's both-logged-day count (NEVER
+                // jitter, NEVER hue). Per-mark a11y label = the two real-unit readouts; value = the day count.
+                ForEach(points, id: \.self) { point in
+                    PointMark(
+                        x: .value(xSeries.displayName, point.x),
+                        y: .value(ySeries.displayName, point.y)
+                    )
+                    .symbolSize(by: .value("Days", point.count))
+                    .foregroundStyle(Color.accentColor)   // single accent hue — count is size, never color
+                    .accessibilityLabel(Text(markLabel(point)))
+                    .accessibilityValue(Text("\(point.count) days"))
+                }
             }
+            .chartXScale(domain: xDomain)
+            .chartYScale(domain: yDomain)
+            .chartXAxis { AxisMarks() }
+            .chartYAxis { AxisMarks() }
+            .chartPlotStyle { $0.padding(8) }            // chart-plot-inset (UI-SPEC §Spacing)
+            .frame(height: 320)                          // scatter-plot-height — square (UI-SPEC §Spacing)
+            // Reduce Motion: render the final state directly (no animated point transition) — verbatim from
+            // the InsightTrendChart recipe.
+            .animation(reduceMotion ? nil : .default, value: points)
+            .accessibilityIdentifier("explore.scatter.plot")
         }
-        // FIXED real-unit domains per scale kind — NEVER data-driven (the `?? 0...10` is an inert fallback;
-        // a quantitative series always returns a non-nil domain, so it never fires in practice).
-        .chartXScale(domain: SeriesNormalization.domain(for: xSeries.scaleKind) ?? 0...10)
-        .chartYScale(domain: SeriesNormalization.domain(for: ySeries.scaleKind) ?? 0...10)
-        .chartXAxis { AxisMarks() }
-        .chartYAxis { AxisMarks() }
-        .chartPlotStyle { $0.padding(8) }            // chart-plot-inset (UI-SPEC §Spacing)
-        .frame(height: 320)                          // scatter-plot-height — square (UI-SPEC §Spacing)
-        // Reduce Motion: render the final state directly (no animated point transition) — verbatim from
-        // the InsightTrendChart recipe.
-        .animation(reduceMotion ? nil : .default, value: points)
-        .accessibilityIdentifier("explore.scatter.plot")
     }
 
     // MARK: - Worded copy helpers (real units via SeriesNormalization.readout — never a normalized number)
