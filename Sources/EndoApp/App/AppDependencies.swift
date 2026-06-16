@@ -256,7 +256,7 @@ final class AppDependencies {
         #if DEBUG
         if uiTestReset,
            let axesIndex = ProcessInfo.processInfo.arguments.firstIndex(of: "-uitest-scatter-axes"),
-           axesIndex + 1 < ProcessInfo.processInfo.arguments.count {
+           ProcessInfo.processInfo.arguments.indices.contains(axesIndex + 1) {
             let ids = ProcessInfo.processInfo.arguments[axesIndex + 1].split(separator: ",").map(String.init)
             if ids.count == 2,
                let xSeries = ExploreSeriesCatalog.all.first(where: { $0.id == ids[0] }),
