@@ -66,7 +66,8 @@ struct HomeView: View {
             }
             .background(Color.canvas)
             .scrollContentBackground(.hidden)
-            .navigationTitle("Endo-App")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {

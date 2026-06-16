@@ -137,7 +137,8 @@ struct InsightsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.canvas)
-            .navigationTitle("Insights")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .accessibilityIdentifier("insights.screen")
             .toolbar {
                 // Non-blocking recompute affordance (SC2): a subtle "Updating…" caption, NEVER a
