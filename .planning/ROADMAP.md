@@ -152,7 +152,7 @@ Plans:
 | 13. Trend-Chart Scrubbing | 3/3 | Complete | 2026-06-15 |
 | 14. Series Catalog & Pure Extraction Layer | 4/4 | Complete   | 2026-06-15 |
 | 15. Explore Tab & Overlay Lanes | 6/6 | Complete   | 2026-06-15 |
-| 16. Scatter View & Correlation Deep-Link | 3/4 | In Progress|  |
+| 16. Scatter View & Correlation Deep-Link | 4/4 | Executed   |  |
 
 ---
 *Roadmap updated: 2026-06-16 — Phase 16 planned (4 plans, 4 waves)*
