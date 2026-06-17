@@ -29,7 +29,7 @@ Phase: ALL 4 v1.1 phases (13–16) complete — milestone feature-complete
 Plan: —
 Status: v1.1 feature-complete. All 15/15 requirements delivered (CHART-01..04, EXPL-01..07, SCAT-01..04), each phase verified + code-reviewed + fixed. Device-gated tone/feel/legibility items + the host-flaky testGeneratePDF re-run carried to the pre-release checklist. Next: milestone audit → complete (archive + tag v1.1) → cleanup.
 Progress: [x] 13 [x] 14 [x] 15 [x] 16 — 100% (4/4 phases)
-Last activity: 2026-06-17 -- Phase 16 closed; ready for the milestone lifecycle
+Last activity: 2026-06-17 -- Integrated the "Bloom" design-system reskin onto master: added DesignSystem/ (tokens, typography, components, tab-bar chrome) and reskinned Home, DayLog, Insights, Settings, Onboarding, Consent, and the Explore/scatter screens (quick-260617-np5) to Bloom. Restyle-only — all v1.1 behavior, a11y ids, honesty semantics, and tests preserved; clean build green from the main checkout. (Phase 16 milestone work unchanged.)
 
 ## Performance Metrics
 
