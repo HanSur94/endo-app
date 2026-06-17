@@ -79,6 +79,10 @@ struct ExploreLaneChart: View {
 
     var body: some View {
         chart
+            // Bloom mark recolour: map the single series-name domain to its Bloom hue. Keeps the
+            // `.foregroundStyle(by: .value("Series", series.displayName))` legend/encoding semantic
+            // intact (the `by:` form is NOT removed) — only the assigned colour changes (key fact 3/4).
+            .chartForegroundStyleScale(domain: [series.displayName], range: [bloomColor(for: series)])
             .chartXScale(domain: xDomain)            // SHARED absolute-date domain (identical per lane)
             .chartYScale(domain: yDomain)            // per-lane FIXED honest real-unit domain
             .chartYAxis(.hidden)                     // 15-01 inset mechanism: no numeric Y gutter → aligned
@@ -113,6 +117,21 @@ struct ExploreLaneChart: View {
             .accessibilityLabel(Text(summaryText))
             .accessibilityChartDescriptor(self)
             .accessibilityIdentifier("explore.lane.\(series.id)")
+    }
+
+    /// The feature-local Bloom mark hue for a series (key fact 4) — switches on the explicit `scaleKind`
+    /// so it can NEVER drift from the catalog's taxonomy. Severity/pain/stress → rose, sleep → indigo,
+    /// bleeding rank → plum, mood → gold, activity → teal, presence/event ticks → plum. Feature-private
+    /// (no new BloomColors token introduced).
+    private func bloomColor(for series: ExploreSeries) -> Color {
+        switch series.scaleKind {
+        case .ordinal0to10:     return Color.rose    // symptom/pain severity + stress
+        case .continuousHours:  return Color.indigo  // sleep.hours
+        case .ordinalBleeding:  return Color.plum    // bleeding.intensity
+        case .ordinal1to5:      return Color.gold    // mood
+        case .continuousMinutes: return Color.teal   // activity.minutes
+        case .presenceEvent:    return Color.plum    // event ticks (food, clots, prn, medication, bleeding.event)
+        }
     }
 
     /// The one-line text summary so the lane is NEVER the sole carrier of meaning (a11y full-text
@@ -170,7 +189,7 @@ struct ExploreLaneChart: View {
     @ChartContentBuilder
     private func selectionMarks(_ sel: ChartScrubSelection.Resolution) -> some ChartContent {
         RuleMark(x: .value("Selected", sel.day))
-            .foregroundStyle(Color.secondary.opacity(0.5))
+            .foregroundStyle(Color.inkMuted.opacity(0.5))   // chrome scrub line — distinct from data hue
             .zIndex(-1)
         // Highlight point — logged day ONLY (drawing one on a gap would fabricate data); on a logged
         // value-0 day it draws AT the zero line (honest absence ≠ 0).

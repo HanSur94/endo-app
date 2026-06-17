@@ -66,7 +66,7 @@ struct ExploreLanesView: View {
                 VStack(alignment: .leading, spacing: 4) {   // xs gap title↔lane
                     Text(laneTitle(lane.series))
                         .font(.subheadline).fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkSecondary)
                     ExploreLaneChart(
                         series: lane.series,
                         points: lane.points,
@@ -80,7 +80,7 @@ struct ExploreLanesView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(lane.series.displayName)
                         .font(.subheadline).fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkSecondary)
                     EventLaneChart(
                         series: lane.series,
                         days: lane.days,
@@ -140,22 +140,23 @@ struct ExploreLanesView: View {
             Text(day, format: .dateTime.month().day())
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
             // One line per quantitative series (resolved exact-day) …
             ForEach(quantitativeLanes, id: \.series.id) { lane in
                 Text(quantitativeLine(lane.series, points: lane.points, day: day))
                     .font(.caption)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.ink)
             }
             // … then one line per event series (resolved via isPresent, Pitfall 2).
             ForEach(eventLanes, id: \.series.id) { lane in
                 Text(eventLine(lane.series, day: day))
                     .font(.caption)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.ink)
             }
         }
         .padding(8)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 8))   // Bloom card surface
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.strokeSubtle, lineWidth: 1))   // Bloom hairline
         // Hidden from the a11y tree: Swift Charts never exposes annotation content anyway, and the
         // readout/ids live on the proxy — hiding this PREVENTS a duplicate element.
         .accessibilityHidden(true)

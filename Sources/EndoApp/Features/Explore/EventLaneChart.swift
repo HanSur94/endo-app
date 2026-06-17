@@ -50,6 +50,20 @@ struct EventLaneChart: View {
         selectedDate.map { calendar.startOfDay(for: $0) }
     }
 
+    /// The feature-local Bloom mark hue for an event series (key fact 4) — every presence/event series
+    /// renders in the Bloom event hue (plum). Switches on the explicit `scaleKind` so it can never drift
+    /// from the catalog taxonomy. Feature-private (no new BloomColors token introduced).
+    private func bloomColor(for series: ExploreSeries) -> Color {
+        switch series.scaleKind {
+        case .ordinal0to10:      return Color.rose
+        case .continuousHours:   return Color.indigo
+        case .ordinalBleeding:   return Color.plum
+        case .ordinal1to5:       return Color.gold
+        case .continuousMinutes: return Color.teal
+        case .presenceEvent:     return Color.plum   // the event-tick hue (this lane's only kind)
+        }
+    }
+
     /// The lane-level a11y text summary (WR-03 — the non-gesture VoiceOver path, parity with the
     /// quantitative lane's Audio Graph). Names the series + how many days it was logged WITHIN the shared
     /// window, so a VoiceOver user reaches the occurrence count without scrubbing. Presence has no numeric
@@ -77,10 +91,13 @@ struct EventLaneChart: View {
             // The shared gray scrub rule — chrome, NEVER the data hue; same date the sibling lanes use.
             if let day = scrubDay {
                 RuleMark(x: .value("Selected", day))
-                    .foregroundStyle(Color.secondary.opacity(0.5))
+                    .foregroundStyle(Color.inkMuted.opacity(0.5))   // chrome scrub line — distinct from data hue
                     .zIndex(-1)
             }
         }
+        // Bloom mark recolour: map the single series-name domain to its Bloom event hue (plum). Keeps the
+        // `.foregroundStyle(by: .value("Series", series.displayName))` encoding semantic intact (key fact 3/4).
+        .chartForegroundStyleScale(domain: [series.displayName], range: [bloomColor(for: series)])
         .chartXScale(domain: xDomain)            // SHARED absolute-date domain (identical per lane)
         .chartYScale(domain: 0...1)              // no numeric domain — a constant-Y tick row
         .chartYAxis(.hidden)                     // event lanes inherit the identical-inset alignment
