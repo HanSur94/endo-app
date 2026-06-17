@@ -84,7 +84,12 @@ struct ExploreView: View {
         NavigationStack {
             ScrollView {   // NOT a List — the lanes are a fixed free-scrub surface (Pitfall 7 / UI-SPEC §A)
                 VStack(alignment: .leading, spacing: 24) {   // lg inter-block gaps
-                    // Pinned not-medical-advice disclaimer (reused verbatim — never duplicated).
+                    // In-content Bloom serif title (mirrors InsightsView's `.bloomTitle()` header) — the
+                    // system nav title is cleared below so this is the screen's heading. The word "Explore"
+                    // already existed as the nav title, so no NEW user-facing copy string is introduced.
+                    Text("Explore").bloomTitle()
+
+                    // Pinned not-medical-advice disclaimer (reused verbatim — never duplicated; already Bloom).
                     DisclaimerBanner()
                         .accessibilityIdentifier("explore.disclaimer")
 
@@ -100,6 +105,7 @@ struct ExploreView: View {
                             .accessibilityIdentifier("explore.mode.scatter")
                     }
                     .pickerStyle(.segmented)
+                    .tint(Color.plum)   // Bloom: active segment reads plum
                     .accessibilityIdentifier("explore.mode")
 
                     if mode == .lanes {
@@ -110,7 +116,10 @@ struct ExploreView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Explore")
+            .scrollContentBackground(.hidden)   // forward-compat parity with the sibling Bloom screens
+            .background(Color.canvas)            // warm Bloom canvas behind the content column
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .accessibilityIdentifier("explore.screen")
         }
         .onAppear {
@@ -367,7 +376,7 @@ struct ExploreView: View {
         VStack(spacing: 12) {
             Image(systemName: "square.stack.3d.up")
                 .font(.largeTitle)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
                 .accessibilityHidden(true)
             Text(heading)
                 .font(.headline)
@@ -375,7 +384,7 @@ struct ExploreView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(body)
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }

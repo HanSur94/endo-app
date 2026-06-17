@@ -78,21 +78,25 @@ struct ScatterAxisPicker: View {
             HStack(spacing: 8) {   // sm axis-letter ↔ value gap
                 Text(axis)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSecondary)
                 Text(chosen?.displayName ?? ExploreCopy.scatterAxisPlaceholder)
                     .font(.subheadline)
-                    .foregroundStyle(chosen == nil ? Color.secondary : Color.primary)
+                    .foregroundStyle(chosen == nil ? Color.inkMuted : Color.ink)
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSecondary)
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)   // ≥44pt touch floor (HIG)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(.secondarySystemBackground))
+                    .fill(Color.surface)   // Bloom field surface
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.strokeSubtle, lineWidth: 1)   // Bloom hairline (DayLog/Settings field look)
             )
         }
         .accessibilityIdentifier(idStem)

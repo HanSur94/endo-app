@@ -69,7 +69,7 @@ struct SeriesPickerView: View {
             if capReached {
                 Text(ExploreCopy.capReached)
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("explore.picker.capHint")
             }
@@ -83,6 +83,7 @@ struct SeriesPickerView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .tint(Color.plum)   // Bloom: active range segment reads plum
             .accessibilityIdentifier("explore.range")
         }
     }
@@ -122,13 +123,13 @@ struct SeriesPickerView: View {
             .frame(minHeight: 44)   // ≥44pt touch floor (HIG)
             .background(
                 Capsule().fill(isSelected
-                    ? Color.accentColor.opacity(0.18)         // selected FILL (redundant accent cue)
-                    : Color(.secondarySystemBackground))      // unselected secondary surface
+                    ? Color.petal                              // selected FILL (Bloom active-pill tint)
+                    : Color.surface)                           // unselected outlined add-chip surface
             )
             .overlay(
-                Capsule().strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
+                Capsule().strokeBorder(isSelected ? Color.plum : Color.strokeSubtle, lineWidth: 1)
             )
-            .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+            .foregroundStyle(isSelected ? Color.plum : Color.ink)
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
