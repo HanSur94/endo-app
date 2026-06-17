@@ -4,18 +4,13 @@
 
 ## Current State
 
-**v1.0 — feature-complete (shipped 2026-06-10).** All 12 phases built, goal-verified, and code-reviewed; cross-phase integration intact (7/7 seams); the full insights engine (trends · cycle-phase · correlations · honesty layer · recommendations · flare) ships behind a single honesty gate, with HealthKit import, a doctor-ready PDF report, and private-CloudKit sync wired. 28/31 requirements are automatable-complete. Remaining before App Store submission = a documented **release/device-gated checklist** (CloudKit Dev→Prod deploy + a real Developer team; 6 on-device/multi-device human verifications incl. DATA-02/03/04 sync survival) — see [ROADMAP.md](ROADMAP.md) and [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md). Next milestone: run `/gsd-new-milestone`.
+**v1.1 — feature-complete (shipped 2026-06-17).** Builds on the feature-complete v1.0. The insight charts are now interactive (scrub-to-read on every dashboard trend chart, gap-honest, with a non-gesture VoiceOver path) and a new consent-gated **Explore** tab lets users combine any logged series into one honest plot: aligned per-scale **overlay lanes** + event-marker lanes, and a descriptive-only factor-vs-factor **scatter** reachable from a "Possible association" card. All 15/15 v1.1 requirements satisfied (CHART-01..04, EXPL-01..07, SCAT-01..04); audit PASSED (7/7 cross-phase integration, 3/3 E2E flows); 25 code-review findings across 4 phases fixed (0 criticals). Built on plain Swift Charts with **zero new dependencies, zero schema/engine changes** — the v1.0 honesty stack (absence ≠ 0, no dual-y/no normalization, descriptive-only, audited ClaimsPolicy copy) carried over intact, and the v1.0 PDF report path stayed byte-identical. Remaining before App Store submission = the documented **device/host-gated checklists** for both v1.0 (CloudKit Dev→Prod, real Developer team, multi-device sync + on-device verifications) and v1.1 (device feel/legibility/VoiceOver, one host-flaky PDF test re-run) — see [ROADMAP.md](ROADMAP.md), [milestones/v1.1-MILESTONE-AUDIT.md](v1.1-MILESTONE-AUDIT.md). Next milestone: run `/gsd-new-milestone`.
 
-## Current Milestone: v1.1 Interactive Charts & Explore
+<details>
+<summary>v1.0 — feature-complete (shipped 2026-06-10)</summary>
 
-**Goal:** Turn the static insight charts into interactive surfaces and add an Explore area where users combine any logged data series into one plot.
-
-**Target features:**
-- Scrub/tap on the dashboard trend charts to read the exact day + value (tooltip/lollipop)
-- A new Explore screen: pick multiple logged series (symptoms, sleep, activity, stress, mood, bleeding, food tags) and view them as an overlay on a shared time axis
-- A scatter view: one factor against another, each point = one logged day (the classic correlation look)
-
-**Key context:** All v1.0 honesty invariants carry over — unlogged days stay gaps (absence ≠ 0), mixed scales (0–10 severity vs. hours vs. binary tags) need honest axis treatment, and combined plots must stay descriptive (never causal framing; ClaimsPolicy scans apply to all new chrome copy). Deliberately scoped to the chart features only — the v1.0 polish backlog stays parked.
+All 12 phases built, goal-verified, and code-reviewed; cross-phase integration intact (7/7 seams); the full insights engine (trends · cycle-phase · correlations · honesty layer · recommendations · flare) ships behind a single honesty gate, with HealthKit import, a doctor-ready PDF report, and private-CloudKit sync wired. 28/31 requirements automatable-complete. Release/device-gated checklist (CloudKit Dev→Prod deploy + a real Developer team; 6 on-device/multi-device human verifications incl. DATA-02/03/04 sync survival) carried forward — see [milestones/v1.0-MILESTONE-AUDIT.md](milestones/v1.0-MILESTONE-AUDIT.md).
+</details>
 
 ## What This Is
 
@@ -36,6 +31,9 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - ✓ Doctor-ready report export (shareable PDF summary) — Phase 10 (on-device vector PDF for a date range, per-source labels, prominent "self-tracked, not diagnostic" framing, system share sheet with no silent upload; verified + code-reviewed.)
 - ✓ Insights: personalized, data-driven recommendations — Phase 11 (deterministic, non-prescriptive discussion prompts composed from the gated correlation engine, behind the single honesty gate; new forbidden-imperative copy scan; dismissable dashboard section; suppressed/sparse → zero. Verified + code-reviewed.)
 - ✓ Insights: flare early-warning from personal history — Phase 12 (heuristic, non-diagnostic, uncertainty-first warning composed from a required rising-severity spine + active triggers + cycle-phase proximity; bounded ≤medium, withheld-when-insufficient, calm/non-alarmist card, in-app only — no push; new alarmist/diagnostic copy scan + no-push + no-alarm-visual source guards. Verified + code-reviewed.)
+- ✓ Interactive trend charts — scrub/tap to read the exact day + value (v1.1, Phase 13: gap-honest `ChartScrubSelection` resolver behind an additive `allowsSelection` layer; rule-mark + lollipop tooltip, day-change haptic, `AXChartDescriptor` Audio Graph; PDF report path byte-identical. Verified + reviewed.)
+- ✓ Explore screen — combine multiple logged series in one overlay plot on a shared time axis (v1.1, Phases 14–15: a consent-gated tab with aligned per-scale lanes + event-marker lanes, multi-series scrub tooltip, suppression-hides-bleeding, honest empty/sparse states, over the Foundation-only series catalog/extraction layer. Verified + reviewed.)
+- ✓ Scatter view — one factor against another, each point = one both-logged day (v1.1, Phase 16: descriptive-only count-encoded `PointMark` scatter — no fitted line/r-value — reachable via a "See the days behind this" deep-link from a "Possible association" card. Verified + reviewed.)
 
 ### Active
 
@@ -47,9 +45,6 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - [ ] Physical activity / sport tracking
 - [ ] Insights: correlations & triggers across logged factors (symptoms ↔ food, sleep, activity, cycle) — engine shipped (Phase 7) + rendered in dashboard (Phase 8); pending confirmation with real multi-factor data
 - [ ] Private iCloud (CloudKit) sync across the user's own devices — no account/login
-- [ ] v1.1: Interactive trend charts — scrub/tap a chart to read the exact day + value
-- [ ] v1.1: Explore screen — combine multiple logged series in one overlay plot on a shared time axis
-- [ ] v1.1: Scatter view — plot one logged factor against another (each point = one day)
 
 ### Out of Scope
 
@@ -111,4 +106,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-10 — milestone v1.1 (Interactive Charts & Explore) started*
+*Last updated: 2026-06-17 — v1.1 milestone complete (Interactive Charts & Explore shipped)*

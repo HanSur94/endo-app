@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** v1.1 milestone lifecycle (audit → complete → cleanup)
+**Current focus:** v1.1 complete & archived; next is `/gsd-new-milestone` (or the pre-release checklists)
 
 ## Current Position
 

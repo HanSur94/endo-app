@@ -1,5 +1,17 @@
 # Milestones
 
+## v1.1 — Interactive Charts & Explore (Shipped: 2026-06-17)
+
+**Phases completed:** 4 phases (13–16), 17 plans · 137 commits · +5,568 / −77 LOC across 39 source files · audit PASSED (15/15 requirements, 7/7 integration, 3/3 E2E flows).
+
+**Key accomplishments:**
+
+- **Scrub-to-read-value on every dashboard trend chart (Phase 13):** a pure, exact-day `ChartScrubSelection` resolver (gap-honest — a gap reads "Not logged", never 0, never interpolated; a logged severity-0 reads a real 0) behind an additive `allowsSelection` layer on `InsightTrendChart` — a rule-mark + lollipop tooltip, a selection haptic on day-change, and an `AXChartDescriptor` Audio Graph for a non-gesture VoiceOver path. The exported PDF report stays byte-identical (renderer omits the param → default false), proven by a git zero-diff gate. A DEBUG `-uitest-select-day` seam drives the E2E with no gesture coordinates.
+- **A Foundation-only honesty layer for combinable data (Phase 14):** the keystone `ExploreSeriesCatalog` (39 series enumerated FROM the enum domains so it can't drift) + `ExploreSeriesExtraction` (unlogged → no point, logged-0 → a real point; presence series return `[Date]` occurrences so a 0/1 line is structurally unrepresentable) + `ScatterPairing` (both-logged-only, identical pairs count-aggregated, never jittered) + `SeriesNormalization` (fixed real-unit domains, never per-window). 156/156 package tests, boundary-lint green; consumed UNCHANGED by both UI phases.
+- **The Explore tab — combine any logged series in one honest plot (Phase 15):** a consent-gated third tab where the user overlays up to 3–4 quantitative series as **aligned per-scale lanes** (each in its real unit — no dual y-axis, no silent normalization) plus **event-marker lanes** for binary/event series (date-aligned ticks, never fake 0/1 lines), all sharing one absolute-date axis and one scrub state with a multi-series tooltip. Suppressed users are offered no bleeding series; unlogged days stay gaps in every lane; the new `ExploreCopy` chrome runs through the audited ClaimsPolicy choke-point.
+- **A descriptive-only scatter + the correlation-card deep-link (Phase 16):** a Lanes|Scatter mode with two quantitative axes, one `PointMark` per both-logged day, overplotting handled by **count-encoded size** (never jitter), a neutral count caption, and an honest sparse state — no fitted line, no r-value, no "% impact" (the least causally-suggestive way to show an association). A "See the days behind this" affordance on a "Possible association" card resolves the structural `signalKey` (never prose) to two axes and routes cross-tab into a prefilled scatter — hidden for presence-only / sleep-quality / suppressed-bleeding correlations.
+- **Honesty discipline held across every seam:** all 25 code-review findings across the 4 phases fixed (0 criticals); the substring-scan copy choke-point caught real gendered-token traps mid-flight (`where`/`either`/`together`/`another` all ⊃ "her"); cross-phase integration verified INTACT (7/7); the v1.0 report path and the v1.0 dashboard regressed clean throughout.
+
 ## v1.0 v1.0 (Shipped: 2026-06-10)
 
 **Phases completed:** 12 phases, 39 plans, 85 tasks
