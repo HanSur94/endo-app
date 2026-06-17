@@ -57,13 +57,13 @@ struct ScatterPlotView: View {
             // names both axes, never implies X causes/affects Y).
             Text(axisTitle)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
                 .accessibilityIdentifier("explore.scatter.axisTitles")
 
             // The NEUTRAL caption — a factual both-logged-day count, never a statistic.
             Text(ExploreCopy.scatterCaption(days: totalDays))
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("explore.scatter.caption")
 
@@ -72,7 +72,7 @@ struct ScatterPlotView: View {
             // cloud has no single value axis, so a plain summary is MORE honest than an Audio Graph.
             Text(ExploreCopy.scatterSummary(x: xSeries.displayName, y: ySeries.displayName, days: totalDays))
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("explore.scatter.summary")
         }
@@ -100,7 +100,7 @@ struct ScatterPlotView: View {
                         y: .value(ySeries.displayName, point.y)
                     )
                     .symbolSize(by: .value("Days", point.count))
-                    .foregroundStyle(Color.accentColor)   // single accent hue — count is size, never color
+                    .foregroundStyle(Color.plum)   // single Bloom accent hue — count is size, never color
                     .accessibilityLabel(Text(markLabel(point)))
                     .accessibilityValue(Text("\(point.count) days"))
                 }
