@@ -60,7 +60,15 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
   3. A boundary lint test proves `:insights` contains no `android.`/`androidx.` imports, and cross-platform drift tests turn red when a Kotlin enum raw value or ClaimsPolicy substring diverges from the Swift sources (scan + golden JSON)
   4. The numeric-divergence fixture pack is green — NaN, ±0.0, rounding ties, tied ranks, and DST/non-UTC day boundaries all produce Swift-identical results
   5. The `android/` Gradle workspace builds under path-filtered CI, and a test fails if any analytics/auth/backend coordinate appears in the version catalog
-**Plans**: TBD
+**Plans**: 8 plans
+- [ ] 17-01-PLAN.md — Gradle workspace + `:insights` module + boundary-lint/catalog-audit guards + CI + PARITY scaffold
+- [ ] 17-02-PLAN.md — Domain enums + value types (Factor/DaySnapshot/Insight+DeterministicUUID) + enum drift scan + golden JSON + fixtures
+- [ ] 17-03-PLAN.md — CorrelationStats + hand-rolled lgamma/erf/rounding (Swift-golden gated) + numeric-divergence (stats half)
+- [ ] 17-04-PLAN.md — TrendsEngine + CyclePhaseMapper + suppressed-user silence
+- [ ] 17-05-PLAN.md — Chart data-prep (ExploreSeries/Extraction/ScatterPairing/Normalization/ScrubSelection)
+- [ ] 17-06-PLAN.md — CorrelationEngine (BH-FDR flood → zero, three-AND gate, top-5 determinism)
+- [ ] 17-07-PLAN.md — RecommendationsEngine + FlareEngine + copy-drift shims
+- [ ] 17-08-PLAN.md — ForbiddenTerms + HonestyGate + InsightsEngine (one public producer) + ClaimsPolicy drift + DST completion + PARITY=157 + CI green
 
 ### Phase 18: Room Persistence
 **Goal**: All user data persists locally in Room with the iOS data-lifecycle guarantees — consent-gated, delete-complete, migration-disciplined, and backup-excluded from day one
@@ -166,7 +174,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 |-------|-----------|----------------|--------|-----------|
 | 1–12 (archived) | v1.0 | 39/39 | Complete | 2026-06-10 |
 | 13–16 (archived) | v1.1 | 17/17 | Complete | 2026-06-17 |
-| 17. Insights Engine Port | v2.0 | 0/TBD | Not started | - |
+| 17. Insights Engine Port | v2.0 | 0/8 | Not started | - |
 | 18. Room Persistence | v2.0 | 0/TBD | Not started | - |
 | 19. App Shell & Consent | v2.0 | 0/TBD | Not started | - |
 | 20. Tracking Screens | v2.0 | 0/TBD | Not started | - |
