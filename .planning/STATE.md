@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Android Version (Port)
-status: planning
-last_updated: "2026-07-08T20:01:34.427Z"
+status: roadmap_created
+last_updated: "2026-07-08T20:49:07.000Z"
 last_activity: 2026-07-08
 progress:
-  total_phases: 0
+  total_phases: 9
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-10)
 
 **Core value:** Turn everyday self-tracking into understanding — correlations, cycle/trend patterns, flare warnings, and personalized recommendations that help people with endometriosis make sense of their condition.
-**Current focus:** v1.1 complete & archived; next is `/gsd-new-milestone` (or the pre-release checklists)
+**Current focus:** v2.0 Android Version (Port) — roadmap created (Phases 17–25, 42/42 requirements mapped); next `/gsd-plan-phase 17`
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 17 of 17–25 (Insights Engine Port) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-08 — Milestone v2.0 started
+Status: Roadmap created — ready to plan Phase 17
+Last activity: 2026-07-08 — v2.0 roadmap created (9 phases 17–25 per the locked port order + research-inserted export/import slice; ROADMAP.md rewritten, REQUIREMENTS.md traceability mapped 42/42)
 
 ## Performance Metrics
 
@@ -163,10 +163,13 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- [v2.0 kickoff — AREL-04]: Verify the Play developer account is organization-type with D-U-N-S verification NOW (health-category apps cannot ship from individual accounts; individual→organization recovery takes weeks and gates the Phase 25 ship date). Confirmed green in Phase 25.
 
 ### Blockers/Concerns
 
+- [v2.0]: Play org-account (D-U-N-S) status unknown — a kickoff check, not a Phase-25 form; if the account is individual-type, recovery latency is weeks and gates the whole milestone's ship date (research/SUMMARY.md Pitfall 1).
+- [v2.0 / Phase 21]: Health Connect ~30-day history window can silently truncate a longitudinal cycle-history import — the permission-vs-label decision (AHC-04) must be made against current docs during Phase 21 planning.
+- [v2.0 / Phase 22]: Canvas chart layer is Confidence: MEDIUM by locked decision — Vico is the named escape hatch, evaluated mid-phase with Layout Inspector evidence only.
 - [Phase 15]: The lanes-vs-labeled-normalization Explore layout decision (recovery cost = full UI rework) + the bleeding-series-under-suppression product call — both flagged `research: true` on Phase 15; decide before building.
 - [Phases 13/15 + every OS update]: Scroll-vs-scrub gesture arbitration is OS-version-volatile (documented iOS 18/26-beta chart-gesture-in-scroll regressions) — a recurring release-checklist item, not a one-time check.
 - [v1.0 carried]: App Store 5.1.3(ii) private-CloudKit-health-storage interpretation is reviewer-dependent — the one genuine go/no-go. De-risk via throwaway TestFlight + pre-submission review note; keep a local-only fallback.
@@ -192,11 +195,12 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-08T19:54:26.204Z
-Stopped at: Completed 16-03-PLAN.md
+Last session: 2026-07-08T20:49:07.000Z
+Stopped at: v2.0 roadmap created — ROADMAP.md (Phases 17–25) + REQUIREMENTS.md traceability written
 Resume file: None
 
 ## Operator Next Steps
 
-- Verify Phase 13: /gsd-verify-work (four manual checkpoints listed in 13-03-SUMMARY.md — device haptic, scroll-vs-scrub feel, PDF visual compare, VoiceOver/Audio Graph)
-- Then plan the next phase: /gsd-plan-phase 14
+- Kickoff check (AREL-04): verify the Play developer account is organization-type (D-U-N-S) — do this NOW, weeks of latency if it isn't
+- Plan the first Android phase: /gsd-plan-phase 17 (Insights Engine Port)
+- Note: Phase 21 (Health Connect Import) is parallelizable with Phase 20 (Tracking Screens) if desired

@@ -101,17 +101,62 @@ All architectural decisions are locked in [research/ANDROID-PORT-PLAN.md](resear
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements. Mapped at roadmap creation (2026-07-08); the locked port order (ANDROID-PORT-PLAN.md §4) plus the research-inserted export/import slice yields Phases 17–25.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | Populated by roadmapper |
+| AENG-01 | Phase 17 | Pending |
+| AENG-02 | Phase 17 | Pending |
+| AENG-03 | Phase 17 | Pending |
+| AENG-04 | Phase 17 | Pending |
+| AENG-05 | Phase 17 | Pending |
+| AENG-06 | Phase 17 | Pending |
+| AENG-07 | Phase 17 | Pending |
+| APER-01 | Phase 18 | Pending |
+| APER-02 | Phase 18 | Pending |
+| APER-03 | Phase 18 | Pending |
+| APER-04 | Phase 18 | Pending |
+| APER-05 | Phase 18 | Pending |
+| APER-06 | Phase 18 | Pending |
+| APER-07 | Phase 18 | Pending |
+| ASHL-01 | Phase 19 | Pending |
+| ASHL-02 | Phase 19 | Pending |
+| ASHL-03 | Phase 19 | Pending |
+| ASHL-04 | Phase 19 | Pending |
+| ATRK-01 | Phase 20 | Pending |
+| ATRK-02 | Phase 20 | Pending |
+| ATRK-03 | Phase 20 | Pending |
+| ATRK-04 | Phase 20 | Pending |
+| ATRK-05 | Phase 20 | Pending |
+| AHC-01 | Phase 21 | Pending |
+| AHC-02 | Phase 21 | Pending |
+| AHC-03 | Phase 21 | Pending |
+| AHC-04 | Phase 21 | Pending |
+| AINS-01 | Phase 22 | Pending |
+| AINS-02 | Phase 22 | Pending |
+| AINS-03 | Phase 22 | Pending |
+| AINS-04 | Phase 22 | Pending |
+| AINS-05 | Phase 22 | Pending |
+| AINS-06 | Phase 22 | Pending |
+| AINS-07 | Phase 22 | Pending |
+| APRT-01 | Phase 23 | Pending |
+| APRT-02 | Phase 23 | Pending |
+| APRT-03 | Phase 23 | Pending |
+| AREL-01 | Phase 24 | Pending |
+| AREL-02 | Phase 24 | Pending |
+| AREL-03 | Phase 25 | Pending |
+| AREL-04 | Phase 25 | Pending (kickoff check — verify org account NOW; confirmed in Phase 25) |
+| AREL-05 | Phase 25 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 40 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 40 ⚠️ (pending roadmap)
+- v2.0 requirements: 42 total (the initial-definition footer said 40 — the actual enumerated ID count is 42; corrected at roadmap creation)
+- Mapped to phases: 42 ✓
+- Unmapped: 0 ✓
+
+**Mapping notes:**
+- AREL-01/AREL-02 (PDF report) live in Phase 24 and AREL-03/04/05 (release) in Phase 25 — the locked port order keeps "PDF report" and "Play prep" as separate phases, so splitting the AREL block along that boundary is the only mapping where each requirement sits in the phase that actually delivers it.
+- AREL-04 stays a Phase 25 requirement, but its verification is a **milestone-kickoff action** (weeks of D-U-N-S latency if the account is individual-type).
 
 ---
 *Requirements defined: 2026-07-08*
-*Last updated: 2026-07-08 after initial definition*
+*Last updated: 2026-07-08 — traceability mapped at v2.0 roadmap creation (Phases 17–25)*
