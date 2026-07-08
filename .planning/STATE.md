@@ -1,16 +1,15 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: — Interactive Charts & Explore
+milestone_name: — Pre-release checklist
+current_phase: 4
+current_phase_name: 13–16
 status: milestone-feature-complete
 stopped_at: Phase 16 complete (verified 4/4 + reviewed, all 6 findings fixed) — v1.1 ALL phases done; milestone lifecycle next
-last_updated: "2026-06-17T01:00:00.000Z"
-last_activity: 2026-06-17 -- Phase 16 closed; ALL 15/15 v1.1 requirements complete; ready for milestone audit → complete → cleanup
+last_updated: "2026-07-08T19:54:26.227Z"
+last_activity: 2026-07-08
+last_activity_desc: "Completed quick task 260708-u6d: Android port plan doc at .planning/research/ANDROID-PORT-PLAN.md — decision-complete stack/sync/module-layout/roadmap/invariants plan for the Android version, ready to seed /gsd-new-milestone. (Prior: 2026-06-17 Bloom reskin integration onto master.)"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 17
-  completed_plans: 17
   percent: 100
 ---
 
@@ -190,10 +189,11 @@ Items acknowledged and carried forward from previous milestone close:
 |----|------|--------|------|
 | 260610-sng | Wire the "Bloom" app icon into the iOS app (alpha-stripped 1024 single-size asset catalog + `ASSETCATALOG_COMPILER_APPICON_NAME` wiring) | complete ✓ | 2026-06-10 |
 | 260615-erj | Replace the BodyMapView region-tile grid with an accessible human-silhouette pain map (SwiftUI `Path` silhouette + one ≥44pt accessible hotspot per `BodyRegion`; SYMP-02 contract + all `bodymap.*` ids preserved). Commit `b535f6c`; build green; `testLoggingFlow` UI contract verified (passed) | complete ✓ (verified) | 2026-06-15 |
+| 260708-u6d | Create Android port plan doc (`.planning/research/ANDROID-PORT-PLAN.md`) — stack decisions (Kotlin + Compose, Room, Health Connect), sync strategy (local-only v1 + encrypted export/import, no backend), `android/` module layout, 8-phase port roadmap, invariants mapping. Foundation for a future `/gsd-new-milestone` (Android version) | complete ✓ | 2026-07-08 |
 
 ## Session Continuity
 
-Last session: 2026-06-16T01:46:00.000Z
+Last session: 2026-07-08T19:54:26.204Z
 Stopped at: Completed 16-03-PLAN.md
 Resume file: None
 
