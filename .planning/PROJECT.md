@@ -20,6 +20,22 @@ A free, privacy-first **iOS app for people with endometriosis** to track their s
 
 Turn everyday self-tracking into **understanding** — surfacing correlations, cycle/trend patterns, flare predictions, and personalized recommendations that help people with endometriosis make sense of their condition. If everything else fails, the insights must make the effort of logging feel worth it.
 
+## Current Milestone: v2.0 Android Version (Port)
+
+**Goal:** Ship a native Android version of Endo-App — Kotlin + Jetpack Compose, feature-equivalent to iOS v1.1, with every honesty/privacy invariant carried over as an enforcing test.
+
+**Target features:**
+- `:insights` engine port to pure Kotlin JVM with test parity against the shipped Swift suite (trends, cycle-phase, correlations, recommendations, flare, honesty gate, forbidden terms)
+- Room persistence with consent-gated repository and a born-complete delete-day cascade (iOS GDPR Art. 17 lesson carried verbatim)
+- Consent-by-construction UI shell + Bloom design-system port (Compose + Material 3)
+- Tracking screens: Daily Check-In, Day Log editor + BodyMap, medications, reminders
+- Health Connect read-only import (menstruation, sleep, exercise, nutrition) with manual-wins/nil-honest merge
+- Explore + charts under the locked chart-honesty rules (no dual-y, no normalization, gaps stay gaps)
+- Vector PDF doctor report with share-intent export
+- Play Store prep: Health apps policy declaration, truthful Data safety form, claims-audited store copy
+
+**Key context:** All architectural decisions are pre-made and locked in [research/ANDROID-PORT-PLAN.md](research/ANDROID-PORT-PLAN.md) (stack, local-only-v1 sync with encrypted export/import, monorepo `android/` layout with `:app` + `:insights`). iOS↔Android live sync is out of scope by decision. The iOS codebase stays untouched.
+
 ## Requirements
 
 ### Validated
@@ -53,7 +69,8 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - Education / knowledge-base content library — deferred to v2; v1 focuses on the tracking + insights differentiator
 - Guided therapy programs (physio/movement, nutrition, pain-coping courses) — large content + clinical-credibility lift; deferred
 - User accounts / custom backend / web app — avoided to stay free to run and privacy-first (private iCloud sync instead)
-- Android / cross-platform — iOS-first; revisit after v1 validation
+- ~~Android / cross-platform — iOS-first; revisit after v1 validation~~ — **promoted to v2.0 scope** (native Android port; see Current Milestone)
+- iOS↔Android live cross-device sync — CloudKit has no Android private-DB client and the no-backend constraint forbids a bridge; only a one-time encrypted export/import handoff is contemplated (not scheduled)
 - Medical-device / DiGA certification & diagnostic claims — regulated, expensive path; positioned as a wellness/self-tracking tool, not a medical device
 - Community / social features — not core to v1 value
 - Monetization / paywall — the app is free for everyone
@@ -87,6 +104,7 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 | On-device + private iCloud/CloudKit sync, no accounts/backend | Privacy-first for sensitive health data + free to run | — Pending |
 | Apple HealthKit integration | Reduce double-logging by importing cycle/sleep/workouts/nutrition | — Pending |
 | Position as wellness tool, not a certified medical device | Avoid regulated DiGA/medical-device path; appropriate for a free v1 | — Pending |
+| v2.0 Android port: native Kotlin + Compose, `android/` monorepo dir, `:insights` ported first, local-only v1 + encrypted export/import (no backend, no accounts) | Mirrors the all-first-party iOS philosophy; CloudKit has no Android client and the no-backend constraint is hard; the pure insights engine is the core value and the safest anchor to port first (decisions locked in research/ANDROID-PORT-PLAN.md) | — Pending |
 
 ## Evolution
 
@@ -106,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-17 — v1.1 milestone complete (Interactive Charts & Explore shipped)*
+*Last updated: 2026-07-08 — v2.0 milestone started (Android Version port; decisions locked in research/ANDROID-PORT-PLAN.md)*

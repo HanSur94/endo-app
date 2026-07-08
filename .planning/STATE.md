@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: — Pre-release checklist
-current_phase: 4
-current_phase_name: 13–16
-status: milestone-feature-complete
-stopped_at: Phase 16 complete (verified 4/4 + reviewed, all 6 findings fixed) — v1.1 ALL phases done; milestone lifecycle next
-last_updated: "2026-07-08T19:54:26.227Z"
+milestone: v2.0
+milestone_name: Android Version (Port)
+status: planning
+last_updated: "2026-07-08T20:01:34.427Z"
 last_activity: 2026-07-08
-last_activity_desc: "Completed quick task 260708-u6d: Android port plan doc at .planning/research/ANDROID-PORT-PLAN.md — decision-complete stack/sync/module-layout/roadmap/invariants plan for the Android version, ready to seed /gsd-new-milestone. (Prior: 2026-06-17 Bloom reskin integration onto master.)"
 progress:
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,11 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-10)
 
 ## Current Position
 
-Phase: ALL 4 v1.1 phases (13–16) complete — milestone feature-complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: v1.1 feature-complete. All 15/15 requirements delivered (CHART-01..04, EXPL-01..07, SCAT-01..04), each phase verified + code-reviewed + fixed. Device-gated tone/feel/legibility items + the host-flaky testGeneratePDF re-run carried to the pre-release checklist. Next: milestone audit → complete (archive + tag v1.1) → cleanup.
-Progress: [x] 13 [x] 14 [x] 15 [x] 16 — 100% (4/4 phases)
-Last activity: 2026-06-17 -- Integrated the "Bloom" design-system reskin onto master: added DesignSystem/ (tokens, typography, components, tab-bar chrome) and reskinned Home, DayLog, Insights, Settings, Onboarding, Consent, and the Explore/scatter screens (quick-260617-np5) to Bloom. Restyle-only — all v1.1 behavior, a11y ids, honesty semantics, and tests preserved; clean build green from the main checkout. (Phase 16 milestone work unchanged.)
+Status: Defining requirements
+Last activity: 2026-07-08 — Milestone v2.0 started
 
 ## Performance Metrics
 
