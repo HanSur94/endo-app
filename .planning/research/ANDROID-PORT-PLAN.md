@@ -124,3 +124,97 @@ Package sketch:
 ### Dependency rule
 
 **`:app` depends on `:insights` — never the reverse.** `:insights` knows nothing about Android, Room, Compose, or Health Connect. This is the same one-way arrow that made the iOS EndoInsights package portable enough to be the anchor of this whole plan.
+
+---
+
+## 4. Phased Port Roadmap
+
+The order below is **locked**, and the reason it starts with `:insights` is deliberate: the insights engine is the app's core value ("if everything else fails, the insights must make the effort of logging feel worth it"), it has **zero platform dependencies** (Foundation-only on iOS, Kotlin-stdlib-only on Android), and its ported test suite becomes the **correctness anchor** for everything downstream — every later phase builds on an engine already proven equivalent to the shipped iOS one.
+
+### Phase 1 — `:insights` engine port
+
+- **Goal:** The complete insights engine runs on the JVM with test parity against the shipped Swift suite.
+- **Key deliverables:**
+  - Domain enums ported verbatim by raw value: SymptomType (11 cases), FactorKind, FoodTag, ActivityType, ActivityIntensity, SleepQuality, FlowIntensity, BodyRegion (10 cases).
+  - Domain value types (`DaySnapshot`, insight types) with the nil-means-unlogged honesty contract intact (absence ≠ 0).
+  - All six engines: TrendsEngine, CyclePhaseMapper, CorrelationEngine (BH-FDR, Fisher exact, Mann-Whitney U, Cliff's delta), RecommendationsEngine, FlareEngine — plus HonestyGate and ForbiddenTerms.
+  - The **ported test suite**, including the honesty acceptance fixtures: suppressed-user silence, under-sample withholding, the BH-FDR multiple-comparison flood test, and the absence-vs-zero distinctions.
+  - The `:insights` boundary lint test (no `android.`/`androidx.` imports).
+- **Exit criteria:** Ported JVM tests green with **case-count parity** against the Swift suite; boundary lint test green.
+
+### Phase 2 — Persistence
+
+- **Goal:** All user data persists locally in Room with the iOS data-lifecycle guarantees, consent-gated from day one.
+- **Key deliverables:**
+  - Room schema for the 10 models; DataStore for the consent flag and reminder prefs (outside the health DB).
+  - Consent-gated repository (every health read/write asserts consent).
+  - **Delete-day cascade covering EVERY day-scoped row type.** iOS lesson, carried verbatim: an orphaned `FactorReading` after `deleteDay` was a real GDPR Art. 17 bug (found and fixed in iOS 04-02). The Android cascade must be **born complete**, with a test proving all day-scoped rows are purged while non-day-scoped definitions (e.g. `Medication`) survive.
+- **Exit criteria:** Repository tests green including the full-cascade delete test and the definition-survival guard test; Room migration test scaffold in place.
+
+### Phase 3 — UI shell + consent
+
+- **Goal:** A user can complete onboarding/consent and land in the app shell; health UI is unreachable without consent, by construction.
+- **Key deliverables:** Onboarding/Consent flow; consent-by-construction `AppGate` composable (health UI composables constructed ONLY inside the consented branch); 3-tab shell; Bloom theme port (`designsystem` package).
+- **Exit criteria:** Compose UI test proving the health surface cannot be reached pre-consent and that withdrawing consent re-gates; Bloom tokens render on all shell screens.
+
+### Phase 4 — Tracking screens
+
+- **Goal:** A user can log a full day (symptoms, pain map, bleeding, factors, meds) as fast as on iOS.
+- **Key deliverables:** Daily Check-In sheet; Day Log editor + BodyMap; medications/settings; reminders as device-local prefs with just-in-time notification permission.
+- **Exit criteria:** Log-persist-reload round trip proven per screen; untouched optional sections read as "not logged", never 0.
+
+### Phase 5 — Health Connect import
+
+- **Goal:** Users who already track in Health Connect avoid double-logging, without the app ever writing health data.
+- **Key deliverables:** Read-only Health Connect client for the four mapped record types; `ImportedSample`-equivalent provenance rows; manual-wins / nil-honest merge; rationale-before-permission UX; graceful denial handling; runtime availability gating (Android 14+ built-in vs. installable app).
+- **Exit criteria:** Import round trip proven with provenance intact; manifest declares zero write permissions; denial path renders gently with manual logging unaffected.
+
+### Phase 6 — Explore + charts
+
+- **Goal:** The Explore surface gives honest, readable views of any tracked series over time.
+- **Key deliverables:** Trend charts with tap-to-read scrub; aligned per-scale lanes; event-marker lanes; count-encoded scatter. The **locked chart honesty rules restated:** no dual y-axis, no silent normalization, gap days are gaps — never zeros, never interpolation — and no fitted line or r-value on the scatter.
+- **Exit criteria:** Honesty rules pinned by tests on the chart data-preparation layer; scrub on a gap day reads "not logged", severity-0 reads as a real zero.
+
+### Phase 7 — PDF report
+
+- **Goal:** A user can hand their clinician a clean, honest, vector PDF of a chosen date range.
+- **Key deliverables:** Vector `PdfDocument` report for a date range; per-source labels (manual vs. imported); prominent self-tracked-not-diagnostic framing; share via Intent with no silent upload.
+- **Exit criteria:** Generated PDF has selectable text (vector, not raster); report copy passes the copy audit; share flow leaves no file readable by other apps beyond the user's explicit share target.
+
+### Phase 8 — Play Store prep
+
+- **Goal:** The app clears Google Play's health-app gauntlet honestly and ships.
+- **Key deliverables:** Google Play Health apps policy declaration; **Data safety** form (truthfully states: no data collected, no data shared — all processing on-device); privacy policy URL; Health Connect permission rationale requirements (including the rationale activity/intent Play requires); target-API compliance; pre-launch report pass.
+- **Exit criteria:** All Play Console declarations submitted and consistent with the manifest; pre-launch report shows no blocking issues; store listing copy passes the same claims audit as in-app copy.
+
+> **Note:** Phases 3–7 roughly mirror the iOS v1.0 phase order (consent shell → tracking → health import → insights surfaces → report), which was validated in practice; Phases 1–2 are pulled forward because on Android the engine port is pure JVM work with no platform blockers.
+
+---
+
+## 5. Non-Negotiable Invariants
+
+Every invariant below shipped in iOS **enforced by a test in the repo, not by convention** — and the Android port carries each one over with a named, testable Android mechanism. A row in this table is done when its Android test exists and is green, not when the behavior happens to be true.
+
+| Invariant | iOS mechanism | Android mechanism |
+|-----------|---------------|-------------------|
+| **Claims-policy copy gating** — no causal, alarmist, imperative, gendered, or numeric-claim language in user-facing copy | `ClaimsPolicy` forbidden-substring lists + `CopyAuditTests` + mandatory `auditableStrings` registration | Kotlin `ClaimsPolicy` port sharing the **same substring lists** + a `CopyAudit` JVM test scanning a registered copy catalog. Rule carried verbatim: every user-facing string is registered for audit **in the same change that introduces it**. |
+| **Honesty gate / bias to silence** — insights are withheld rather than overstated; per-kind minimum-sample floors; absence ≠ 0 | `HonestyGate.apply` single choke point + per-kind min-sample floors + producer self-gating | Verbatim port in `:insights`; **one public producer function**; the same per-kind floors. The ported honesty acceptance fixtures (Phase 1) pin the behavior. |
+| **Consent-by-construction** — health UI cannot exist before consent | `AppGate` builds health UI only in the consented branch + repository `assertConsented` | `AppGate` composable with the consented subtree **only composed post-consent** + repository consent check. Deep links and notifications land on the gate, never inside it. |
+| **No flare alarm notifications** — flare signals surface in-app only, never as push/alarm | In-app-only flare card + `FlareNoNotificationTests` structural source scan | Flare surfaces in-app only; a **structural JVM test scans flare-related sources** for notification/alarm APIs; the reminder feature's notification code stays **physically separate** from flare code so the scan boundary is clean. |
+| **Read-only health import** — the app never writes health data | HealthKit read-only authorization | Health Connect **read permissions only**; no write permissions declared in the manifest — **the manifest itself is the auditable artifact** (a test can assert zero `WRITE_*` health permissions). |
+| **No third-party analytics** | MetricKit-only; no analytics SDKs | No analytics SDKs; Play vitals / Play Console crash reporting only. The version catalog (`libs.versions.toml`) is the greppable audit surface. |
+| **No accounts / no backend** | Implicit iCloud identity; no login surface | Local-only v1 (Section 2); **no sign-in surface anywhere**; no auth SDK in the dependency catalog. |
+
+**Enforcement philosophy.** On iOS, every one of these survived feature pressure because a test failed when someone drifted — the copy audit caught forbidden substrings before ship, the boundary lint kept the engine pure, the notification scan kept flare warnings calm. The Android port adopts the same stance from day one: each invariant lands **with its enforcing test in the same phase that introduces the surface it protects**. An invariant without a red-capable test is not considered ported.
+
+---
+
+## How to Consume This Doc
+
+For the future `/gsd-new-milestone` run that scopes the Android milestone:
+
+- **Section 4's eight phases map directly to milestone phases.** Keep the order — it is locked, and the insights-first rationale (core value, zero platform deps, ported tests as the correctness anchor) is load-bearing.
+- **Sections 1–3 are pre-made decisions.** Import them as locked decisions in the milestone's context; do **not** re-open stack, sync, or module-layout questions during discuss/plan.
+- **Section 5's rows become cross-phase requirements/tests.** Each invariant should appear in the milestone's requirements with its Android mechanism as the acceptance criterion.
+- **Exactly two calls are consciously revisitable:** (1) the charts **Canvas-vs-Vico** escape hatch (Section 1 — revisit only if Canvas layout cost balloons in Phase 6), and (2) the **Google Drive `appDataFolder` deferral** (Section 2 — revisit as a v2 candidate only on real user demand for Android multi-device sync). Everything else is settled.
+- **Cross-platform sync is out of scope by decision, not omission** (Section 2). Do not let milestone requirements re-introduce it.
