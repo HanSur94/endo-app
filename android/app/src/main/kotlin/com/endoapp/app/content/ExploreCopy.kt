@@ -53,8 +53,57 @@ object ExploreCopy : AuditableCopy {
     /** The event-tick / event-present tooltip value — a presence, NEVER "1". */
     const val EVENT_TICK = "Logged"
 
-    // --- Scatter mode (Plan 06 fills the real view; this is the honest placeholder) ---
+    // --- Scatter mode (Plan 06) ---
+    // The honest placeholder is retired now that Scatter mode is real; retained as a member for any
+    // fallback caller. The scatter is DESCRIPTIVE-ONLY: no fitted line, no r-value (H5) — the copy below
+    // states a factual both-logged tally only, never a statistic.
     const val SCATTER_SOON = "The scatter view is coming soon."
+
+    /** The `.correlation` card deep-link affordance label ("See the days behind this"). Rendered by the
+     *  Insights card ONLY when `ScatterDeepLink.resolve` yields two quantitative axes. Uses "behind this"
+     *  (no forbidden substring); NEVER re-derives or reads insight prose. */
+    const val SCATTER_LINK = "See the days behind this"
+
+    // Scatter axis-picker labels (the two quantitative-only selectors). "First" / "Second" dodge every
+    // ClaimsPolicy substring (no gendered / causal / imperative token).
+    const val SCATTER_AXIS_X_LABEL = "First factor"
+    const val SCATTER_AXIS_Y_LABEL = "Second factor"
+
+    /** The axis-selector placeholder before a factor is chosen. */
+    const val SCATTER_AXIS_PLACEHOLDER = "Pick a factor"
+
+    // Scatter honest states.
+    /** Fewer than two axes chosen. */
+    const val SCATTER_EMPTY_TITLE = "Pick two factors to compare."
+    /** The empty-state body: "each dot is one day when both were logged" — days missing a factor are left
+     *  out, never counted as zero (H: absence ≠ 0). "missing a factor" dodges "either" (⊃ "her"); "when
+     *  both were logged" dodges "where" (⊃ "her"). */
+    const val SCATTER_EMPTY_BODY =
+        "Choose a factor for each axis. Each dot is one day when both were logged — days missing a factor are left out, never counted as zero."
+    /** Both axes chosen but the both-logged tally is below the sparse floor. */
+    const val SCATTER_SPARSE_TITLE = "Not enough overlapping days yet."
+    /** The sparse body: "on too few of the same days" dodges "together" (⊃ "her"). */
+    const val SCATTER_SPARSE_BODY =
+        "These two factors were logged on too few of the same days to plot. Keep logging and this fills in over time."
+
+    /** The neutral factual caption under the plot: "Based on {n} days when both were logged." A factual
+     *  both-logged tally, NEVER a statistic (H5). */
+    fun scatterCaption(days: Int): String = "Based on $days days when both were logged."
+
+    /** The worded summary: "{X} compared with {Y}, {n} days when both were logged." The X/Y names are
+     *  data-derived (catalog). "compared with" dodges "against" (which reads cause→effect). */
+    fun scatterSummary(xName: String, yName: String, days: Int): String =
+        "$xName compared with $yName, $days days when both were logged."
+
+    /** The axis-titles line under the plot — the two data-derived series names, factual only. */
+    fun scatterAxisTitles(xName: String, yName: String): String = "$xName · $yName"
+
+    /** A per-cell a11y label: "{X name} {x readout}, {Y name} {y readout}" (names + readouts data-derived). */
+    fun scatterCellLabel(xName: String, xReadout: String, yName: String, yReadout: String): String =
+        "$xName $xReadout, $yName $yReadout"
+
+    /** A per-cell a11y value: "{count} days" — a factual tally at that exact (x, y), never a statistic. */
+    fun scatterCellDays(count: Int): String = "$count days"
 
     /** The event-lane summary node text, e.g. "Clots — logged on 3 days" — carried INSTEAD of a value
      *  axis (a value axis would imply a "1" the presence data does not carry). */
@@ -89,6 +138,15 @@ object ExploreCopy : AuditableCopy {
         SPARSE_BODY,
         EVENT_TICK,
         SCATTER_SOON,
+        // Scatter mode chrome (Plan 06) — registered in the SAME change that introduces it.
+        SCATTER_LINK,
+        SCATTER_AXIS_X_LABEL,
+        SCATTER_AXIS_Y_LABEL,
+        SCATTER_AXIS_PLACEHOLDER,
+        SCATTER_EMPTY_TITLE,
+        SCATTER_EMPTY_BODY,
+        SCATTER_SPARSE_TITLE,
+        SCATTER_SPARSE_BODY,
         // Representative composed lines (the static prefixes/separators are what we audit; registered in
         // the SAME change that introduces them — Pitfall 5). Names shown are clean catalog examples.
         eventLaneSummary("Clots", 3),
@@ -96,5 +154,10 @@ object ExploreCopy : AuditableCopy {
         seriesReadoutLine("Sleep", "8 h"),
         seriesNotLoggedLine("Sleep"),
         seriesLoggedLine("Clots"),
+        scatterCaption(12),
+        scatterSummary("Stress", "Sleep", 12),
+        scatterAxisTitles("Stress", "Sleep"),
+        scatterCellLabel("Stress", "6 of 10", "Sleep", "8 h"),
+        scatterCellDays(3),
     )
 }

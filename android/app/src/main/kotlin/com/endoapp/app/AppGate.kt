@@ -47,6 +47,7 @@ fun AppGate(
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
     insightsCoordinator: InsightsCoordinator? = null,
+    exploreScatterRouter: ExploreScatterRouter = ExploreScatterRouter(),
 ) {
     val state by consentStore.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -101,6 +102,10 @@ fun AppGate(
                 // healthConnect posture, so the dashboard's health-derived surface is unconstructible
                 // pre-consent by construction (consent-by-construction, T-19-01).
                 insightsCoordinator = insightsCoordinator,
+                // The cross-tab scatter deep-link router — bound HERE (Consented arm ONLY), so the
+                // dashboard→Explore scatter handoff is unconstructible pre-consent (T-19-01). Ephemeral,
+                // carries only public catalog series ids, never persisted.
+                exploreScatterRouter = exploreScatterRouter,
                 today = today,
             )
         }

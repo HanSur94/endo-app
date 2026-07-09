@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import com.endoapp.app.CheckInRouter
+import com.endoapp.app.ExploreScatterRouter
 import com.endoapp.app.content.PlaceholderCopy
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
@@ -74,6 +75,7 @@ fun ConsentedShell(
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
     insightsCoordinator: InsightsCoordinator? = null,
+    exploreScatterRouter: ExploreScatterRouter = ExploreScatterRouter(),
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) }
@@ -127,7 +129,17 @@ fun ConsentedShell(
                     // is wired. Falls back to the placeholder only when unwired (e.g. the shell unit test),
                     // so the coordinator-absent path never crashes.
                     if (insightsCoordinator != null) {
-                        InsightsScreen(coordinator = insightsCoordinator)
+                        InsightsScreen(
+                            coordinator = insightsCoordinator,
+                            loadSuppressed = loadSuppressed,
+                            // Set the router payload FIRST, THEN switch to Explore — the set-before-select
+                            // sequence (no race): Explore consumes the typed axes on appear/change and clears
+                            // it. The axes are TYPED (never re-derived from copy downstream).
+                            onOpenScatter = { pending ->
+                                exploreScatterRouter.pendingScatter = pending
+                                selectedTab = ConsentedTab.Explore
+                            },
+                        )
                     } else {
                         TabPlaceholder(
                             eyebrow = PlaceholderCopy.INSIGHTS_EYEBROW,

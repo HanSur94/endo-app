@@ -27,13 +27,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.endoapp.app.PendingScatter
+import com.endoapp.app.content.ExploreCopy
 import com.endoapp.app.content.InsightsCopy
 import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.designsystem.bloomBody
@@ -54,6 +58,8 @@ fun InsightCard(
     insight: Insight,
     onDismiss: (String) -> Unit,
     modifier: Modifier = Modifier,
+    suppressed: Boolean = true,
+    onOpenScatter: (PendingScatter) -> Unit = {},
 ) {
     val colors = LocalBloomColors.current
     val root = "insights.card.${insight.signalKey}"
@@ -137,6 +143,34 @@ fun InsightCard(
                 color = colors.inkSecondary,
                 modifier = Modifier.testTag("$root.evidence"),
             )
+        }
+
+        // 4b. Scatter deep-link affordance — the `.correlation` arm ONLY. Resolve the STRUCTURAL signalKey
+        // ONCE (never the headline/detail prose — the honesty contract, T-22-01j); when it yields two typed
+        // quantitative axes, render "See the days behind this". When null the affordance is HIDDEN (not
+        // disabled) — a presence-only / sleep-quality / suppressed-bleeding correlation shows no link. The
+        // TYPED axes ride the router payload; they are NEVER re-derived from copy downstream.
+        if (insight.kind == InsightKind.CORRELATION) {
+            val axes = remember(insight.signalKey, suppressed) {
+                ScatterDeepLink.resolve(insight.signalKey, suppressed)
+            }
+            if (axes != null) {
+                Box(
+                    modifier = Modifier
+                        .sizeIn(minHeight = 48.dp)
+                        .testTag("$root.scatterLink")
+                        .clickable { onOpenScatter(PendingScatter(x = axes.first, y = axes.second)) },
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = ExploreCopy.SCATTER_LINK,
+                        style = bloomChipLabel,
+                        fontWeight = FontWeight.SemiBold,
+                        // Accent-tinted plum — the reserved deep-link affordance hue.
+                        color = colors.plum,
+                    )
+                }
+            }
         }
 
         // 5. Basis note.

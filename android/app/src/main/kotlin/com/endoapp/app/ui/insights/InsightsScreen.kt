@@ -34,12 +34,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.endoapp.app.PendingScatter
 import com.endoapp.app.content.Disclaimer
 import com.endoapp.app.content.InsightsCopy
 import com.endoapp.app.designsystem.DisclaimerBanner
@@ -94,13 +98,26 @@ fun insightSections(insights: List<Insight>): List<InsightSection> {
 fun InsightsScreen(
     coordinator: InsightsCoordinator,
     modifier: Modifier = Modifier,
+    loadSuppressed: suspend () -> Boolean = { true },
+    onOpenScatter: (PendingScatter) -> Unit = {},
 ) {
     val state by coordinator.state.collectAsStateWithLifecycle()
+    // Fail-closed: default suppressed=true until the load resolves, so a bleeding scatter-link can never
+    // flash before we know the treatment mode (the ExploreScreen fail-closed posture). The real gate is
+    // upstream anyway — the engine emits NO bleeding correlation under suppression.
+    var suppressed by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         coordinator.loadCached()
         coordinator.dataChanged()
+        suppressed = loadSuppressed()
     }
-    InsightsDashboard(state = state, onDismiss = coordinator::dismiss, modifier = modifier)
+    InsightsDashboard(
+        state = state,
+        onDismiss = coordinator::dismiss,
+        modifier = modifier,
+        suppressed = suppressed,
+        onOpenScatter = onOpenScatter,
+    )
 }
 
 /**
@@ -114,6 +131,8 @@ fun InsightsDashboard(
     state: InsightsUiState,
     onDismiss: (String) -> Unit,
     modifier: Modifier = Modifier,
+    suppressed: Boolean = true,
+    onOpenScatter: (PendingScatter) -> Unit = {},
 ) {
     val colors = LocalBloomColors.current
     val insights = state.insights
@@ -205,7 +224,7 @@ fun InsightsDashboard(
             }
         } else {
             // Blocks 5–9 — the fixed-order kind sections (Flare FIRST), each omit-when-empty.
-            sections.forEach { section -> kindSection(section, onDismiss) }
+            sections.forEach { section -> kindSection(section, onDismiss, suppressed, onOpenScatter) }
         }
 
         item(key = "footer") { Spacer(Modifier.size(8.dp)) }
@@ -213,7 +232,12 @@ fun InsightsDashboard(
 }
 
 /** One kind section: a header row then its cards. Omitted entirely upstream when the kind is empty. */
-private fun LazyListScope.kindSection(section: InsightSection, onDismiss: (String) -> Unit) {
+private fun LazyListScope.kindSection(
+    section: InsightSection,
+    onDismiss: (String) -> Unit,
+    suppressed: Boolean,
+    onOpenScatter: (PendingScatter) -> Unit,
+) {
     item(key = section.testTag) {
         Column(
             modifier = Modifier
@@ -226,7 +250,12 @@ private fun LazyListScope.kindSection(section: InsightSection, onDismiss: (Strin
         }
     }
     items(section.insights, key = { it.signalKey }) { insight ->
-        InsightCard(insight = insight, onDismiss = onDismiss)
+        InsightCard(
+            insight = insight,
+            onDismiss = onDismiss,
+            suppressed = suppressed,
+            onOpenScatter = onOpenScatter,
+        )
     }
 }
 

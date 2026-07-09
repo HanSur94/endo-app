@@ -57,6 +57,14 @@ class AppDependencies(context: Context) {
     val checkInRouter: CheckInRouter = CheckInRouter()
 
     /**
+     * The cross-tab scatter deep-link router (SCAT-04) — the `.correlation` card affordance sets its
+     * ephemeral [ExploreScatterRouter.pendingScatter] and the Explore Scatter mode consumes it. A plain
+     * seam like [checkInRouter]; observed ONLY inside [AppGate]'s Consented arm. Carries only public catalog
+     * series ids — never health data, never persisted.
+     */
+    val exploreScatterRouter: ExploreScatterRouter = ExploreScatterRouter()
+
+    /**
      * The on-device Room health database (Phase-18). Built lazily (no query runs until first access),
      * so constructing it here does no disk I/O on the main thread.
      */

@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
                     reminders = dependencies.reminderController,
                     healthConnect = dependencies.healthConnectController,
                     insightsCoordinator = dependencies.insightsCoordinator,
+                    exploreScatterRouter = dependencies.exploreScatterRouter,
                 )
             }
         }
