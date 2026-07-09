@@ -1,0 +1,153 @@
+package com.endoapp.app.data
+
+import com.endoapp.app.data.daos.DayEntryDao
+import com.endoapp.app.data.daos.DeleteDayDao
+import com.endoapp.app.data.daos.InsightsDao
+import com.endoapp.app.data.daos.MedicationDao
+import com.endoapp.app.data.daos.SymptomDao
+import com.endoapp.app.data.entities.BleedingEvent
+import com.endoapp.app.data.entities.DayEntry
+import com.endoapp.app.data.entities.DismissedInsight
+import com.endoapp.app.data.entities.FactorReading
+import com.endoapp.app.data.entities.ImportedSample
+import com.endoapp.app.data.entities.Medication
+import com.endoapp.app.data.entities.PainPoint
+import com.endoapp.app.data.entities.SymptomReading
+import com.endoapp.app.data.entities.TreatmentState
+
+/**
+ * The consent-gated facade over the health data store — the ONLY path through which health data is
+ * read or written (ONBD-01, APER-01/02).
+ *
+ * ## Consent by construction (T-18-02)
+ * [checkConsented] is the FIRST statement of EVERY health read/write. It throws
+ * [IllegalStateException] whenever [ConsentStore.state] is not [ConsentState.Consented] — so
+ * [ConsentState.Unknown] (the async-DataStore startup gap) AND [ConsentState.NotConsented] both fail
+ * closed. This is a HARD throw, not `assert`: Android has no debug-only assert that survives R8, so
+ * the iOS `assertConsented()` (a debug `assert`) becomes a real throw here.
+ *
+ * ## Atomic delete-day
+ * [deleteDay] gates, then delegates to the single-[androidx.room.Transaction] [DeleteDayDao.deleteDay]
+ * — never N sequential deletes of its own, so a crash mid-cascade cannot orphan rows.
+ *
+ * `daySnapshots()` (which needs the SnapshotProjector) deliberately lands in Plan 04; this facade
+ * ships the consent gate + the per-aggregate write/read/delete surface this phase needs.
+ */
+class EndoRepository(
+    private val consent: ConsentStore,
+    private val dayEntryDao: DayEntryDao,
+    private val symptomDao: SymptomDao,
+    private val medicationDao: MedicationDao,
+    private val insightsDao: InsightsDao,
+    private val deleteDayDao: DeleteDayDao,
+) {
+
+    /**
+     * The consent gate. Called first by every health method; throws pre-consent so no health data
+     * can be read or written before explicit, current consent. [ConsentState.Unknown] counts as not
+     * consented (fail closed).
+     */
+    private fun checkConsented() {
+        if (consent.state.value !is ConsentState.Consented) {
+            throw IllegalStateException("Repository accessed before consent (ONBD-01).")
+        }
+    }
+
+    // --- Writes (each gated) ---
+
+    suspend fun upsertDayEntry(entry: DayEntry) {
+        checkConsented()
+        dayEntryDao.upsert(entry)
+    }
+
+    suspend fun upsertSymptom(reading: SymptomReading) {
+        checkConsented()
+        symptomDao.upsertSymptom(reading)
+    }
+
+    suspend fun upsertPain(point: PainPoint) {
+        checkConsented()
+        symptomDao.upsertPain(point)
+    }
+
+    suspend fun upsertBleeding(event: BleedingEvent) {
+        checkConsented()
+        symptomDao.upsertBleeding(event)
+    }
+
+    suspend fun upsertFactor(reading: FactorReading) {
+        checkConsented()
+        symptomDao.upsertFactor(reading)
+    }
+
+    suspend fun upsertImported(sample: ImportedSample) {
+        checkConsented()
+        symptomDao.upsertImported(sample)
+    }
+
+    suspend fun upsertMedication(medication: Medication) {
+        checkConsented()
+        medicationDao.upsertMedication(medication)
+    }
+
+    suspend fun upsertTreatment(state: TreatmentState) {
+        checkConsented()
+        medicationDao.upsertTreatment(state)
+    }
+
+    suspend fun dismissInsight(dismissed: DismissedInsight) {
+        checkConsented()
+        insightsDao.insertDismissed(dismissed)
+    }
+
+    // --- Per-day reads (each gated) ---
+
+    suspend fun dayEntriesForDay(epochDay: Long): List<DayEntry> {
+        checkConsented()
+        return dayEntryDao.forDay(epochDay)
+    }
+
+    suspend fun symptomsForDay(epochDay: Long): List<SymptomReading> {
+        checkConsented()
+        return symptomDao.symptomsForDay(epochDay)
+    }
+
+    suspend fun painForDay(epochDay: Long): List<PainPoint> {
+        checkConsented()
+        return symptomDao.painForDay(epochDay)
+    }
+
+    suspend fun bleedingForDay(epochDay: Long): List<BleedingEvent> {
+        checkConsented()
+        return symptomDao.bleedingForDay(epochDay)
+    }
+
+    suspend fun factorsForDay(epochDay: Long): List<FactorReading> {
+        checkConsented()
+        return symptomDao.factorsForDay(epochDay)
+    }
+
+    suspend fun importedForDay(epochDay: Long): List<ImportedSample> {
+        checkConsented()
+        return symptomDao.importedForDay(epochDay)
+    }
+
+    // --- Delete-day (gated; delegates to the single-transaction cascade) ---
+
+    suspend fun deleteDay(epochDay: Long) {
+        checkConsented()
+        deleteDayDao.deleteDay(epochDay)
+    }
+
+    companion object {
+        /** Production wiring: pull the DAOs off the database. */
+        fun from(consent: ConsentStore, db: EndoDatabase): EndoRepository = EndoRepository(
+            consent = consent,
+            dayEntryDao = db.dayEntryDao(),
+            symptomDao = db.symptomDao(),
+            medicationDao = db.medicationDao(),
+            insightsDao = db.insightsDao(),
+            deleteDayDao = db.deleteDayDao(),
+        )
+    }
+}
