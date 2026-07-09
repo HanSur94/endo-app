@@ -53,7 +53,7 @@ class DayLogEditorTest {
         // The Save capsule + a representative set of the §1 sections render.
         composeRule.onNodeWithTag("daylog.save").assertExists()
         composeRule.onNodeWithTag("daylog.symptom.${SymptomType.PELVIC_PAIN.raw}").assertExists()
-        composeRule.onNodeWithTag("daylog.painAreas.host").assertExists()
+        composeRule.onNodeWithTag("bodymap.sideToggle").assertExists() // the Pain areas BodyMap is mounted
         composeRule.onNodeWithTag("daylog.note").assertExists()
 
         // A fresh day (no existing data) offers NO destructive delete.

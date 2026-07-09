@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -257,13 +256,21 @@ private fun SymptomsCard(draft: DayDraft, onDraft: (DayDraft) -> Unit) {
 }
 
 /**
- * Pain areas — Task 1 renders a placeholder host; Task 2 mounts the accessible `BodyMapView` here so
- * both the hotspot map and the list fallback write the SAME [DayDraft.pain] point.
+ * Pain areas — the accessible [BodyMapView]. Both the hotspot map and the non-visual list fallback
+ * write the SAME [DayDraft.pain] point through [onSetRegion]/[onClearRegion] (SYMP-02).
  */
 @Composable
 private fun PainAreasCard(draft: DayDraft, onDraft: (DayDraft) -> Unit) {
     DayLogSection(DayLogCopy.SECTION_PAIN) {
-        Box(modifier = Modifier.fillMaxWidth().testTag("daylog.painAreas.host"))
+        BodyMapView(
+            draft = draft,
+            onSetRegion = { region, severity ->
+                onDraft(draft.copy(pain = draft.pain.toMutableMap().apply { put(region, severity) }))
+            },
+            onClearRegion = { region ->
+                onDraft(draft.copy(pain = draft.pain.toMutableMap().apply { remove(region) }))
+            },
+        )
     }
 }
 
