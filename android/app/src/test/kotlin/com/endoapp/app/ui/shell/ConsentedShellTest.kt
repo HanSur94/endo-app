@@ -46,10 +46,10 @@ class ConsentedShellTest {
         }
     }
 
-    // --- 1. Default Log tab + Log placeholder ---
+    // --- 1. Default Log tab + real Log-home host (Phase 20 replaced the tab.log placeholder) ---
 
     @Test
-    fun defaultTab_isLog_showsThreeTabs_andLogPlaceholder() {
+    fun defaultTab_isLog_showsThreeTabs_andLogHome() {
         setShell()
 
         composeRule.onNodeWithTag("tab.log").assertExists()
@@ -57,7 +57,8 @@ class ConsentedShellTest {
         composeRule.onNodeWithTag("tab.explore").assertExists()
         composeRule.onNodeWithTag("tab.log").assertIsSelected()
 
-        composeRule.onNodeWithTag("tab.log.body").assertExists()
+        // The Log tab now renders the real Log-home host (Phase 20), not the old tab.log.body card.
+        composeRule.onNodeWithTag("log.checkInCta").assertExists()
         composeRule.onNodeWithTag("tab.insights.body").assertDoesNotExist()
     }
 
@@ -92,7 +93,7 @@ class ConsentedShellTest {
 
         // Back off a secondary tab returns to the start tab (Log), not app exit.
         composeRule.onNodeWithTag("tab.log").assertIsSelected()
-        composeRule.onNodeWithTag("tab.log.body").assertExists()
+        composeRule.onNodeWithTag("log.checkInCta").assertExists()
         composeRule.onNodeWithTag("tab.insights.body").assertDoesNotExist()
     }
 

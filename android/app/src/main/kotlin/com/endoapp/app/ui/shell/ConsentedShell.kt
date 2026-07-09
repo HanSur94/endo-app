@@ -9,7 +9,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -19,12 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.content.PlaceholderCopy
 import com.endoapp.app.content.ShellCopy
+import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.designsystem.BloomNavigationBar
 import com.endoapp.app.designsystem.BloomTabIcons
 import com.endoapp.app.designsystem.LocalBloomColors
+import com.endoapp.app.ui.tracking.LogTabHost
 
 /**
  * The consented 3-tab shell — composed ONLY inside [com.endoapp.app.AppGate]'s `Consented` arm, so
@@ -44,25 +46,18 @@ import com.endoapp.app.designsystem.LocalBloomColors
  * handler is disabled, so back falls through to the system default (exit the app). Back is never
  * intercepted generally (predictive back stays default-on).
  *
- * The [router] deep-link flag is observed ONLY here (inside the consented subtree) — never in the
- * gate's pre-consent arms — so a notification/deep link lands on the gate while unconsented.
+ * The [router] deep-link flag is observed ONLY inside the consented Log subtree — now by
+ * [LogTabHost], not here — so a notification/deep link lands on the gate while unconsented, and the
+ * consented host owns the push to Daily Check-In.
  */
 @Composable
 fun ConsentedShell(
     router: CheckInRouter,
     onWithdraw: () -> Unit,
+    recentDays: Flow<List<DayEntry>> = emptyFlow(),
 ) {
     val colors = LocalBloomColors.current
     var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) }
-
-    // Consume the non-sensitive deep-link flag. Real target (jump to the Log check-in) is Phase 20;
-    // here we simply select Log and reset the flag so the entry point lands on the shell.
-    LaunchedEffect(router.pendingCheckIn) {
-        if (router.pendingCheckIn) {
-            selectedTab = ConsentedTab.Log
-            router.pendingCheckIn = false
-        }
-    }
 
     // Predictive-back-to-Log: intercept back ONLY off the start tab, so a back gesture from
     // Insights/Explore animates the return to Log, while back from Log falls through to the system
@@ -89,11 +84,10 @@ fun ConsentedShell(
                 .padding(innerPadding),
         ) {
             when (selectedTab) {
-                ConsentedTab.Log -> TabPlaceholder(
-                    eyebrow = PlaceholderCopy.LOG_EYEBROW,
-                    heading = PlaceholderCopy.LOG_HEADING,
-                    body = PlaceholderCopy.LOG_BODY,
-                    testTag = "tab.log.body",
+                ConsentedTab.Log -> LogTabHost(
+                    recentDays = recentDays,
+                    router = router,
+                    onWithdraw = onWithdraw,
                 )
                 ConsentedTab.Insights -> TabPlaceholder(
                     eyebrow = PlaceholderCopy.INSIGHTS_EYEBROW,
