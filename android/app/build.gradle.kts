@@ -31,6 +31,15 @@ android {
         // generated schemas under android/app/schemas/ (Plan 02 adds exportSchema entities).
         arg("room.schemaLocation", "$projectDir/schemas")
     }
+
+    sourceSets {
+        // Expose the committed schemas to instrumentation tests so MigrationTestHelper (Class-based
+        // constructor) can load `<dbClassFqn>/<version>.json` from androidTest assets and prove the
+        // v1 baseline is a valid migration starting point (Plan 02 Task 3).
+        getByName("androidTest") {
+            assets.srcDirs("$projectDir/schemas")
+        }
+    }
 }
 
 kotlin {
