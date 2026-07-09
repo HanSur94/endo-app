@@ -26,13 +26,20 @@ import com.endoapp.app.content.ShellCopy
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.designsystem.LocalBloomColors
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 /**
  * The Log-tab host. [recentDays] is the live day history off the consent-gated repository;
  * [router] is observed here (and nowhere pre-consent) to push [TrackingRoute.CheckIn] on a
  * reminder deep-link; [onWithdraw] backs the temporary withdraw affordance (graduates into the real
- * Settings screen in Plan 04); [onDayLogged] is a reserved no-op seam Plan 05 wires to the reminder
+ * Settings screen in Plan 04); [onDayLogged] is the fire-and-forget seam Plan 05 wires to the reminder
  * auto-suppress consumer (kept here so this host imports no notification API).
+ *
+ * The Daily Check-In persistence is injected as seams so the host stays free of any DAO and the
+ * check-in is testable off a fake repository: [persistDay] writes the mapped rows through the
+ * consent-gated repository, [loadYesterday] reads yesterday's draft (the sticky-context source), and
+ * [today] supplies the epoch-day the check-in records against. Their production wiring is threaded from
+ * the composition root; the defaults keep the Phase-19 call sites (and the shell/gate tests) compiling.
  */
 @Composable
 fun LogTabHost(
@@ -40,7 +47,10 @@ fun LogTabHost(
     router: CheckInRouter,
     onWithdraw: () -> Unit,
     modifier: Modifier = Modifier,
-    @Suppress("UNUSED_PARAMETER") onDayLogged: () -> Unit = {},
+    onDayLogged: () -> Unit = {},
+    persistDay: suspend (DayLogRows) -> Unit = {},
+    loadYesterday: suspend () -> DayDraft? = { null },
+    today: Long = LocalDate.now().toEpochDay(),
 ) {
     val stack = rememberTrackingBackStack()
     val days by recentDays.collectAsState(initial = emptyList())
@@ -65,7 +75,14 @@ fun LogTabHost(
                 onEditDay = { epochDay -> stack.push(TrackingRoute.DayLog(epochDay)) },
                 onOpenSettings = { stack.push(TrackingRoute.Settings) },
             )
-            TrackingRoute.CheckIn -> RoutePlaceholder("log.route.checkIn")
+            TrackingRoute.CheckIn -> DailyCheckInScreen(
+                today = today,
+                loadYesterday = loadYesterday,
+                persistDay = persistDay,
+                onDayLogged = onDayLogged,
+                onDismiss = { stack.pop() },
+                modifier = Modifier.testTag("log.route.checkIn"),
+            )
             is TrackingRoute.DayLog -> RoutePlaceholder("log.route.dayLog")
             TrackingRoute.Settings -> SettingsPlaceholder(onWithdraw)
         }
