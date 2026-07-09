@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Theme.EndoApp — a MINIMAL launch theme only. It exists so the launch window paints the Bloom
+  canvas (not a white flash) before Compose takes over; BloomTheme owns all real styling in Compose.
+  Platform NoActionBar parent (no AppCompat/Material dependency); transparent system bars because
+  MainActivity.enableEdgeToEdge() draws content under them.
+-->
+<resources>
+    <style name="Theme.EndoApp" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/canvas</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>
