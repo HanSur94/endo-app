@@ -42,6 +42,7 @@ class RepositoryConsentTest {
         "upsertBleeding" to { upsertBleeding(BleedingEvent(id = "b", epochDay = 0)) },
         "upsertFactor" to { upsertFactor(FactorReading(id = "f", epochDay = 0)) },
         "upsertImported" to { upsertImported(ImportedSample(id = "i", epochDay = 0, importedAtMillis = 0)) },
+        "deleteImportedByHcRecordId" to { deleteImportedByHcRecordId("hc-1") },
         "upsertMedication" to { upsertMedication(Medication(id = "m", createdAtMillis = 0)) },
         "upsertTreatment" to { upsertTreatment(TreatmentState(id = "t", startedAtMillis = 0)) },
         "dismissInsight" to { dismissInsight(DismissedInsight(id = "x", dismissedAtMillis = 0)) },
@@ -131,6 +132,7 @@ class RepositoryConsentTest {
         override suspend fun importedForDay(epochDay: Long): List<ImportedSample> = emptyList()
         override suspend fun allImported(): List<ImportedSample> = emptyList()
         override suspend fun deleteImportedForDay(epochDay: Long) = Unit
+        override suspend fun deleteImportedByHcRecordId(hcRecordId: String) = Unit
     }
 
     private class FakeMedicationDao : MedicationDao {
