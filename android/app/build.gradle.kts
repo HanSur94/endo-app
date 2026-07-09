@@ -97,6 +97,9 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
+    // Coroutines virtual-time test lane — drives the InsightsCoordinator debounce (advanceUntilIdle)
+    // and off-main recompute deterministically on the JVM (no real clock, no emulator).
+    testImplementation(libs.kotlinx.coroutines.test)
     // WorkManager test lane — WorkManagerTestInitHelper/TestDriver proves the reminder enqueues an
     // INEXACT periodic unique work (and never an exact alarm) on the JVM Robolectric lane.
     testImplementation(libs.work.testing)

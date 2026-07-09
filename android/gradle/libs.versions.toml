@@ -22,6 +22,7 @@ junitJupiter = "6.1.1"
 junit4 = "4.13.2"
 androidxTestExtJunit = "1.3.0"
 kotlinxSerialization = "1.11.0"
+kotlinxCoroutinesTest = "1.9.0"  # JVM virtual-time test lane (runTest/StandardTestDispatcher); pinned to the coroutines-core the app graph already resolves
 
 [libraries]
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
@@ -63,6 +64,10 @@ robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 # androidx.test.ext:junit — the AndroidJUnit4 runner base for :app androidTest.
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
+# kotlinx-coroutines-test — the JVM virtual-time unit-test lane (runTest / StandardTestDispatcher /
+# advanceUntilIdle) that drives the InsightsCoordinator debounce + off-main recompute deterministically.
+# First-party JetBrains; no analytics/auth/networking coordinate (VersionCatalogAuditTests stays green).
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }              # :insights only

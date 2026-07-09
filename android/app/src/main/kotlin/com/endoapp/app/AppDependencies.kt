@@ -10,12 +10,14 @@ import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.DataStoreConsentStore
 import com.endoapp.app.data.EndoDatabase
 import com.endoapp.app.data.EndoRepository
+import com.endoapp.app.data.entities.DismissedInsight
 import com.endoapp.app.health.ChangesTokenStore
 import com.endoapp.app.health.HealthAvailability
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.health.HealthConnectReader
 import com.endoapp.app.health.HealthImportCoordinator
 import com.endoapp.app.health.RealHealthConnectController
+import com.endoapp.app.insights.InsightsCoordinator
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.reminders.ReminderNotifier
 import com.endoapp.app.reminders.ReminderScheduler
@@ -23,6 +25,8 @@ import com.endoapp.app.reminders.ReminderSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import java.time.LocalDate
+import java.util.UUID
 
 /**
  * The manual composition root — the Android mirror of the iOS `AppDependencies`. A plain class (NO DI
@@ -65,6 +69,42 @@ class AppDependencies(context: Context) {
      * persists and reloads in the running app while consent-by-construction is preserved.
      */
     val repository: EndoRepository = EndoRepository.from(consentStore, database)
+
+    // --- Insights coordinator (Phase 22 Plan 01) ---
+    //
+    // The app-scoped, off-main insight recompute + fingerprint-cache brain (the iOS `InsightsCoordinator`
+    // analog). Constructed over the live [repository] seams; every dependency is an injected closure so
+    // it stays unit-testable with no store or clock. It is NOT threaded into the shell here — Plan 04
+    // threads [InsightsCoordinator.state] into the Insights tab. Imports NO notification/alarm/WorkManager
+    // API, so the NotificationSeparation invariant (CONTEXT §5) stays green.
+
+    /**
+     * The dashboard's insight data path (AINS-01): reads Room-projected snapshots + dismissed keys, runs
+     * the Phase-17 engine OFF the main thread (`withContext(Dispatchers.Default)`), fingerprint-caches
+     * (replace-all), loads the cache instantly, and excludes dismissed keys — publishing a [StateFlow].
+     * `persist` is wrapped best-effort so a cache-write failure never drops fresh insights; `writeDismissed`
+     * appends a NON-destructive [DismissedInsight] (never deletes logged data).
+     */
+    val insightsCoordinator: InsightsCoordinator = InsightsCoordinator(
+        loadSnapshots = repository::daySnapshots,
+        loadDismissed = repository::dismissedSignalKeys,
+        loadCache = repository::loadCachedInsights,
+        persist = { insights, computedAtMillis, fingerprint ->
+            runCatching { repository.replaceCachedInsights(insights, computedAtMillis, fingerprint) }
+        },
+        writeDismissed = { signalKey ->
+            repository.dismissInsight(
+                DismissedInsight(
+                    id = UUID.randomUUID().toString(),
+                    signalKey = signalKey,
+                    dismissedAtMillis = System.currentTimeMillis(),
+                ),
+            )
+        },
+        now = { LocalDate.now() },
+        nowMillis = System::currentTimeMillis,
+        scope = applicationScope,
+    )
 
     // --- Daily check-in reminder (Phase-20 Plan 05) ---
     //
