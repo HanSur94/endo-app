@@ -2,6 +2,7 @@ package com.endoapp.app.ui.tracking
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -41,7 +42,7 @@ class SeverityControlTest {
     fun tappingSeverePreset_setsValueTo9() {
         var value = 0
         composeRule.setContent {
-            var v by mutableIntStateOf(0)
+            var v by remember { mutableIntStateOf(0) }
             BloomTheme {
                 SeverityControl(
                     value = v,
@@ -61,7 +62,7 @@ class SeverityControlTest {
     fun tappingMildPreset_setsValueTo3() {
         var value = 0
         composeRule.setContent {
-            var v by mutableIntStateOf(10)
+            var v by remember { mutableIntStateOf(10) }
             BloomTheme { SeverityControl(value = v, onValueChange = { v = it; value = it }) }
         }
 
