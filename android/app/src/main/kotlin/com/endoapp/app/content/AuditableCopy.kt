@@ -41,6 +41,7 @@ object CopyAuditRegistry {
         ShellCopy,
         PlaceholderCopy,
         OnboardingCopy,
+        TrackingCopy,
     )
 
     /** The union of every registered source's auditable strings — the surface `CopyAudit` scans. */
