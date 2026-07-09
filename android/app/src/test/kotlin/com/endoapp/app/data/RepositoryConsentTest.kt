@@ -55,6 +55,9 @@ class RepositoryConsentTest {
         "factorsForDay" to { factorsForDay(0) },
         "importedForDay" to { importedForDay(0) },
         "daySnapshots" to { daySnapshots() },
+        // T-24-04: per-day provenance READS health rows — must fail closed pre-consent.
+        "daySnapshotSources" to { daySnapshotSources(0) },
+        "daySnapshotSourcesBatch" to { daySnapshotSources(listOf(0L)) },
         "deleteDay" to { deleteDay(0) },
         // T-23-06: export READS health data, import WRITES health data — both must gate first.
         "exportSnapshot" to { exportSnapshot() },

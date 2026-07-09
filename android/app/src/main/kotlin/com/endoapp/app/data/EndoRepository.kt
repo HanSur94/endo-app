@@ -18,8 +18,11 @@ import com.endoapp.app.data.entities.SymptomReading
 import com.endoapp.app.data.entities.TreatmentState
 import com.endoapp.app.export.ExportEnvelope
 import com.endoapp.app.export.ExportMapper
+import com.endoapp.app.insightsbridge.FactorKind
+import com.endoapp.app.insightsbridge.ImportedSignals
 import com.endoapp.app.insightsbridge.SnapshotProjector
 import com.endoapp.insights.DaySnapshot
+import com.endoapp.insights.FlowIntensity
 import com.endoapp.insights.Insight
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
@@ -225,6 +228,54 @@ class EndoRepository(
         )
     }
 
+    /**
+     * Per-field provenance for a single day (D-03 badge / report SOURCE label). Port of the iOS
+     * `daySnapshotSources(on:)` (Repository.swift ~596). Gates FIRST (throws under Unknown /
+     * NotConsented, like every other health read — T-24-04), then reads the day's factor, bleeding,
+     * and imported rows and resolves each field's source through [source].
+     *
+     * STORE-DERIVED, NEVER RECOMPUTED (Pitfall 4 / T-24-05): provenance is decided by which ROWS are
+     * PRESENT (a manual `FactorReading`/`BleedingEvent` vs an `ImportedSample`), never re-derived from
+     * merged values — so value and provenance cannot drift. Manual ALWAYS wins (D-02).
+     *
+     * ACTIVITY (WR-01): imported activity counts as present ONLY when there is no manual activity AND
+     * an imported activity TYPE exists ([importedActivityWins]) — imported MINUTES alone never claim
+     * the badge, mirroring the SnapshotProjector merge gate exactly.
+     *
+     * A field with NEITHER a manual nor an imported contribution reports `null` (no fabricated badge).
+     */
+    suspend fun daySnapshotSources(epochDay: Long): DaySnapshotSource {
+        checkConsented()
+        val manualFactors = symptomDao.factorsForDay(epochDay)
+        val manualBleeding = symptomDao.bleedingForDay(epochDay)
+        val imported = ImportedSignals.from(symptomDao.importedForDay(epochDay))
+
+        val manualFood = manualFactors.any { FactorKind.fromRaw(it.kindRaw) == FactorKind.FOOD }
+        val manualSleep = manualFactors.any { FactorKind.fromRaw(it.kindRaw) == FactorKind.SLEEP }
+        val manualActivity = manualFactors.any { FactorKind.fromRaw(it.kindRaw) == FactorKind.ACTIVITY }
+        val manualFlow = manualBleeding.any { FlowIntensity.fromRawOrNull(it.flowRaw) != null }
+
+        // WR-01: imported activity wins ONLY when no manual activity AND a typed imported workout —
+        // minutes-only imports never claim the badge (they ride on the type in the merge).
+        val importedActivityWins = !manualActivity && imported.activityType != null
+
+        return DaySnapshotSource(
+            flow = source(manual = manualFlow, imported = imported.flow != null),
+            sleep = source(manual = manualSleep, imported = imported.sleepHours != null || imported.sleepQuality != null),
+            activity = source(manual = manualActivity, imported = importedActivityWins),
+            food = source(manual = manualFood, imported = imported.ateThatDay == true),
+        )
+    }
+
+    /**
+     * Convenience batch read for a range (the Plan-05 report caller): gates once, then reads each day's
+     * provenance. Returns a per-day map keyed by `epochDay`.
+     */
+    suspend fun daySnapshotSources(epochDays: List<Long>): Map<Long, DaySnapshotSource> {
+        checkConsented()
+        return epochDays.associateWith { daySnapshotSources(it) }
+    }
+
     // --- Insight cache / dismiss (gated; the InsightsCoordinator's persistence seam, Phase 22) ---
 
     /**
@@ -333,6 +384,17 @@ class EndoRepository(
     suspend fun deleteDay(epochDay: Long) {
         checkConsented()
         deleteDayDao.deleteDay(epochDay)
+    }
+
+    /**
+     * Resolve a field's source (port of the iOS private `source(manual:imported:)`): manual present →
+     * [ValueSource.MANUAL] (manual ALWAYS wins, D-02); else imported present → [ValueSource.HEALTH_CONNECT];
+     * else `null` (neither — no fabricated badge).
+     */
+    private fun source(manual: Boolean, imported: Boolean): ValueSource? = when {
+        manual -> ValueSource.MANUAL
+        imported -> ValueSource.HEALTH_CONNECT
+        else -> null
     }
 
     /**
