@@ -16,6 +16,7 @@ import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.EndoRepository
 import com.endoapp.app.data.entities.TreatmentState
 import com.endoapp.app.health.HealthConnectController
+import com.endoapp.app.insights.InsightsCoordinator
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.ui.onboarding.OnboardingScreen
@@ -45,6 +46,7 @@ fun AppGate(
     repository: EndoRepository? = null,
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
+    insightsCoordinator: InsightsCoordinator? = null,
 ) {
     val state by consentStore.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -91,6 +93,10 @@ fun AppGate(
                 // The Health Connect connect/import seam — bound HERE (Consented arm ONLY), so the
                 // connect/import surface is unconstructible pre-consent by construction (T-21-05a).
                 healthConnect = healthConnect,
+                // The insights coordinator — bound HERE (Consented arm ONLY), mirroring the reminders /
+                // healthConnect posture, so the dashboard's health-derived surface is unconstructible
+                // pre-consent by construction (consent-by-construction, T-19-01).
+                insightsCoordinator = insightsCoordinator,
                 today = today,
             )
         }

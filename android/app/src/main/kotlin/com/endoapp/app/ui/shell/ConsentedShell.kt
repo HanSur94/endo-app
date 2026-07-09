@@ -20,9 +20,11 @@ import com.endoapp.app.content.PlaceholderCopy
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.health.HealthConnectController
+import com.endoapp.app.insights.InsightsCoordinator
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.designsystem.BloomNavigationBar
 import com.endoapp.app.designsystem.BloomTabIcons
+import com.endoapp.app.ui.insights.InsightsScreen
 import com.endoapp.app.ui.tracking.DayDraft
 import com.endoapp.app.ui.tracking.DayLogRows
 import com.endoapp.app.ui.tracking.LogTabHost
@@ -68,6 +70,7 @@ fun ConsentedShell(
     setSuppressed: suspend (Boolean) -> Unit = {},
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
+    insightsCoordinator: InsightsCoordinator? = null,
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) }
@@ -116,12 +119,20 @@ fun ConsentedShell(
                     healthConnect = healthConnect,
                     today = today,
                 )
-                ConsentedTab.Insights -> TabPlaceholder(
-                    eyebrow = PlaceholderCopy.INSIGHTS_EYEBROW,
-                    heading = PlaceholderCopy.INSIGHTS_HEADING,
-                    body = PlaceholderCopy.INSIGHTS_BODY,
-                    testTag = "tab.insights.body",
-                )
+                ConsentedTab.Insights ->
+                    // The Phase-22 gated dashboard (AINS-01) replaces the placeholder once the coordinator
+                    // is wired. Falls back to the placeholder only when unwired (e.g. the shell unit test),
+                    // so the coordinator-absent path never crashes.
+                    if (insightsCoordinator != null) {
+                        InsightsScreen(coordinator = insightsCoordinator)
+                    } else {
+                        TabPlaceholder(
+                            eyebrow = PlaceholderCopy.INSIGHTS_EYEBROW,
+                            heading = PlaceholderCopy.INSIGHTS_HEADING,
+                            body = PlaceholderCopy.INSIGHTS_BODY,
+                            testTag = "tab.insights.body",
+                        )
+                    }
                 ConsentedTab.Explore -> TabPlaceholder(
                     eyebrow = PlaceholderCopy.EXPLORE_EYEBROW,
                     heading = PlaceholderCopy.EXPLORE_HEADING,

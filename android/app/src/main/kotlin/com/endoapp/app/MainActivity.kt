@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
                     repository = dependencies.repository,
                     reminders = dependencies.reminderController,
                     healthConnect = dependencies.healthConnectController,
+                    insightsCoordinator = dependencies.insightsCoordinator,
                 )
             }
         }

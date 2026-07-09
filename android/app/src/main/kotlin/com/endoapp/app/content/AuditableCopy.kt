@@ -48,6 +48,7 @@ object CopyAuditRegistry {
         ReminderCopy,
         HealthConnectCopy,
         ChartsCopy,
+        InsightsCopy,
     )
 
     /** The union of every registered source's auditable strings — the surface `CopyAudit` scans. */
