@@ -47,6 +47,9 @@ object ExportImportCopy : AuditableCopy {
     /** Confirm-passphrase field label (export). */
     const val CONFIRM_PASSPHRASE = "Confirm passphrase"
 
+    /** Passphrase field label (import) — the existing passphrase that opens the picked file. */
+    const val ENTER_PASSPHRASE = "Enter your passphrase"
+
     /** Shown when the choose + confirm passphrase fields disagree. */
     const val PASSPHRASE_MISMATCH = "The two passphrases don't match."
 
@@ -99,6 +102,7 @@ object ExportImportCopy : AuditableCopy {
         IMPORT_LABEL,
         CHOOSE_PASSPHRASE,
         CONFIRM_PASSPHRASE,
+        ENTER_PASSPHRASE,
         PASSPHRASE_MISMATCH,
         CANNOT_RECOVER,
         EXPORT_IN_PROGRESS,
