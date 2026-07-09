@@ -39,7 +39,7 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
 **Phase Numbering:** continuous across milestones — v1.1 ended at Phase 16, so v2.0 spans **Phases 17–25**. The 8-phase port order is **locked** (ANDROID-PORT-PLAN.md §4, do not reorder); Phase 23 is the research-mandated encrypted export/import insertion between the charts phase and the release phases (research/SUMMARY.md "Phase 6.5"). Decimal phases (e.g. 22.1) remain available for urgent insertions.
 
 - [x] **Phase 17: Insights Engine Port** - The complete insights engine runs as pure Kotlin JVM with test-case parity against the shipped Swift suite ✅ (verified 5/5; 176 tests green, PARITY=157)
-- [ ] **Phase 18: Room Persistence** - All 10 models persist consent-gated in Room with the delete-day cascade born complete, migration discipline, backup exclusion, and the copy-audit + export-format contracts in place
+- [x] **Phase 18: Room Persistence** - All 10 models persist consent-gated in Room with the delete-day cascade born complete, migration discipline, backup exclusion, and the copy-audit + export-format contracts in place ✅ (verified 5/5; :app builds, 63 app + 176 insights tests green)
 - [ ] **Phase 19: App Shell & Consent** - Consent-by-construction gate, Bloom design-system port, and a 3-tab Compose shell that declares no INTERNET permission
 - [ ] **Phase 20: Tracking Screens** - Daily Check-In, Day Log editor + BodyMap, medications, and inexact reminders — nothing mandatory, absence ≠ 0
 - [ ] **Phase 21: Health Connect Import** - Read-only import of menstruation/sleep/exercise/nutrition with three-state availability gating, dual rationale declarations, and manual-wins/nil-honest merge
@@ -181,7 +181,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 1–12 (archived) | v1.0 | 39/39 | Complete | 2026-06-10 |
 | 13–16 (archived) | v1.1 | 17/17 | Complete | 2026-06-17 |
 | 17. Insights Engine Port | v2.0 | 8/8 | Complete ✅ | 2026-07-09 |
-| 18. Room Persistence | v2.0 | 0/6 | Planned | - |
+| 18. Room Persistence | v2.0 | 6/6 | Complete ✅ | 2026-07-09 |
 | 19. App Shell & Consent | v2.0 | 0/TBD | Not started | - |
 | 20. Tracking Screens | v2.0 | 0/TBD | Not started | - |
 | 21. Health Connect Import | v2.0 | 0/TBD | Not started | - |
