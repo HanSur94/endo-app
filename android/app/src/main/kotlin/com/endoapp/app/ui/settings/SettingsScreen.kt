@@ -59,6 +59,8 @@ import com.endoapp.app.designsystem.bloomBody
 import com.endoapp.app.designsystem.bloomButtonLabel
 import com.endoapp.app.designsystem.bloomCard
 import com.endoapp.app.designsystem.bloomH3
+import com.endoapp.app.health.HealthConnectController
+import com.endoapp.app.health.ui.HealthConnectSection
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.ui.onboarding.PrivacyPolicyScreen
 import kotlinx.coroutines.flow.Flow
@@ -76,6 +78,10 @@ import kotlinx.coroutines.launch
  * @param onSetSuppressed writes a fresh timestamped TreatmentState (latest wins) on toggle.
  * @param reminders the daily-reminder facade the reminders section drives (null when not yet wired /
  *   in isolation — the section then renders a default OFF state and stays inert).
+ * @param healthConnect the Health Connect connect/import seam (null when not yet wired / in isolation —
+ *   the connect section is then omitted entirely, keeping Settings inert; the exact reminders posture).
+ * @param onConnectHealth the AVAILABLE happy-path callback the host wires to the Health Connect import
+ *   screen (the composition-root wiring lands in Plan 05).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,6 +90,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     reminders: ReminderController? = null,
+    healthConnect: HealthConnectController? = null,
+    onConnectHealth: () -> Unit = {},
     medications: Flow<List<Medication>> = emptyFlow(),
     onAddMedication: suspend (Medication) -> Unit = {},
     onArchiveMedication: suspend (Medication) -> Unit = {},
@@ -150,6 +158,13 @@ fun SettingsScreen(
                     }
                 },
             )
+
+            // (3b) Connect Health data — the availability-gated Health Connect entry (Plan 04). Omitted
+            // entirely when no controller is threaded (isolation / not yet wired), so Settings stays
+            // inert; NEVER gates manual logging in any availability state.
+            if (healthConnect != null) {
+                HealthConnectSection(controller = healthConnect, onConnect = onConnectHealth)
+            }
 
             // (4) Privacy → the Phase-19 PrivacyPolicyScreen.
             SettingsRow(label = SettingsCopy.PRIVACY, testTag = "settings.privacy") { showPrivacy = true }
