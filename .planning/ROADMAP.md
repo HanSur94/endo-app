@@ -169,7 +169,13 @@ Plans:
   2. User imports an export file: passphrase → decrypt → schema-version validation → idempotent upsert by UUID; re-importing the same file changes nothing
   3. Wrong-passphrase and corrupt-file failures are distinguished and rendered gently
   4. A committed golden fixture pins the format, read-back decrypt verification runs before any success message, and two exports of identical data differ (fresh salt/nonce per export)
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 23-01-PLAN.md — ExportCrypto (PBKDF2 600k + AES-GCM) + ExportCodec (ENDO container, versioned header, GZIP) + fresh-salt/nonce + ordered error taxonomy — pure JVM [wave 1]
+- [ ] 23-02-PLAN.md — ExportMapper (9 entity⇄DTO) + ImportDao (@Transaction bulk REPLACE) + consent-gated exportSnapshot()/importEnvelope() + round-trip + idempotency-by-UUID [wave 2]
+- [ ] 23-03-PLAN.md — DocumentIo SAF seam (SafDocumentIo "wt" + FakeDocumentIo) + read-back verify + committed golden fixture + zero-storage-permission manifest assertion [wave 2]
+- [ ] 23-04-PLAN.md — ExportImportViewModel (off-main KDF, progress, orchestration, gentle no-leak errors) + registered ExportImportCopy + export-package notification-separation scan [wave 3]
+- [ ] 23-05-PLAN.md — Settings "Your data" export/import UI (passphrase confirm + cannot-recover warning + spinner) + SAF picker host + Consented-arm-only composition-root wiring [wave 4]
 
 ### Phase 24: PDF Report
 **Goal**: A user can hand their clinician a clean, honest, vector PDF of a chosen date range — shared on their terms, with no silent upload
@@ -208,7 +214,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 20. Tracking Screens | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
 | 21. Health Connect Import | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
 | 22. Insights Dashboard, Explore & Charts | v2.0 | 6/6 | Complete ✅ | 2026-07-09 |
-| 23. Encrypted Export/Import | v2.0 | 0/TBD | Not started | - |
+| 23. Encrypted Export/Import | v2.0 | 0/5 | Not started | - |
 | 24. PDF Report | v2.0 | 0/TBD | Not started | - |
 | 25. Play Store Prep | v2.0 | 0/TBD | Not started | - |
 
