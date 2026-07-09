@@ -178,9 +178,9 @@ internal object RecommendationCopy {
  *  future edit to ONE side without the other fails a test. The forwarded values are pure data with no
  *  behavior; exposing them does NOT widen the engine's API or the Foundation-only boundary.
  *
- *  NOTE (17-08): the Swift `RecommendationsDriftGuard` also forwards `ForbiddenTerms.imperative`/`.causal`.
- *  Those lists land in 17-08 (`ForbiddenTerms.kt`); the forwarders are added there so this file compiles
- *  before `ForbiddenTerms` exists. */
+ *  The `ForbiddenTerms.imperative`/`.causal` list forwarders (deferred from 17-07) now land here too, since
+ *  `ForbiddenTerms` exists in the package as of 17-08 — an app-side test can assert the app's forbidden
+ *  lists stay within the package superset. */
 object RecommendationsDriftGuard {
 
     /** The package-internal `RecommendationCopy.beneficialHeadline` mirror, for byte-identity comparison
@@ -193,4 +193,11 @@ object RecommendationsDriftGuard {
 
     /** The package-internal `RecommendationCopy.detail` mirror. */
     val packageDetail: String get() = RecommendationCopy.detail
+
+    /** The package-internal `ForbiddenTerms.causal` list, for the app-side subset drift assertion. */
+    val packageForbiddenCausal: List<String> get() = ForbiddenTerms.causal
+
+    /** The package-internal `ForbiddenTerms.imperative` list, for the app-side byte-equality drift
+     *  assertion. */
+    val packageForbiddenImperative: List<String> get() = ForbiddenTerms.imperative
 }

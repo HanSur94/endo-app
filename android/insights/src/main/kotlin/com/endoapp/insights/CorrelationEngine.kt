@@ -34,10 +34,10 @@ object CorrelationEngine {
     /** The top-N strongest gate-eligible survivors emitted (D-10, A6) — caps the flood at the source. */
     const val topN: Int = 5
 
-    /** The per-pair sample floor — mirrors `HonestyGate.minSample(for: .correlation) == 10` (Phase 7
-     *  D-14/A1). `HonestyGate` lands in 17-08; until then this named constant is the SINGLE source of the
-     *  correlation floor (exactly one literal, to be replaced by the `HonestyGate` call once it is wired). */
-    private const val correlationMinSample: Int = 10
+    /** The per-pair sample floor (Phase 7 D-14/A1). WIRED (17-08) to `HonestyGate.minSample(CORRELATION)`
+     *  — the ONE source of truth now that the gate exists. This producer self-gates at the SAME floor the
+     *  gate enforces, so the gate's min-sample backstop never count-drops a valid correlation survivor. */
+    private val correlationMinSample: Int = HonestyGate.minSample(InsightKind.CORRELATION)
 
     // Cliff's-δ effect-magnitude floors (severity arm) — the locked Romano bands (07-RESEARCH §2A).
     private const val severityMediumFloor: Double = 0.33

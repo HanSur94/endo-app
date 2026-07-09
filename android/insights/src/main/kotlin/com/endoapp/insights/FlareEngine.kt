@@ -38,10 +38,10 @@ import java.time.LocalDate
 /** Pure `.flare` early-warning producer. No store, no UI, no I/O, no logging — value-in / value-out. */
 object FlareEngine {
 
-    /** The evidence floor — mirrors `HonestyGate.minSample(for: .flare) == 21`. `HonestyGate` lands in
-     *  17-08; until then this named constant is the SINGLE source of the flare floor (Pitfall 4 — so the
-     *  gate's backstop never re-drops a valid warning). */
-    private const val flareMinSample: Int = 21
+    /** The evidence floor. WIRED (17-08) to `HonestyGate.minSample(FLARE)` — the ONE source of truth now
+     *  that the gate exists (Pitfall 4 — the producer self-gates at the SAME floor the gate enforces, so
+     *  the gate's min-sample backstop never re-drops a valid warning). */
+    private val flareMinSample: Int = HonestyGate.minSample(InsightKind.FLARE)
 
     // MARK: - The single public entry point (mirrors RecommendationsEngine.recommendations, minus Calendar).
 
@@ -320,8 +320,9 @@ internal object FlareCopyText {
  *  the other fails a test. The forwarded values are pure data with no behavior; exposing them does NOT widen
  *  the engine's API or the Foundation-only boundary.
  *
- *  NOTE (17-08): the Swift `FlareDriftGuard` also forwards `ForbiddenTerms.alarmist`. That list lands in 17-08
- *  (`ForbiddenTerms.kt`); the forwarder is added there so this file compiles before `ForbiddenTerms` exists. */
+ *  The `ForbiddenTerms.alarmist` list forwarder (deferred from 17-07) now lands here too, since
+ *  `ForbiddenTerms` exists in the package as of 17-08 — an app-side test can assert the app's alarmist list
+ *  stays set-equal to the package's. */
 object FlareDriftGuard {
 
     /** The package-internal `FlareCopyText.headline` mirror, for byte-identity comparison against the app's
@@ -342,4 +343,7 @@ object FlareDriftGuard {
 
     /** The package-internal `FlareCopyText.insufficientSubtitle` mirror. */
     val packageInsufficientSubtitle: String get() = FlareCopyText.insufficientSubtitle
+
+    /** The package-internal `ForbiddenTerms.alarmist` list, for the app-side set-equality drift assertion. */
+    val packageForbiddenAlarmist: List<String> get() = ForbiddenTerms.alarmist
 }
