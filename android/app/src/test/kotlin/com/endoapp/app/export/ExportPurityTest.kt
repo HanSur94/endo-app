@@ -11,15 +11,16 @@ import java.io.File
  * precedent: it locates the committed MAIN-source `export/` directory, then asserts the three crypto
  * files carry NO `import android.` / `import androidx.` line.
  *
- * The allowlist is by filename: only [ExportCrypto.kt], [ExportCodec.kt], [ExportError.kt] are pinned
- * android-free. The SAF seam + UI files that land in later plans (23-03/04) legitimately import
- * `android.*` and are exempt. Comments are stripped first so a KDoc may DOCUMENT `android.util.Base64`
- * by name (as [ExportCodec] does) without tripping the scan — only a real `import` line trips it.
+ * The allowlist is by filename: [ExportCrypto.kt], [ExportCodec.kt], [ExportError.kt] (23-01) and
+ * [ExportMapper.kt] (23-02, the entity⇄DTO conversion place) are pinned android-free. The SAF seam +
+ * UI files that land in later plans (23-03/04) legitimately import `android.*` and are exempt.
+ * Comments are stripped first so a KDoc may DOCUMENT `android.util.Base64` by name (as [ExportCodec]
+ * does) without tripping the scan — only a real `import` line trips it.
  */
 class ExportPurityTest {
 
     private companion object {
-        val ANDROID_FREE_FILES = listOf("ExportCrypto.kt", "ExportCodec.kt", "ExportError.kt")
+        val ANDROID_FREE_FILES = listOf("ExportCrypto.kt", "ExportCodec.kt", "ExportError.kt", "ExportMapper.kt")
     }
 
     /** Strip Kotlin block + line comments so only real code (import lines) is scanned. */
