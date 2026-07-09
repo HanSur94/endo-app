@@ -1,5 +1,7 @@
 package com.endoapp.app.ui.shell
 
+import androidx.activity.BackEventCompat
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.flow.Flow
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.content.PlaceholderCopy
 import com.endoapp.app.content.ShellCopy
@@ -59,6 +62,13 @@ fun ConsentedShell(
             selectedTab = ConsentedTab.Log
             router.pendingCheckIn = false
         }
+    }
+
+    // Predictive-back-to-Log: intercept back ONLY off the start tab, so a back gesture from
+    // Insights/Explore animates the return to Log, while back from Log falls through to the system
+    // default (exit). The decision is the pure [tabBackTarget] — the same seam the shell test pins.
+    TabBackHandler(enabled = tabBackTarget(selectedTab) != null) {
+        tabBackTarget(selectedTab)?.let { selectedTab = it }
     }
 
     Scaffold(
@@ -119,4 +129,32 @@ private fun iconFor(tab: ConsentedTab): ImageVector = when (tab) {
     ConsentedTab.Log -> BloomTabIcons.logGlyph
     ConsentedTab.Insights -> BloomTabIcons.insightsGlyph
     ConsentedTab.Explore -> BloomTabIcons.exploreGlyph
+}
+
+/**
+ * The pure tab-back decision — the M3 norm "back from a secondary tab returns to the start tab":
+ * from Insights/Explore, back targets [ConsentedTab.Log]; from Log it returns `null` (do NOT
+ * intercept — back falls through to exit the app). Extracted as a pure function so the shell test
+ * pins the behavior deterministically on the JVM without simulating the device back gesture.
+ */
+internal fun tabBackTarget(current: ConsentedTab): ConsentedTab? =
+    if (current == ConsentedTab.Log) null else ConsentedTab.Log
+
+/**
+ * A thin, predictive-back-friendly wrapper over [PredictiveBackHandler]: when [enabled], a back
+ * gesture's progress flow is collected (the system renders the back-preview animation) and, on
+ * commit, [onBack] runs; a cancelled gesture leaves the current tab untouched. When disabled the
+ * handler does not register, so back stays default-on (predictive-back-to-exit on the start tab).
+ */
+@Composable
+private fun TabBackHandler(enabled: Boolean, onBack: () -> Unit) {
+    PredictiveBackHandler(enabled = enabled) { progress: Flow<BackEventCompat> ->
+        try {
+            progress.collect { /* back-preview frames animated by the system */ }
+            onBack()
+        } catch (cancelled: kotlin.coroutines.cancellation.CancellationException) {
+            // Gesture cancelled — remain on the current tab. Rethrow to honor structured concurrency.
+            throw cancelled
+        }
+    }
 }
