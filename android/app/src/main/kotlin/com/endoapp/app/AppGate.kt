@@ -80,6 +80,10 @@ fun AppGate(
                 addMedication = { med -> repository?.upsertMedication(med) },
                 archiveMedication = { med -> repository?.upsertMedication(med) },
                 loadSuppressed = { repository?.latestTreatment()?.modeRaw == "suppressed" },
+                // The Explore descriptive-read seam — bound HERE (Consented arm ONLY), so the raw
+                // day-snapshot surface the Explore lanes render is unconstructible pre-consent by
+                // construction (consent-by-construction, T-19-01). Ephemeral selection never persists.
+                exploreSnapshots = { repository?.daySnapshots() ?: emptyList() },
                 setSuppressed = { on ->
                     repository?.upsertTreatment(
                         TreatmentState(

@@ -24,8 +24,10 @@ import com.endoapp.app.insights.InsightsCoordinator
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.designsystem.BloomNavigationBar
 import com.endoapp.app.designsystem.BloomTabIcons
+import com.endoapp.app.ui.explore.ExploreScreen
 import com.endoapp.app.ui.insights.InsightsScreen
 import com.endoapp.app.ui.tracking.DayDraft
+import com.endoapp.insights.DaySnapshot
 import com.endoapp.app.ui.tracking.DayLogRows
 import com.endoapp.app.ui.tracking.LogTabHost
 import java.time.LocalDate
@@ -68,6 +70,7 @@ fun ConsentedShell(
     archiveMedication: suspend (Medication) -> Unit = {},
     loadSuppressed: suspend () -> Boolean = { false },
     setSuppressed: suspend (Boolean) -> Unit = {},
+    exploreSnapshots: suspend () -> List<DaySnapshot> = { emptyList() },
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
     insightsCoordinator: InsightsCoordinator? = null,
@@ -133,12 +136,15 @@ fun ConsentedShell(
                             testTag = "tab.insights.body",
                         )
                     }
-                ConsentedTab.Explore -> TabPlaceholder(
-                    eyebrow = PlaceholderCopy.EXPLORE_EYEBROW,
-                    heading = PlaceholderCopy.EXPLORE_HEADING,
-                    body = PlaceholderCopy.EXPLORE_BODY,
-                    testTag = "tab.explore.body",
-                )
+                ConsentedTab.Explore ->
+                    // The Phase-22 Explore surface (AINS-04) replaces the placeholder — the descriptive
+                    // per-scale overlay + event lanes over the consent-gated `daySnapshots()` seam, still
+                    // suppression-gated (hides bleeding). Composed ONLY here inside the Consented arm.
+                    ExploreScreen(
+                        loadSnapshots = exploreSnapshots,
+                        loadSuppressed = loadSuppressed,
+                        today = LocalDate.ofEpochDay(today),
+                    )
             }
         }
     }
