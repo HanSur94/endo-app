@@ -97,7 +97,12 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
   2. The ported Bloom design system (color tokens, typography scale, components, tab chrome) renders on all shell screens
   3. The 3-tab shell (Log / Insights / Explore) handles edge-to-edge and predictive back correctly at targetSdk 36
   4. A manifest assertion test proves the app declares no `INTERNET` permission
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 19-01-PLAN.md — Compose/Robolectric toolchain + Bloom design-system port (tokens, typography, components, theme) [wave 1]
+- [ ] 19-02-PLAN.md — MainActivity + AppGate when-switch + consent-by-construction test (health UI unreachable pre-consent) [wave 2]
+- [ ] 19-03-PLAN.md — 3-tab Bloom shell: edge-to-edge insets, predictive-back-to-Log, placeholder cards [wave 3]
+- [ ] 19-04-PLAN.md — Onboarding + consent + privacy flow; long-form legal constants (exempt-scanned) [wave 4]
+- [ ] 19-05-PLAN.md — No-INTERNET manifest assertion test + phase exit-gate suite [wave 5]
 **UI hint**: yes
 
 ### Phase 20: Tracking Screens
@@ -182,7 +187,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 13–16 (archived) | v1.1 | 17/17 | Complete | 2026-06-17 |
 | 17. Insights Engine Port | v2.0 | 8/8 | Complete ✅ | 2026-07-09 |
 | 18. Room Persistence | v2.0 | 6/6 | Complete ✅ | 2026-07-09 |
-| 19. App Shell & Consent | v2.0 | 0/TBD | Not started | - |
+| 19. App Shell & Consent | v2.0 | 0/5 | Not started | - |
 | 20. Tracking Screens | v2.0 | 0/TBD | Not started | - |
 | 21. Health Connect Import | v2.0 | 0/TBD | Not started | - |
 | 22. Insights Dashboard, Explore & Charts | v2.0 | 0/TBD | Not started | - |
