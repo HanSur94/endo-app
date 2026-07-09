@@ -51,6 +51,7 @@ object CopyAuditRegistry {
         InsightsCopy,
         ExploreCopy,
         ExportImportCopy,
+        ReportCopy,
     )
 
     /** The union of every registered source's auditable strings — the surface `CopyAudit` scans. */

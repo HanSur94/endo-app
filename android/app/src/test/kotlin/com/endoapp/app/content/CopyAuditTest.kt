@@ -125,6 +125,48 @@ class CopyAuditTest {
         }
     }
 
+    // --- Phase 24 report copy (Plan 24-02): ReportCopy honesty framing ---
+    //
+    // ReportCopy is registered in [CopyAuditRegistry.sources], so its strings are already covered by the
+    // catalog scans above (no causal/imperative/alarmist/gendered/false-precision hit). These extra
+    // assertions pin the honesty FRAMING the report must carry, mirroring the iOS `reportCopy_isNonEmpty`
+    // expectations.
+
+    @Test
+    fun reportCopy_isRegisteredInTheAuditedCatalog() {
+        // Registration IS the enforcement — an unregistered string escapes the scan (the load-bearing rule).
+        assertTrue(
+            "ReportCopy must be registered in CopyAuditRegistry.sources.",
+            CopyAuditRegistry.sources.contains(ReportCopy),
+        )
+        assertTrue(
+            "The registered catalog must include a ReportCopy string.",
+            CopyAuditRegistry.allAuditableStrings.contains(ReportCopy.PDF_TITLE),
+        )
+    }
+
+    @Test
+    fun reportCopy_sourceTagForHealthConnect_isFromHealthConnect_notAppleHealth() {
+        val tag = ReportCopy.sourceTag(com.endoapp.app.report.SectionSource.HEALTH_CONNECT)
+        assertTrue("The imported source tag reads \"from Health Connect\".", tag == "from Health Connect")
+        assertFalse("The Android tag must not mention Apple Health.", tag.lowercase().contains("apple"))
+        // NONE → empty string (no badge — honesty).
+        assertTrue(ReportCopy.sourceTag(com.endoapp.app.report.SectionSource.NONE).isEmpty())
+    }
+
+    @Test
+    fun reportCopy_carriesTheSelfTrackedNotDiagnosticFraming() {
+        // The footer is the prominent self-tracked-not-diagnostic framing. It is EXEMPT from the curated
+        // substring scan (a legitimate "not diagnostic" negation trips the alarmist "diagnos" stem, exactly
+        // like Disclaimer.text), so it is pinned HERE instead — a must-contain, mirroring iOS.
+        val footer = ReportCopy.FOOTER.lowercase()
+        assertTrue("The footer must carry the self-tracked framing.", footer.contains("self-tracked"))
+        assertTrue("The footer must carry the not-diagnostic framing.", footer.contains("not diagnostic"))
+        // The suppressed-cycle line reads as an off-state; the sparse line is the honest not-enough-data.
+        assertTrue(ReportCopy.CYCLE_SUPPRESSED.lowercase().contains("off"))
+        assertTrue(ReportCopy.NOT_ENOUGH_DATA_IN_RANGE.lowercase().contains("not enough data"))
+    }
+
     @Test
     fun scanPassesCuratedCleanCopy() {
         // Curated discussion-prompt words, each verified by hand against the substring traps — these must
