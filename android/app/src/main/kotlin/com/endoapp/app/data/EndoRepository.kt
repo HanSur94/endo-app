@@ -90,7 +90,14 @@ class EndoRepository(
 
     suspend fun upsertMedication(medication: Medication) {
         checkConsented()
-        medicationDao.upsertMedication(medication)
+        // Length-bound the free-text name/note HERE (the seam), never in the UI (UI-SPEC §Section-row
+        // contracts): the store is the single guard, so a pasted essay can never bloat a definition row.
+        medicationDao.upsertMedication(
+            medication.copy(
+                name = medication.name?.take(MAX_MED_TEXT),
+                note = medication.note?.take(MAX_MED_TEXT),
+            ),
+        )
     }
 
     suspend fun upsertTreatment(state: TreatmentState) {
@@ -110,6 +117,14 @@ class EndoRepository(
      * `recentDays` consent-by-construction posture the shell already relies on).
      */
     fun observeDayEntries(): Flow<List<DayEntry>> = dayEntryDao.observeAll()
+
+    /**
+     * The live saved-medication list (active / non-archived, newest first) the Settings manage-meds
+     * screen renders. Like [observeDayEntries] it is NOT method-gated (a cold [Flow] cannot fail-closed
+     * synchronously) — it is safe by CONSTRUCTION: wired only inside [com.endoapp.app.AppGate]'s
+     * `Consented` arm, so it is never collected pre-consent.
+     */
+    fun observeMedications(): Flow<List<Medication>> = medicationDao.observeActive()
 
     // --- Per-day reads (each gated) ---
 
@@ -143,6 +158,21 @@ class EndoRepository(
         return symptomDao.importedForDay(epochDay)
     }
 
+    /** Every medication definition, INCLUDING soft-archived ones (gated) — the archive round-trip
+     *  proof: a med hidden from [observeMedications] still lives here, so prior 'taken' history keyed by
+     *  its id stays valid. */
+    suspend fun allMedications(): List<Medication> {
+        checkConsented()
+        return medicationDao.allMedications()
+    }
+
+    /** The current standing treatment/suppression state (the latest-started row), or null (gated). Feeds
+     *  the Settings cycle-tracking-off toggle's initial value (`modeRaw == "suppressed"`). */
+    suspend fun latestTreatment(): TreatmentState? {
+        checkConsented()
+        return medicationDao.latestTreatment()
+    }
+
     // --- Projection read (gated; the single path onto the pure SnapshotProjector) ---
 
     /**
@@ -174,6 +204,9 @@ class EndoRepository(
     }
 
     companion object {
+        /** Upper bound on a saved medication's free-text name/note, enforced at this write seam. */
+        private const val MAX_MED_TEXT = 200
+
         /** Production wiring: pull the DAOs off the database. */
         fun from(consent: ConsentStore, db: EndoDatabase): EndoRepository = EndoRepository(
             consent = consent,
