@@ -76,6 +76,10 @@ dependencies {
     implementation(libs.work.runtime)
     // kotlinx-serialization — the versioned export/import JSON DTOs (contract lands this phase).
     implementation(libs.kotlinx.serialization.json)
+    // Health Connect (androidx.health.connect:connect-client) — the READ-ONLY import broker (Phase 21).
+    // The app declares only the four health READ perms + READ_HEALTH_DATA_HISTORY; zero WRITE, no
+    // INTERNET, no background read. Availability is gated per session via HealthConnectClient.getSdkStatus.
+    implementation(libs.health.connect.client)
 
     // Jetpack Compose (Phase 19 UI). The BOM is the single version knob — every artifact below
     // is versionless and pinned by the platform() import.
