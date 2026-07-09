@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
                 AppGate(
                     consentStore = dependencies.consentStore,
                     router = dependencies.checkInRouter,
+                    repository = dependencies.repository,
                 )
             }
         }

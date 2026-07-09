@@ -3,10 +3,11 @@
 // [CheckInRouter] flag — but ONLY here, inside the consented Log subtree (threat T-20-11), so a
 // reminder deep-link lands on the consent gate first and can never construct health UI pre-consent.
 //
-// NO `NavHost`, NO navigation dependency. The CheckIn / DayLog / Settings arms render temporary inline
-// placeholders this plan; each later plan (02/03/04) replaces its arm with the real screen. This host
-// stays free of any notification API — the [onDayLogged] seam is where Plan 05 wires the reminder
-// auto-suppress consumer.
+// NO `NavHost`, NO navigation dependency. The CheckIn arm (Plan 02) and the DayLog arm (Plan 03) now
+// render their real screens; only the Settings arm stays a temporary placeholder until Plan 04. This
+// host stays free of any notification API — the [onDayLogged] seam is where Plan 05 wires the reminder
+// auto-suppress consumer. Persistence is injected as seams (Check-In MERGES via [persistDay]; the Day
+// Log editor REPLACES the whole day via [persistDayLog]) so the host imports no DAO.
 package com.endoapp.app.ui.tracking
 
 import androidx.activity.compose.BackHandler
@@ -49,6 +50,7 @@ fun LogTabHost(
     modifier: Modifier = Modifier,
     onDayLogged: () -> Unit = {},
     persistDay: suspend (DayLogRows) -> Unit = {},
+    persistDayLog: suspend (DayLogRows) -> Unit = {},
     loadYesterday: suspend () -> DayDraft? = { null },
     loadDay: suspend (Long) -> DayDraft? = { null },
     deleteDay: suspend (Long) -> Unit = {},
@@ -88,7 +90,7 @@ fun LogTabHost(
             is TrackingRoute.DayLog -> DayLogEditorScreen(
                 epochDay = route.epochDay,
                 loadDay = loadDay,
-                persistDay = persistDay,
+                persistDay = persistDayLog, // the editor REPLACES the whole day (honest deselect)
                 deleteDay = deleteDay,
                 onDayLogged = onDayLogged,
                 onDismiss = { stack.pop() },

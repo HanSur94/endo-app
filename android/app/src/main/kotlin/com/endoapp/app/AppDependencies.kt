@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.DataStoreConsentStore
+import com.endoapp.app.data.EndoDatabase
+import com.endoapp.app.data.EndoRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,4 +40,18 @@ class AppDependencies(context: Context) {
 
     /** The deep-link / notification entry flag, observed only inside the consented shell. */
     val checkInRouter: CheckInRouter = CheckInRouter()
+
+    /**
+     * The on-device Room health database (Phase-18). Built lazily (no query runs until first access),
+     * so constructing it here does no disk I/O on the main thread.
+     */
+    val database: EndoDatabase = EndoDatabase.build(context)
+
+    /**
+     * The consent-gated facade over the health store — the ONLY path the UI reads/writes health data
+     * through. Every method fails closed pre-consent (Phase-18 [EndoRepository.checkConsented]); it is
+     * threaded into the shell ONLY inside [AppGate]'s `Consented` arm, so a logged day genuinely
+     * persists and reloads in the running app while consent-by-construction is preserved.
+     */
+    val repository: EndoRepository = EndoRepository.from(consentStore, database)
 }

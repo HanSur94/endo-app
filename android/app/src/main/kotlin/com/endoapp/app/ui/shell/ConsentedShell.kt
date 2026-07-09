@@ -26,7 +26,10 @@ import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.designsystem.BloomNavigationBar
 import com.endoapp.app.designsystem.BloomTabIcons
 import com.endoapp.app.designsystem.LocalBloomColors
+import com.endoapp.app.ui.tracking.DayDraft
+import com.endoapp.app.ui.tracking.DayLogRows
 import com.endoapp.app.ui.tracking.LogTabHost
+import java.time.LocalDate
 
 /**
  * The consented 3-tab shell — composed ONLY inside [com.endoapp.app.AppGate]'s `Consented` arm, so
@@ -55,6 +58,13 @@ fun ConsentedShell(
     router: CheckInRouter,
     onWithdraw: () -> Unit,
     recentDays: Flow<List<DayEntry>> = emptyFlow(),
+    onDayLogged: () -> Unit = {},
+    persistDay: suspend (DayLogRows) -> Unit = {},
+    persistDayLog: suspend (DayLogRows) -> Unit = {},
+    loadYesterday: suspend () -> DayDraft? = { null },
+    loadDay: suspend (Long) -> DayDraft? = { null },
+    deleteDay: suspend (Long) -> Unit = {},
+    today: Long = LocalDate.now().toEpochDay(),
 ) {
     val colors = LocalBloomColors.current
     var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) }
@@ -88,6 +98,13 @@ fun ConsentedShell(
                     recentDays = recentDays,
                     router = router,
                     onWithdraw = onWithdraw,
+                    onDayLogged = onDayLogged,
+                    persistDay = persistDay,
+                    persistDayLog = persistDayLog,
+                    loadYesterday = loadYesterday,
+                    loadDay = loadDay,
+                    deleteDay = deleteDay,
+                    today = today,
                 )
                 ConsentedTab.Insights -> TabPlaceholder(
                     eyebrow = PlaceholderCopy.INSIGHTS_EYEBROW,

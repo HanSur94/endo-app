@@ -16,6 +16,7 @@ import com.endoapp.app.data.entities.SymptomReading
 import com.endoapp.app.data.entities.TreatmentState
 import com.endoapp.app.insightsbridge.SnapshotProjector
 import com.endoapp.insights.DaySnapshot
+import kotlinx.coroutines.flow.Flow
 
 /**
  * The consent-gated facade over the health data store — the ONLY path through which health data is
@@ -101,6 +102,14 @@ class EndoRepository(
         checkConsented()
         insightsDao.insertDismissed(dismissed)
     }
+
+    /**
+     * The live day history (newest first) the Log-home renders. NOT method-gated (a cold [Flow] gate
+     * cannot fail-closed synchronously) — instead it is safe by CONSTRUCTION: it is wired only inside
+     * [com.endoapp.app.AppGate]'s `Consented` arm, so it is never collected pre-consent (mirrors the
+     * `recentDays` consent-by-construction posture the shell already relies on).
+     */
+    fun observeDayEntries(): Flow<List<DayEntry>> = dayEntryDao.observeAll()
 
     // --- Per-day reads (each gated) ---
 
