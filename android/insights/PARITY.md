@@ -29,7 +29,7 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | Swift file | Swift @Test | Kotlin file | Kotlin count | Plan | Status |
 |------------|------------:|-------------|-------------:|------|--------|
 | `SnapshotFixtures.swift` | 0 | `SnapshotFixtures.kt` | — | 17-02 | ✅ done |
-| `SeriesTestSupport.swift` | 0 | `SeriesTestSupport.kt` | — | 17-05 | pending |
+| `SeriesTestSupport.swift` | 0 | `SeriesTestSupport.kt` | — | 17-05 | ✅ done |
 | `SmokeTests.swift` | 2 | `SmokeTests.kt` | 2 | 17-01 | ✅ done |
 | `BoundaryLintTests.swift` | 1 | `BoundaryLintTests.kt` | 1 | 17-01 | ✅ done |
 | `InsightCodableTests.swift` | 6 | `InsightCodableTests.kt` | 6 | 17-02 | ✅ done |
@@ -37,22 +37,29 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `TrendsEngineTests.swift` | 11 | `TrendsEngineTests.kt` | 11 | 17-04 | ✅ done |
 | `CyclePhaseMapperTests.swift` | 8 | `CyclePhaseMapperTests.kt` | 8 | 17-04 | ✅ done |
 | `SuppressedFixtureTests.swift` | 2 | `SuppressedFixtureTests.kt` | 2 | 17-04 | ✅ done |
-| `ChartScrubSelectionTests.swift` | 7 | `ChartScrubSelectionTests.kt` | pending | 17-05 | pending |
-| `ExploreSeriesCatalogTests.swift` | 9 | `ExploreSeriesCatalogTests.kt` | pending | 17-05 | pending |
-| `ExploreSeriesExtractionTests.swift` | 10 | `ExploreSeriesExtractionTests.kt` | pending | 17-05 | pending |
-| `ScatterPairingTests.swift` | 7 | `ScatterPairingTests.kt` | pending | 17-05 | pending |
-| `SeriesNormalizationTests.swift` | 6 | `SeriesNormalizationTests.kt` | pending | 17-05 | pending |
+| `ChartScrubSelectionTests.swift` | 7 | `ChartScrubSelectionTests.kt` | 7 | 17-05 | ✅ done |
+| `ExploreSeriesCatalogTests.swift` | 9 | `ExploreSeriesCatalogTests.kt` | 9 | 17-05 | ✅ done |
+| `ExploreSeriesExtractionTests.swift` | 10 | `ExploreSeriesExtractionTests.kt` | 10 | 17-05 | ✅ done |
+| `ScatterPairingTests.swift` | 7 | `ScatterPairingTests.kt` | 7 | 17-05 | ✅ done |
+| `SeriesNormalizationTests.swift` | 6 | `SeriesNormalizationTests.kt` | 6 | 17-05 | ✅ done |
 | `CorrelationEngineTests.swift` | 12 | `CorrelationEngineTests.kt` | pending | 17-06 | pending |
 | `RecommendationsEngineTests.swift` | 7 | `RecommendationsEngineTests.kt` | pending | 17-07 | pending |
 | `FlareEngineTests.swift` | 6 | `FlareEngineTests.kt` | pending | 17-07 | pending |
 | `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
 | `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | pending | 17-08 | pending |
 | `ContractTests.swift` | 7 | `ContractTests.kt` | pending | 17-08 | pending |
-| **TOTAL** | **157** | | **56** | | |
+| **TOTAL** | **157** | | **95** | | |
 
-Kotlin count so far: **56** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26
-+ TrendsEngineTests 11 + CyclePhaseMapperTests 8 + SuppressedFixtureTests 2).
-SnapshotFixtures.kt (0-case shared builder) is ported and available to plans 03–08.
+Kotlin count so far: **95** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26
++ TrendsEngineTests 11 + CyclePhaseMapperTests 8 + SuppressedFixtureTests 2 + ChartScrubSelectionTests 7
++ ExploreSeriesCatalogTests 9 + ExploreSeriesExtractionTests 10 + ScatterPairingTests 7 + SeriesNormalizationTests 6).
+SnapshotFixtures.kt + SeriesTestSupport.kt (0-case shared builders) are ported and available to plans 06–08.
+
+**17-05 chart data-prep landed (39 cases):** `ChartScrubSelectionTests` 7, `ExploreSeriesCatalogTests` 9,
+`ExploreSeriesExtractionTests` 10, `ScatterPairingTests` 7, `SeriesNormalizationTests` 6. The injected Swift
+`Calendar` is dropped (LocalDate identity): the `ChartScrubSelectionTests` 23:59-boundary and DST-spring-forward
+cases are preserved as day-identity pins that now hold by construction (LocalDate is zone-free, no wall-clock
+bucketing). Remaining pending: 17-06 (12), 17-07 (13), 17-08 (37) → 95 + 62 = 157.
 
 ## Additional guard tests (no Swift mirror)
 
