@@ -41,10 +41,36 @@ class ManifestPermissionsTest {
         const val INTERNET_PERMISSION = "android.permission.INTERNET"
 
         /**
+         * The exact-alarm permission that must NEVER appear (Phase 20-05 / threat T-20-02b): the daily
+         * reminder uses WorkManager INEXACT scheduling only. Play restricts `SCHEDULE_EXACT_ALARM` to
+         * alarm-clock apps; a health tracker requesting it invites review friction.
+         */
+        const val SCHEDULE_EXACT_ALARM_PERMISSION = "android.permission.SCHEDULE_EXACT_ALARM"
+
+        /**
          * Health Connect write permissions all live under this prefix
          * (e.g. `android.permission.health.WRITE_HEART_RATE`). No name may start with it.
          */
         const val HEALTH_WRITE_PREFIX = "android.permission.health.WRITE_"
+
+        /** The ONE runtime permission the app declares (Phase 20-05, the daily check-in reminder). */
+        const val POST_NOTIFICATIONS_PERMISSION = "android.permission.POST_NOTIFICATIONS"
+
+        /**
+         * WorkManager (androidx.work) transitively merges these BENIGN permissions into the MERGED
+         * manifest. None is a network data path, an exact alarm, or a health write, so all pass the
+         * deny-list. RECEIVE_BOOT_COMPLETED is exactly how WorkManager reschedules the reminder across
+         * reboot (we declare no receiver of our own). ACCESS_NETWORK_STATE is NOT INTERNET.
+         */
+        val WORKMANAGER_TRANSITIVE = setOf(
+            "android.permission.WAKE_LOCK",
+            "android.permission.ACCESS_NETWORK_STATE",
+            "android.permission.RECEIVE_BOOT_COMPLETED",
+            "android.permission.FOREGROUND_SERVICE",
+        )
+
+        /** The exact set of permissions the SOURCE manifest may declare (allow-list). */
+        val SOURCE_ALLOWED = setOf(POST_NOTIFICATIONS_PERMISSION)
 
         /** The source manifest, relative to any ancestor working dir. */
         val SOURCE_MANIFEST_CANDIDATES = listOf(
@@ -117,6 +143,13 @@ class ManifestPermissionsTest {
             !permissions.contains(INTERNET_PERMISSION),
         )
 
+        assertTrue(
+            "The $label manifest must declare NO '$SCHEDULE_EXACT_ALARM_PERMISSION' — the daily " +
+                "reminder uses WorkManager INEXACT scheduling only (T-20-02b). Declared permissions " +
+                "were: $permissions",
+            !permissions.contains(SCHEDULE_EXACT_ALARM_PERMISSION),
+        )
+
         val healthWrites = permissions.filter { it.startsWith(HEALTH_WRITE_PREFIX) }
         assertTrue(
             "The $label manifest must declare NO health WRITE permission (prefix " +
@@ -135,6 +168,52 @@ class ManifestPermissionsTest {
             source,
         )
         assertNoForbiddenPermissions(source!!, "source")
+    }
+
+    @Test
+    fun sourceManifestDeclaresExactlyPostNotifications() {
+        val source = resolveSourceManifest()
+        assertNotNull("source AndroidManifest.xml not found.", source)
+        val declared = declaredPermissions(source!!)
+        // ALLOW-LIST: the source declares exactly {POST_NOTIFICATIONS} — no more, no less. Removing it
+        // (or adding any other source permission, e.g. an exact alarm) turns this red. WorkManager's
+        // transitive permissions live only in the MERGED manifest, so they never appear here.
+        assertTrue(
+            "The source manifest must declare EXACTLY {$POST_NOTIFICATIONS_PERMISSION} (Phase 20-05). " +
+                "Declared permissions were: $declared",
+            declared == SOURCE_ALLOWED,
+        )
+    }
+
+    @Test
+    fun mergedManifestAllowsPostNotifications_andOnlyBenignTransitives_ifBuilt() {
+        val source = resolveSourceManifest() ?: return
+        val merged = resolveMergedManifest(source)
+        org.junit.Assume.assumeTrue(
+            "No merged manifest built yet — skipping the transitive allow-check.",
+            merged != null,
+        )
+        val declared = declaredPermissions(merged!!)
+
+        // POST_NOTIFICATIONS survives the merge (the reminder can post).
+        assertTrue(
+            "The merged manifest must allow '$POST_NOTIFICATIONS_PERMISSION'. Declared: $declared",
+            declared.contains(POST_NOTIFICATIONS_PERMISSION),
+        )
+
+        // Every merged permission is either ours (POST_NOTIFICATIONS), a KNOWN benign WorkManager
+        // transitive, or the app-scoped AGP dynamic-receiver permission. An UNEXPECTED injected
+        // permission (e.g. a dependency pulling in INTERNET) turns this red.
+        val allowedSuperset = SOURCE_ALLOWED + WORKMANAGER_TRANSITIVE
+        val unexpected = declared.filterNot { perm ->
+            perm in allowedSuperset ||
+                perm.endsWith("DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
+        }
+        assertTrue(
+            "The merged manifest declares an UNEXPECTED permission (not POST_NOTIFICATIONS, a benign " +
+                "WorkManager transitive, or the app dynamic-receiver permission): $unexpected",
+            unexpected.isEmpty(),
+        )
     }
 
     @Test
