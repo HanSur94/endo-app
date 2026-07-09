@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.endoapp.app.ExploreScatterRouter
 import com.endoapp.app.content.Disclaimer
 import com.endoapp.app.content.ExploreCopy
 import com.endoapp.app.designsystem.DisclaimerBanner
@@ -61,10 +62,12 @@ import com.endoapp.app.designsystem.bloomTitle
 import com.endoapp.app.ui.charts.ChartCoordinateMapper
 import com.endoapp.app.ui.charts.EventLaneChart
 import com.endoapp.app.ui.charts.ExploreLaneChart
+import com.endoapp.app.ui.charts.ScatterPlot
 import com.endoapp.insights.ChartScrubSelection
 import com.endoapp.insights.DaySnapshot
 import com.endoapp.insights.ExploreSeries
 import com.endoapp.insights.ExploreSeriesExtraction
+import com.endoapp.insights.ScatterPairing
 import com.endoapp.insights.SeriesNormalization
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -78,6 +81,9 @@ enum class ExploreMode(val label: String) {
 
 /** The per-lane minimum logged days in the window before the stack is considered non-sparse. */
 private const val MIN_LOGGED_DAYS = 2
+
+/** The minimum both-logged day-tally before the scatter is considered non-sparse (22-UI-SPEC §B). */
+private const val SCATTER_MIN_OVERLAP = 5
 
 /** Medium absolute date (e.g. "Jan 6, 2026") for the tooltip header — a FORMAT, not audited copy. */
 private val TOOLTIP_DATE: DateTimeFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
@@ -95,6 +101,7 @@ fun ExploreScreen(
     today: LocalDate = LocalDate.now(),
     initialSelection: Set<ExploreSeries> = emptySet(),
     initialRange: ExploreRange = DEFAULT_EXPLORE_RANGE,
+    scatterRouter: ExploreScatterRouter? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalBloomColors.current
@@ -105,10 +112,27 @@ fun ExploreScreen(
     var mode by remember { mutableStateOf(ExploreMode.Lanes) }
     var selected by remember { mutableStateOf(initialSelection) }
     var range by remember { mutableStateOf(initialRange) }
+    // Ephemeral scatter axis selections (never persisted — an axis interest is health-interest metadata).
+    var scatterX by remember { mutableStateOf<ExploreSeries?>(null) }
+    var scatterY by remember { mutableStateOf<ExploreSeries?>(null) }
 
     LaunchedEffect(Unit) {
         suppressed = loadSuppressed()
         snapshots = loadSnapshots()
+    }
+
+    // Consume a cross-tab scatter deep-link payload on BOTH appear AND change (the iOS 16-03
+    // set-before-select + consume-and-clear pattern): switch to Scatter mode, prefill the TYPED axes, then
+    // CLEAR the payload so an identical later tap re-triggers. The axes are the router's typed value — never
+    // re-derived from copy here.
+    val pending = scatterRouter?.pendingScatter
+    LaunchedEffect(pending) {
+        if (pending != null) {
+            mode = ExploreMode.Scatter
+            scatterX = pending.x
+            scatterY = pending.y
+            scatterRouter.pendingScatter = null
+        }
     }
 
     val offered = remember(suppressed) { ExploreSelection.offered(suppressed) }
@@ -164,18 +188,60 @@ fun ExploreScreen(
                     asOf = today,
                 )
             }
-            ExploreMode.Scatter ->
-                // Honest placeholder — Plan 06 fills Scatter mode + the deep-link into this screen.
-                Text(
-                    text = ExploreCopy.SCATTER_SOON,
-                    style = bloomBody,
-                    color = colors.inkSecondary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("explore.scatter.placeholder"),
+            ExploreMode.Scatter -> {
+                // QUANTITATIVE-ONLY axes: the offered set already drops bleeding under suppression; filter
+                // to quantitative so a presence/event series is never offered as an axis (H5).
+                val quantOffered = offered.filter { it.scaleKind.isQuantitative }
+                ScatterAxisPicker(
+                    offered = quantOffered,
+                    x = scatterX,
+                    y = scatterY,
+                    onX = { scatterX = it },
+                    onY = { scatterY = it },
                 )
+                ScatterBody(
+                    x = scatterX,
+                    y = scatterY,
+                    snapshots = snapshots,
+                )
+            }
         }
     }
+}
+
+/**
+ * The Scatter-mode body: the empty state (fewer than two axes chosen), the sparse state (both chosen but
+ * the both-logged tally is below the overlap floor), or the descriptive-only count-encoded [ScatterPlot].
+ * Each dot is one both-logged day pair from the pure `ScatterPairing.pairs` — a day missing either factor
+ * is never counted (absence ≠ 0), and the plot draws NO fitted line / NO r-value (H5).
+ */
+@Composable
+private fun ScatterBody(
+    x: ExploreSeries?,
+    y: ExploreSeries?,
+    snapshots: List<DaySnapshot>,
+) {
+    if (x == null || y == null) {
+        HonestState(
+            title = ExploreCopy.SCATTER_EMPTY_TITLE,
+            body = ExploreCopy.SCATTER_EMPTY_BODY,
+            testTag = "explore.scatter.empty",
+        )
+        return
+    }
+
+    val points = remember(x, y, snapshots) { ScatterPairing.pairs(snapshots, x, y) }
+    val bothLoggedDays = points.sumOf { it.count }
+    if (bothLoggedDays < SCATTER_MIN_OVERLAP) {
+        HonestState(
+            title = ExploreCopy.SCATTER_SPARSE_TITLE,
+            body = ExploreCopy.SCATTER_SPARSE_BODY,
+            testTag = "explore.scatter.sparse",
+        )
+        return
+    }
+
+    ScatterPlot(x = x, y = y, points = points)
 }
 
 /**

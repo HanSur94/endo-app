@@ -156,6 +156,9 @@ fun ConsentedShell(
                         loadSnapshots = exploreSnapshots,
                         loadSuppressed = loadSuppressed,
                         today = LocalDate.ofEpochDay(today),
+                        // The cross-tab scatter deep-link payload — consumed on appear/change → Scatter mode
+                        // prefilled with the typed axes, then cleared (re-trigger safe).
+                        scatterRouter = exploreScatterRouter,
                     )
             }
         }
