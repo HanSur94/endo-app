@@ -41,7 +41,7 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
 - [x] **Phase 17: Insights Engine Port** - The complete insights engine runs as pure Kotlin JVM with test-case parity against the shipped Swift suite ✅ (verified 5/5; 176 tests green, PARITY=157)
 - [x] **Phase 18: Room Persistence** - All 10 models persist consent-gated in Room with the delete-day cascade born complete, migration discipline, backup exclusion, and the copy-audit + export-format contracts in place ✅ (verified 5/5; :app builds, 63 app + 176 insights tests green)
 - [x] **Phase 19: App Shell & Consent** - Consent-by-construction gate, Bloom design-system port, and a 3-tab Compose shell that declares no INTERNET permission ✅ (verified 4/4; consent-by-construction proven, Bloom shell, real APK, 99 app + 176 insights tests)
-- [ ] **Phase 20: Tracking Screens** - Daily Check-In, Day Log editor + BodyMap, medications, and inexact reminders — nothing mandatory, absence ≠ 0
+- [x] **Phase 20: Tracking Screens** - Daily Check-In, Day Log editor + BodyMap, medications, and inexact reminders — nothing mandatory, absence ≠ 0 ✅ (verified 5/5; full-day logging persists to Room, accessible BodyMap, inexact reminder, 182 app + 176 insights tests)
 - [ ] **Phase 21: Health Connect Import** - Read-only import of menstruation/sleep/exercise/nutrition with three-state availability gating, dual rationale declarations, and manual-wins/nil-honest merge
 - [ ] **Phase 22: Insights Dashboard, Explore & Charts** - Gated insight cards, scrub-to-read trends, Explore lanes + descriptive scatter under the locked chart-honesty rules, TalkBack-accessible per data point
 - [ ] **Phase 23: Encrypted Export/Import (INSERTED)** - Passphrase-encrypted SAF export/import (PBKDF2 + AES-GCM) — portability, device migration, and backup in one deliberate surface
@@ -193,7 +193,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 17. Insights Engine Port | v2.0 | 8/8 | Complete ✅ | 2026-07-09 |
 | 18. Room Persistence | v2.0 | 6/6 | Complete ✅ | 2026-07-09 |
 | 19. App Shell & Consent | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
-| 20. Tracking Screens | v2.0 | 0/5 | Not started | - |
+| 20. Tracking Screens | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
 | 21. Health Connect Import | v2.0 | 0/TBD | Not started | - |
 | 22. Insights Dashboard, Explore & Charts | v2.0 | 0/TBD | Not started | - |
 | 23. Encrypted Export/Import | v2.0 | 0/TBD | Not started | - |
