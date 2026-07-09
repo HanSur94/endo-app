@@ -14,6 +14,8 @@ import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.data.entities.PainPoint
 import com.endoapp.app.data.entities.SymptomReading
 import com.endoapp.app.data.entities.TreatmentState
+import com.endoapp.app.insightsbridge.SnapshotProjector
+import com.endoapp.insights.DaySnapshot
 
 /**
  * The consent-gated facade over the health data store — the ONLY path through which health data is
@@ -130,6 +132,29 @@ class EndoRepository(
     suspend fun importedForDay(epochDay: Long): List<ImportedSample> {
         checkConsented()
         return symptomDao.importedForDay(epochDay)
+    }
+
+    // --- Projection read (gated; the single path onto the pure SnapshotProjector) ---
+
+    /**
+     * The consent-gated projection read (APER-05) — the ONE read path the Phase-22 dashboard / report
+     * consumes. Gates FIRST, then fetches every day-scoped row list, derives `suppressed` from the
+     * latest [TreatmentState] (`modeRaw == "suppressed"`), and delegates to the pure
+     * [SnapshotProjector.project]. A one-shot suspend read returning stable value lists for the engine;
+     * Room entities never escape this method (only `:insights` [DaySnapshot] values cross out).
+     */
+    suspend fun daySnapshots(): List<DaySnapshot> {
+        checkConsented()
+        val suppressed = medicationDao.latestTreatment()?.modeRaw == "suppressed"
+        return SnapshotProjector.project(
+            symptoms = symptomDao.allSymptoms(),
+            pain = symptomDao.allPain(),
+            bleeding = symptomDao.allBleeding(),
+            factors = symptomDao.allFactors(),
+            entries = dayEntryDao.all(),
+            imported = symptomDao.allImported(),
+            suppressed = suppressed,
+        )
     }
 
     // --- Delete-day (gated; delegates to the single-transaction cascade) ---

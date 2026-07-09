@@ -51,6 +51,7 @@ class RepositoryConsentTest {
         "bleedingForDay" to { bleedingForDay(0) },
         "factorsForDay" to { factorsForDay(0) },
         "importedForDay" to { importedForDay(0) },
+        "daySnapshots" to { daySnapshots() },
         "deleteDay" to { deleteDay(0) },
     )
 
