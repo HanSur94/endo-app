@@ -63,8 +63,10 @@ abstract class EndoDatabase : RoomDatabase() {
         const val DB_NAME = "endo.db"
 
         /**
-         * Build the database. NOTE: no `fallbackToDestructiveMigration*` — every schema bump from
-         * here on MUST provide a real migration; wiping health history is never acceptable.
+         * Build the database. NOTE: no destructive-migration fallback of any kind — every schema
+         * bump from here on MUST provide a real migration; wiping health history is never acceptable.
+         * (The exact banned method name lives ONLY in DestructiveMigrationBanTest, so this source
+         * stays scannable.)
          */
         fun build(context: Context): EndoDatabase =
             Room.databaseBuilder(
