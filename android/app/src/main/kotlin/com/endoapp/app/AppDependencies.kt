@@ -5,10 +5,17 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.health.connect.client.HealthConnectClient
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.DataStoreConsentStore
 import com.endoapp.app.data.EndoDatabase
 import com.endoapp.app.data.EndoRepository
+import com.endoapp.app.health.ChangesTokenStore
+import com.endoapp.app.health.HealthAvailability
+import com.endoapp.app.health.HealthConnectController
+import com.endoapp.app.health.HealthConnectReader
+import com.endoapp.app.health.HealthImportCoordinator
+import com.endoapp.app.health.RealHealthConnectController
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.reminders.ReminderNotifier
 import com.endoapp.app.reminders.ReminderScheduler
@@ -86,4 +93,54 @@ class AppDependencies(context: Context) {
     /** The reminder facade the Settings reminders section drives (enable/disable/time/quiet hours). */
     val reminderController: ReminderController =
         ReminderController(reminderSettings, reminderScheduler, reminderNotifier)
+
+    // --- Health Connect import (Phase 21 Plan 05) ---
+    //
+    // The read-only Health Connect stack, mirroring the reminder stack's posture: the changes-token
+    // cursor lives in its OWN Preferences DataStore (built here OUTSIDE the Room health DB — device
+    // runtime state, not health data). The reader is availability-gated + NULLABLE: `getOrCreate` is
+    // called ONLY when getSdkStatus == AVAILABLE (a blind construction crashes on API 26–33; T-21-05b),
+    // so an UNAVAILABLE device never crashes and the connect entry stays inert. Import is a FOREGROUND
+    // coroutine (Plan 05 triggers it from the connect screen + a manual refresh) — NO androidx.work,
+    // NO notification import leaks here; the reminders package stays the SOLE notification owner.
+
+    /** The application context, captured for the per-session availability + client resolution. */
+    private val appContext: Context = context.applicationContext
+
+    private val changesTokenDataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
+        scope = applicationScope,
+        produceFile = {
+            appContext.preferencesDataStoreFile(ChangesTokenStore.FILE_NAME)
+        },
+    )
+
+    /** The per-domain changes-token cursor store — SEPARATE from the health DB, consent, and reminders. */
+    private val changesTokenStore: ChangesTokenStore = ChangesTokenStore(changesTokenDataStore)
+
+    /**
+     * The Health Connect connect/import facade the Settings connect entry drives — bound into the shell
+     * ONLY inside [AppGate]'s `Consented` arm, so the connect/import surface is unconstructible
+     * pre-consent (T-21-05a). Its reader is resolved per session behind the availability gate: null
+     * unless the provider is AVAILABLE, so the composition root does NO Health Connect client work on an
+     * unavailable device.
+     */
+    val healthConnectController: HealthConnectController = RealHealthConnectController(
+        availabilityProvider = { HealthAvailability.availability(appContext) },
+        readerProvider = {
+            // getOrCreate ONLY when AVAILABLE — never blindly (T-21-05b). Null ⇒ the controller does
+            // no client work and reports the honest empty state.
+            if (HealthAvailability.availability(appContext) == HealthAvailability.AVAILABLE) {
+                HealthConnectReader(
+                    client = HealthConnectClient.getOrCreate(appContext),
+                    ownPackageName = appContext.packageName,
+                )
+            } else {
+                null
+            }
+        },
+        coordinatorFor = { reader ->
+            HealthImportCoordinator(reader, repository, changesTokenStore, consentStore)
+        },
+        hasImportedData = { repository.hasImportedData() },
+    )
 }

@@ -9,7 +9,12 @@
 // Phase-20 NotificationSeparationTest scans this file and forbids any such import.
 package com.endoapp.app.health
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 /**
  * The observable state of an import run — what the [com.endoapp.app.health.ui.HealthImportScreen]
@@ -77,4 +82,92 @@ interface HealthConnectController {
 
     /** Re-run the import (the "Refresh from Health Connect" action) — idempotent by `hcRecordId`. */
     suspend fun refresh()
+}
+
+/**
+ * The production [HealthConnectController] — the concrete impl wired at the composition root (Plan 05)
+ * over the availability gate (Plan 01), the real [HealthConnectReader] (Plan 02), and the
+ * [HealthImportCoordinator] (Plan 03). Everything Health-Connect-specific enters through injected
+ * seams so this class stays JVM-testable off a [FakeHealthReader] + an in-memory repository with NO
+ * emulator (the flow test drives exactly this class).
+ *
+ * ## Availability-gated, nullable reader (T-21-05b)
+ * [readerProvider] resolves availability EVERY call and returns a reader ONLY when the provider is
+ * AVAILABLE — it is the sole owner of `HealthConnectClient.getOrCreate`, which is NEVER called blindly
+ * (a blind construction crashes on API 26–33). When the reader is `null` the controller does no client
+ * work and reports the honest empty terminal state, so an UNAVAILABLE/UPDATE_REQUIRED device never
+ * crashes and never blocks manual logging.
+ *
+ * ## Per-session grant read (Pitfall 3 / T-21-03)
+ * Neither [grantedHistory] nor the import path caches a grant flag: the reader's
+ * `getGrantedPermissions()` is read afresh on every call (a grant can be revoked or unused-app
+ * auto-reset). An empty granted set ⇒ the honest [HealthImportState.Denied] surface (no re-prompt); a
+ * `SecurityException` mid-read (a race with revocation) is caught and surfaced as `Denied`, never a crash.
+ *
+ * ## Separation invariant (T-20-02d)
+ * The import is a plain foreground coroutine on [dispatcher] — NO WorkManager, NO notification. This
+ * file imports no such API; the reminders package stays the app's SOLE notification owner.
+ *
+ * @param availabilityProvider resolves the three-state posture per session (never cached).
+ * @param readerProvider builds a [HealthReader] when AVAILABLE, else `null` (the availability-gated seam).
+ * @param coordinatorFor builds a fresh [HealthImportCoordinator] over a resolved reader (repo + token
+ *   store + consent are captured at the composition root).
+ * @param hasImportedData the honest "the store holds imported rows" query (drives the empty-vs-data copy).
+ * @param dispatcher the background dispatcher the import + grant reads run on.
+ */
+class RealHealthConnectController(
+    private val availabilityProvider: suspend () -> HealthAvailability,
+    private val readerProvider: suspend () -> HealthReader?,
+    private val coordinatorFor: (HealthReader) -> HealthImportCoordinator,
+    private val hasImportedData: suspend () -> Boolean,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+) : HealthConnectController {
+
+    private val _importState = MutableStateFlow<HealthImportState>(HealthImportState.Idle)
+    override val importState: StateFlow<HealthImportState> = _importState.asStateFlow()
+
+    override suspend fun availability(): HealthAvailability =
+        withContext(dispatcher) { availabilityProvider() }
+
+    override suspend fun grantedHistory(): Boolean = withContext(dispatcher) {
+        // Read PER SESSION — never a cached flag. No reader (not AVAILABLE) ⇒ no history.
+        val reader = readerProvider() ?: return@withContext false
+        reader.grantedPermissions().contains(HealthConnectPermissions.HISTORY)
+    }
+
+    override suspend fun importNow() = runImport()
+
+    override suspend fun refresh() = runImport()
+
+    /**
+     * Resolve the availability-gated reader, read the granted set per session, run the coordinator, and
+     * transition [importState] to the honest terminal state. Does no client work when unavailable.
+     */
+    private suspend fun runImport() = withContext(dispatcher) {
+        val reader = readerProvider()
+        if (reader == null) {
+            // availability != AVAILABLE — honest empty terminal, NO client work, NO crash (T-21-05b).
+            _importState.value = HealthImportState.Done(hasData = false, grantedPermissions = emptySet())
+            return@withContext
+        }
+
+        _importState.value = HealthImportState.InProgress
+        try {
+            // Per-session grant read (never cached). Nothing granted ⇒ the gentle denial (no re-prompt).
+            val granted = reader.grantedPermissions()
+            if (granted.isEmpty()) {
+                _importState.value = HealthImportState.Denied
+                return@withContext
+            }
+
+            val outcome = coordinatorFor(reader).importAll()
+            _importState.value = HealthImportState.Done(
+                hasData = hasImportedData(),
+                grantedPermissions = outcome.grantedPermissions,
+            )
+        } catch (_: SecurityException) {
+            // A grant revoked between the resolve and the read (Pitfall 3) — honest denial, never a crash.
+            _importState.value = HealthImportState.Denied
+        }
+    }
 }

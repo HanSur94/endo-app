@@ -168,6 +168,17 @@ class EndoRepository(
         return symptomDao.importedForDay(epochDay)
     }
 
+    /**
+     * `true` iff at least one Health Connect [ImportedSample] row exists (gated). Drives the honest
+     * connect/import "you have imported data" vs empty-state decision (AHC-03) — read from the store, so
+     * a differential refresh that imports no NEW rows still reports the data already present rather than
+     * a dishonest empty. Never fabricates: no imported row ⇒ `false`.
+     */
+    suspend fun hasImportedData(): Boolean {
+        checkConsented()
+        return symptomDao.allImported().isNotEmpty()
+    }
+
     /** Every medication definition, INCLUDING soft-archived ones (gated) — the archive round-trip
      *  proof: a med hidden from [observeMedications] still lives here, so prior 'taken' history keyed by
      *  its id stays valid. */
