@@ -1,0 +1,42 @@
+name: android
+
+# Path-filtered merge gate for the Android monorepo tree (AENG-07). Only changes under
+# android/** (or this workflow) trigger it, so the iOS build/test lanes stay independent.
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+
+jobs:
+  insights-jvm:
+    name: ':insights JVM tests'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Run :insights tests
+        run: ./gradlew :insights:test --console=plain --stacktrace
+
+      - name: Upload JUnit XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: insights-junit-xml
+          path: android/insights/build/test-results/test/*.xml
+          if-no-files-found: warn
