@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.ZoneId
+import java.util.TimeZone
 import kotlin.math.round
 
 class NumericDivergenceTests {
@@ -121,14 +123,67 @@ class NumericDivergenceTests {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────────
-    // MARK: - 4. DST / non-UTC day-boundary divergence — DEFERRED TO 17-08.
+    // MARK: - 4. DST / non-UTC day-boundary divergence (17-08 — LocalDate purity).
     //
-    // The remaining half of the numeric-divergence pack — day-boundary math run in a non-UTC test zone
-    // (DST spring-forward / fall-back gaps, midnight rollover) — lands here in Phase 17-08, once the
-    // engines that consume LocalDate day identity (TrendsEngine / CyclePhaseMapper / InsightsEngine) are
-    // ported. It cannot be asserted now: there is no engine output to compare, and asserting raw
-    // LocalDate arithmetic here would duplicate 17-08's fixtures. 17-08 ADDS its @Test methods to THIS
-    // class under this header. Intentionally no test stub (a placeholder @Test would either falsely pass
-    // or be a disabled no-op) — the header is the contract.
+    // The remaining half of the numeric-divergence pack: day-boundary math run under a non-UTC default
+    // time zone (DST spring-forward / fall-back gaps, the International Date Line). The engines consume
+    // `java.time.LocalDate` as the ZONE-FREE day identity (the injected Swift `Calendar` was dropped), so
+    // no `Instant` / `ZonedDateTime` / epoch math can leak into day bucketing, period-run detection, or
+    // phase windows. These tests PROVE it: the SAME fixture produces BYTE-IDENTICAL engine output whether
+    // the JVM default zone is UTC, Europe/Berlin (twice-yearly DST), or Pacific/Apia (a date-line zone
+    // that once skipped a whole calendar day). Any leaked epoch/zone math would make one run diverge.
     // ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+    /** The three probe zones: UTC (no DST), Europe/Berlin (DST), Pacific/Apia (date-line / historic
+     *  day-skip). Byte-identical output across all three proves LocalDate purity. */
+    private val probeZones = listOf("UTC", "Europe/Berlin", "Pacific/Apia")
+
+    /** Run [block] with the JVM default time zone forced to [zoneId], ALWAYS restoring the original zone
+     *  in a finally (so one test can never leak a zone into another). */
+    private fun <T> withDefaultZone(zoneId: String, block: () -> T): T {
+        val original = TimeZone.getDefault()
+        return try {
+            TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of(zoneId)))
+            block()
+        } finally {
+            TimeZone.setDefault(original)
+        }
+    }
+
+    @Test
+    fun trendsEngine_outputsAreZoneInvariant_acrossBerlinApiaUtc() {
+        val fixture = Fixtures.risingPelvicPainFixture()
+        val asOf = Fixtures.day(0)
+        val byZone = probeZones.map { zone -> zone to withDefaultZone(zone) { TrendsEngine.trends(from = fixture, asOf = asOf) } }
+        val (baseZone, baseline) = byZone.first()
+        for ((zone, out) in byZone.drop(1)) {
+            assertEquals(baseline, out, "TrendsEngine output diverged between $baseZone and $zone — an epoch/zone leaked past the LocalDate day identity.")
+        }
+    }
+
+    @Test
+    fun cyclePhaseMapper_outputsAreZoneInvariant_acrossBerlinApiaUtc() {
+        val fixture = Fixtures.regularCycleFixture()
+        val asOf = Fixtures.day(0)
+        val byZone = probeZones.map { zone -> zone to withDefaultZone(zone) { CyclePhaseMapper.insights(from = fixture, asOf = asOf) } }
+        val (baseZone, baseline) = byZone.first()
+        for ((zone, out) in byZone.drop(1)) {
+            assertEquals(baseline, out, "CyclePhaseMapper output diverged between $baseZone and $zone — an epoch/zone leaked past the LocalDate day identity.")
+        }
+    }
+
+    @Test
+    fun insightsEngine_compositionIsZoneInvariant_acrossBerlinApiaUtc() {
+        // The full public composition (Trends + CyclePhase + Correlation + Recommendations + Flare, gated)
+        // over two representative fixtures — a regular cycle (trend + cyclePhase + correlation surface) and a
+        // rising-flare history (the flare producer). Byte-identical across all three zones.
+        for (fixture in listOf(Fixtures.regularCycleFixture(), Fixtures.risingFlareFixture(), Fixtures.strongAssociationFixture())) {
+            val asOf = Fixtures.day(0)
+            val byZone = probeZones.map { zone -> zone to withDefaultZone(zone) { InsightsEngine.insights(from = fixture, asOf = asOf) } }
+            val (baseZone, baseline) = byZone.first()
+            for ((zone, out) in byZone.drop(1)) {
+                assertEquals(baseline, out, "InsightsEngine composition diverged between $baseZone and $zone — an epoch/zone leaked past the LocalDate day identity.")
+            }
+        }
+    }
 }

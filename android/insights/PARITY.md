@@ -45,16 +45,23 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `CorrelationEngineTests.swift` | 12 | `CorrelationEngineTests.kt` | 12 | 17-06 | ✅ done |
 | `RecommendationsEngineTests.swift` | 7 | `RecommendationsEngineTests.kt` | 7 | 17-07 | ✅ done |
 | `FlareEngineTests.swift` | 6 | `FlareEngineTests.kt` | 6 | 17-07 | ✅ done |
-| `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
-| `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | pending | 17-08 | pending |
-| `ContractTests.swift` | 7 | `ContractTests.kt` | pending | 17-08 | pending |
-| **TOTAL** | **157** | | **108** | | |
+| `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | 16 | 17-08 | ✅ done |
+| `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | 14 | 17-08 | ✅ done |
+| `ContractTests.swift` | 7 | `ContractTests.kt` | 7 | 17-08 | ✅ done |
+| **TOTAL** | **157** | | **157** | | ✅ |
 
-Kotlin count so far: **108** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26
-+ TrendsEngineTests 11 + CyclePhaseMapperTests 8 + SuppressedFixtureTests 2 + ChartScrubSelectionTests 7
-+ ExploreSeriesCatalogTests 9 + ExploreSeriesExtractionTests 10 + ScatterPairingTests 7 + SeriesNormalizationTests 6
-+ CorrelationEngineTests 12 + RecommendationsEngineTests 7 + FlareEngineTests 6).
-SnapshotFixtures.kt + SeriesTestSupport.kt (0-case shared builders) are ported and available to plans 06–08.
+Kotlin count: **157 / 157 — COMPLETE** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6
++ CorrelationStatsTests 26 + TrendsEngineTests 11 + CyclePhaseMapperTests 8 + SuppressedFixtureTests 2
++ ChartScrubSelectionTests 7 + ExploreSeriesCatalogTests 9 + ExploreSeriesExtractionTests 10 + ScatterPairingTests 7
++ SeriesNormalizationTests 6 + CorrelationEngineTests 12 + RecommendationsEngineTests 7 + FlareEngineTests 6
++ HonestyGateTests 16 + InsightsEngineTests 14 + ContractTests 7). Every Kotlin count equals its Swift count.
+SnapshotFixtures.kt + SeriesTestSupport.kt (0-case shared builders) are ported.
+
+**Reconciliation (17-08, phase exit):** the full `:insights:test` JUnit XML reports **176** testcases with
+**0 failures / 0 errors / 0 skipped**. Of those, **157** are Swift-mirror cases (the 18 rows above) and **19**
+are the additional guard tests with no Swift mirror (ClaimsPolicyDrift 3 + EnumRawValueParity 2 +
+NumericDivergence 10 + SpecialFunctionsGolden 3 + VersionCatalogAudit 1). 157 + 19 = 176. The phase is
+"proven equivalent": every Kotlin Swift-mirror count matches its Swift column and the suite is green.
 
 **17-05 chart data-prep landed (39 cases):** `ChartScrubSelectionTests` 7, `ExploreSeriesCatalogTests` 9,
 `ExploreSeriesExtractionTests` 10, `ScatterPairingTests` 7, `SeriesNormalizationTests` 6. The injected Swift
@@ -87,8 +94,8 @@ They are standing structural / cross-platform-drift guards.
 |-------------------|---------|-----|------|--------|
 | `VersionCatalogAuditTests.kt` | Fails the build if any analytics/auth/backend/networking coordinate enters `gradle/libs.versions.toml` (zero-dependency supply-chain guard) | AENG-07 | 17-01 | ✅ done |
 | `EnumRawValueParityTests.kt` | Swift-source scan (A) + golden JSON (B): fails on enum raw-value divergence vs `SnapshotEnums.swift` / `CyclePhase.swift` (2 tests, both proven red-capable) | AENG-05 | 17-02 | ✅ done |
-| `ClaimsPolicyDriftTests.kt` | Scans `ClaimsPolicy.swift`: fails if the app's forbidden-substring lists drift out of the Kotlin `ForbiddenTerms` superset | AENG-05 | 17-08 | pending |
-| `NumericDivergenceTests.kt` | NaN / ±0.0 / rounding ties / Mann-Whitney tied ranks (17-03, 7 tests ✅) + DST/non-UTC day boundaries (17-08) | AENG-06 | 17-03, 17-08 | 🟡 stats/boundary half done; DST half pending 17-08 |
+| `ClaimsPolicyDriftTests.kt` | Scans `ClaimsPolicy.swift` (assumption-guarded): app `forbiddenVerbs` all caught by the Kotlin `ForbiddenTerms.causal` superset, `forbiddenImperatives` byte-equal, `forbiddenAlarmist` set-equal (3 tests, ran against the real Swift source — not skipped) | AENG-05 | 17-08 | ✅ done |
+| `NumericDivergenceTests.kt` | NaN / ±0.0 / rounding ties / Mann-Whitney tied ranks (17-03, 7 tests) + DST/non-UTC day boundaries (17-08, 3 tests: Trends/CyclePhase/InsightsEngine byte-identical across UTC + Europe/Berlin + Pacific/Apia — LocalDate purity) = 10 tests | AENG-06 | 17-03, 17-08 | ✅ done |
 | `SpecialFunctionsGoldenTests.kt` | Pins the hand-rolled `lgamma`/`erf`/`normalCDF` (Lanczos g=7 / NR3 Chebyshev) against Swift/libm golden values (`stats-goldens.json`) within relative 1e-9 — the AENG-06 tolerance gate (T-17-07) | AENG-06 | 17-03 | ✅ done |
 
 ## Notes
