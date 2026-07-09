@@ -16,6 +16,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "endo-android"
 
-// Only the pure-JVM engine module exists in Phase 17.
-// `:app` (the Android application module) arrives in Phase 19 — do NOT add it here.
-include(":insights")
+// `:app` — the Android Application module (data layer added in Phase 18; Compose UI shell
+// in Phase 19). `:insights` — the pure-JVM analytics engine. The dependency arrow is
+// one-way (:app -> :insights) and never reversed.
+include(":app", ":insights")
