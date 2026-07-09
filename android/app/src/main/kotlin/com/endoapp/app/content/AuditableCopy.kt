@@ -34,9 +34,12 @@ interface AuditableCopy {
 object CopyAuditRegistry {
     /**
      * Every registered copy source. Phase 19+ APPENDS its `FooCopy` here in the same change that
-     * introduces the screen's copy. Empty today by design (zero UI copy).
+     * introduces the screen's copy. [ShellCopy] (Plan 02) is the first source — the app-shell + consent
+     * CTA strings — registered alongside the screens that render them.
      */
-    val sources: List<AuditableCopy> = emptyList()
+    val sources: List<AuditableCopy> = listOf(
+        ShellCopy,
+    )
 
     /** The union of every registered source's auditable strings — the surface `CopyAudit` scans. */
     val allAuditableStrings: List<String>

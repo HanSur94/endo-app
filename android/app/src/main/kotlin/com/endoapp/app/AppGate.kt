@@ -1,0 +1,70 @@
+package com.endoapp.app
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.endoapp.app.data.ConsentState
+import com.endoapp.app.data.ConsentStore
+import com.endoapp.app.designsystem.LocalBloomColors
+import com.endoapp.app.ui.onboarding.OnboardingScreen
+import com.endoapp.app.ui.shell.ConsentedShell
+import kotlinx.coroutines.launch
+
+/**
+ * The consent-by-construction routing surface — the ENTIRE app is this plain three-way `when`-switch
+ * on [ConsentState] (threat T-19-01, Elevation of Privilege). There is NO navigation library: the
+ * health/tab composables ([ConsentedShell] and its tabs) are referenced ONLY inside the `Consented`
+ * arm, so they are not constructible while `Unknown` or `NotConsented`. This is a structural
+ * guarantee, not a runtime guard condition — pinned red-capably by `AppGateConsentTest`.
+ *
+ * - [ConsentState.Unknown] → splash (DataStore has not emitted yet): FAIL CLOSED — never flash the
+ *   gated UI.
+ * - [ConsentState.NotConsented] → onboarding/consent. The [router] is deliberately NOT observed here.
+ * - [ConsentState.Consented] → the tab shell, the only place the [router] flag is read.
+ */
+@Composable
+fun AppGate(
+    consentStore: ConsentStore,
+    router: CheckInRouter,
+) {
+    val state by consentStore.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+
+    when (state) {
+        ConsentState.Unknown -> SplashScreen()
+
+        ConsentState.NotConsented -> OnboardingScreen(
+            onConsent = { scope.launch { consentStore.grant() } },
+            onDecline = { /* fail-closed no-op: nothing is stored, the user stays on the gate */ },
+        )
+
+        is ConsentState.Consented -> ConsentedShell(
+            router = router,
+            onWithdraw = { scope.launch { consentStore.withdraw() } },
+        )
+    }
+}
+
+/**
+ * The `Unknown`-state splash — a full-bleed [BloomColors.canvas] surface with a `Loading` a11y label.
+ * It exists so the gate never briefly composes the gated shell before consent is known (fail closed).
+ */
+@Composable
+private fun SplashScreen() {
+    val colors = LocalBloomColors.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colors.canvas)
+            .testTag("gate.splash")
+            .semantics { contentDescription = "Loading" },
+    )
+}
