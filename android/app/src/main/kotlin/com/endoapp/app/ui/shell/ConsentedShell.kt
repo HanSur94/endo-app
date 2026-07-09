@@ -3,9 +3,6 @@ package com.endoapp.app.ui.shell
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,17 +14,32 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import com.endoapp.app.CheckInRouter
+import com.endoapp.app.content.PlaceholderCopy
 import com.endoapp.app.content.ShellCopy
+import com.endoapp.app.designsystem.BloomNavigationBar
+import com.endoapp.app.designsystem.BloomTabIcons
 import com.endoapp.app.designsystem.LocalBloomColors
 
 /**
- * The consented 3-tab shell — composed ONLY inside [com.endoapp.app.AppGate]'s `Consented` arm.
- * Minimal-but-real this phase (Plan 03 enriches the Bloom nav chrome, insets, predictive back, and
- * fills the placeholders): a Material 3 `Scaffold` with a bottom `NavigationBar` over a
- * [ConsentedTab] `rememberSaveable` selection (NOT a `NavHost`). Each tab body is an empty
- * placeholder Box this phase; Phases 20/22 fill them.
+ * The consented 3-tab shell — composed ONLY inside [com.endoapp.app.AppGate]'s `Consented` arm, so
+ * the tab surface is unconstructible pre-consent by construction (ASHL-01 / threat T-19-01).
+ *
+ * A Material 3 [Scaffold] with the [BloomNavigationBar] as its `bottomBar`, over a [ConsentedTab]
+ * `rememberSaveable` selection (NOT a `NavHost` — no navigation library). Each tab renders a Bloom
+ * [TabPlaceholder] card marking the phase that fills it (Log → 20, Insights/Explore → 22).
+ *
+ * **Edge-to-edge (mandatory at targetSdk 36):** `Scaffold` consumes the system-bar `WindowInsets`
+ * and hands the body `innerPadding`; the `bottomBar` `NavigationBar` handles the `navigationBars`
+ * inset itself. The placeholder body pads from `innerPadding`, so content never draws under the
+ * status/nav bars.
+ *
+ * **Predictive back:** [androidx.activity.compose.PredictiveBackHandler] is enabled ONLY when a
+ * non-Log tab is selected — a back gesture animates the return to the start tab (Log). On Log the
+ * handler is disabled, so back falls through to the system default (exit the app). Back is never
+ * intercepted generally (predictive back stays default-on).
  *
  * The [router] deep-link flag is observed ONLY here (inside the consented subtree) — never in the
  * gate's pre-consent arms — so a notification/deep link lands on the gate while unconsented.
@@ -51,37 +63,40 @@ fun ConsentedShell(
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = colors.surface) {
-                ConsentedTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == tab,
-                        onClick = { selectedTab = tab },
-                        icon = { /* Bloom tab glyphs land in Plan 03 */ },
-                        label = { Text(tab.label) },
-                        modifier = Modifier.testTag(tab.testTag),
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = colors.plum,
-                            selectedTextColor = colors.plum,
-                            unselectedIconColor = colors.inkMuted,
-                            unselectedTextColor = colors.inkMuted,
-                            indicatorColor = colors.petal,
-                        ),
-                    )
-                }
-            }
+            BloomNavigationBar(
+                tabs = ConsentedTab.entries,
+                selected = selectedTab,
+                onSelect = { selectedTab = it },
+                testTag = { it.testTag },
+                label = { it.label },
+                icon = { iconFor(it) },
+            )
         },
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentAlignment = Alignment.Center,
         ) {
-            // Empty per-tab placeholder body this phase (Plan 03 fills the Bloom scaffolds).
             when (selectedTab) {
-                ConsentedTab.Log -> Box(Modifier.testTag("tab.log.body"))
-                ConsentedTab.Insights -> Box(Modifier.testTag("tab.insights.body"))
-                ConsentedTab.Explore -> Box(Modifier.testTag("tab.explore.body"))
+                ConsentedTab.Log -> TabPlaceholder(
+                    eyebrow = PlaceholderCopy.LOG_EYEBROW,
+                    heading = PlaceholderCopy.LOG_HEADING,
+                    body = PlaceholderCopy.LOG_BODY,
+                    testTag = "tab.log.body",
+                )
+                ConsentedTab.Insights -> TabPlaceholder(
+                    eyebrow = PlaceholderCopy.INSIGHTS_EYEBROW,
+                    heading = PlaceholderCopy.INSIGHTS_HEADING,
+                    body = PlaceholderCopy.INSIGHTS_BODY,
+                    testTag = "tab.insights.body",
+                )
+                ConsentedTab.Explore -> TabPlaceholder(
+                    eyebrow = PlaceholderCopy.EXPLORE_EYEBROW,
+                    heading = PlaceholderCopy.EXPLORE_HEADING,
+                    body = PlaceholderCopy.EXPLORE_BODY,
+                    testTag = "tab.explore.body",
+                )
             }
 
             // Temporary withdraw affordance so the withdraw-re-gate invariant is exercisable this
@@ -97,4 +112,11 @@ fun ConsentedShell(
             }
         }
     }
+}
+
+/** The bundled Bloom glyph for each tab (design-system icons resolved in the shell layer). */
+private fun iconFor(tab: ConsentedTab): ImageVector = when (tab) {
+    ConsentedTab.Log -> BloomTabIcons.logGlyph
+    ConsentedTab.Insights -> BloomTabIcons.insightsGlyph
+    ConsentedTab.Explore -> BloomTabIcons.exploreGlyph
 }

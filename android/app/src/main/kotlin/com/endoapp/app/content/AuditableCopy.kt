@@ -39,6 +39,7 @@ object CopyAuditRegistry {
      */
     val sources: List<AuditableCopy> = listOf(
         ShellCopy,
+        PlaceholderCopy,
     )
 
     /** The union of every registered source's auditable strings — the surface `CopyAudit` scans. */
