@@ -6,6 +6,7 @@ import com.endoapp.app.data.daos.InsightsDao
 import com.endoapp.app.data.daos.MedicationDao
 import com.endoapp.app.data.daos.SymptomDao
 import com.endoapp.app.data.entities.BleedingEvent
+import com.endoapp.app.data.entities.CachedInsight
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.DismissedInsight
 import com.endoapp.app.data.entities.FactorReading
@@ -16,7 +17,9 @@ import com.endoapp.app.data.entities.SymptomReading
 import com.endoapp.app.data.entities.TreatmentState
 import com.endoapp.app.insightsbridge.SnapshotProjector
 import com.endoapp.insights.DaySnapshot
+import com.endoapp.insights.Insight
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.Json
 
 /**
  * The consent-gated facade over the health data store — the ONLY path through which health data is
@@ -217,12 +220,73 @@ class EndoRepository(
         )
     }
 
+    // --- Insight cache / dismiss (gated; the InsightsCoordinator's persistence seam, Phase 22) ---
+
+    /**
+     * Load the durable gated-insight cache (D-04) — the instant paint the dashboard shows before any
+     * recompute. Gates FIRST, then decodes each [CachedInsight.payload] JSON blob back to an [Insight].
+     *
+     * RESILIENT DECODE (T-08-04 posture): a corrupt / null payload row is SKIPPED via
+     * `runCatching { ... }.getOrNull()` — never fatal — so one bad cache row can never crash the
+     * dashboard. Returns `[]` when the cache is empty. Never fabricates.
+     */
+    suspend fun loadCachedInsights(): List<Insight> {
+        checkConsented()
+        return insightsDao.allCached().mapNotNull { row ->
+            row.payload?.let { json -> runCatching { insightJson.decodeFromString<Insight>(json) }.getOrNull() }
+        }
+    }
+
+    /**
+     * REPLACE-ALL the insight cache (D-02/D-14): gate, [InsightsDao.clearCached], then insert one
+     * [CachedInsight] per fresh [Insight]. The cache is invalidated wholesale on recompute (keyed by
+     * `fingerprint`, never day-keyed), so this mirrors the DAO's clear-then-insert contract.
+     *
+     * PRIVACY BOUNDARY (T-22-01): `payload` encodes ONLY the gated [Insight] — NEVER a [DaySnapshot],
+     * NEVER note prose. The flat category columns carry the same non-identifying labels DismissedInsight
+     * stores.
+     */
+    suspend fun replaceCachedInsights(insights: List<Insight>, computedAtMillis: Long, fingerprint: String) {
+        checkConsented()
+        insightsDao.clearCached()
+        insightsDao.insertCached(
+            insights.map { insight ->
+                CachedInsight(
+                    id = insight.id.toString(),
+                    signalKey = insight.signalKey,
+                    kindRaw = insight.kind.raw,
+                    windowRaw = insight.window.raw,
+                    payload = insightJson.encodeToString(insight),
+                    computedAtMillis = computedAtMillis,
+                    fingerprint = fingerprint,
+                )
+            },
+        )
+    }
+
+    /**
+     * The dismissed `signalKey`s to exclude from the next recompute (D-09/D-11). Gates, then reads the
+     * append-only [DismissedInsight] keys and dedupes on read (a `Set`) — a dismiss is non-destructive
+     * (it never deletes logged rows), and duplicates collapse here.
+     */
+    suspend fun dismissedSignalKeys(): Set<String> {
+        checkConsented()
+        return insightsDao.dismissedSignalKeys().toSet()
+    }
+
     // --- Delete-day (gated; delegates to the single-transaction cascade) ---
 
     suspend fun deleteDay(epochDay: Long) {
         checkConsented()
         deleteDayDao.deleteDay(epochDay)
     }
+
+    /**
+     * The single serialization boundary for the insight cache (the `:app` export module already depends
+     * on kotlinx-serialization). `ignoreUnknownKeys` keeps a forward-compatible decode: a payload written
+     * by a newer Insight shape still decodes its known fields rather than throwing.
+     */
+    private val insightJson: Json = Json { ignoreUnknownKeys = true }
 
     companion object {
         /** Upper bound on a saved medication's free-text name/note, enforced at this write seam. */
