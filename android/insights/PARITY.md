@@ -42,7 +42,7 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `ExploreSeriesExtractionTests.swift` | 10 | `ExploreSeriesExtractionTests.kt` | 10 | 17-05 | ✅ done |
 | `ScatterPairingTests.swift` | 7 | `ScatterPairingTests.kt` | 7 | 17-05 | ✅ done |
 | `SeriesNormalizationTests.swift` | 6 | `SeriesNormalizationTests.kt` | 6 | 17-05 | ✅ done |
-| `CorrelationEngineTests.swift` | 12 | `CorrelationEngineTests.kt` | pending | 17-06 | pending |
+| `CorrelationEngineTests.swift` | 12 | `CorrelationEngineTests.kt` | 12 | 17-06 | ✅ done |
 | `RecommendationsEngineTests.swift` | 7 | `RecommendationsEngineTests.kt` | pending | 17-07 | pending |
 | `FlareEngineTests.swift` | 6 | `FlareEngineTests.kt` | pending | 17-07 | pending |
 | `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
@@ -59,7 +59,13 @@ SnapshotFixtures.kt + SeriesTestSupport.kt (0-case shared builders) are ported a
 `ExploreSeriesExtractionTests` 10, `ScatterPairingTests` 7, `SeriesNormalizationTests` 6. The injected Swift
 `Calendar` is dropped (LocalDate identity): the `ChartScrubSelectionTests` 23:59-boundary and DST-spring-forward
 cases are preserved as day-identity pins that now hold by construction (LocalDate is zone-free, no wall-clock
-bucketing). Remaining pending: 17-06 (12), 17-07 (13), 17-08 (37) → 95 + 62 = 157.
+bucketing).
+
+**17-06 CorrelationEngine landed (12 cases):** `CorrelationEngineTests` 12 — Factor threshold/binarization
+spot-checks, strong-association surfaces (non-causal copy), under-sampled (n=9) / spurious / BH-FDR flood
+(K≈100+ independent-hash noise) each → ZERO, suppressed-user no-cyclePhase (D-04), severity arm counts DAYS
+(WR-02), and output determinism. `ForbiddenTerms`/`ClaimsPolicyDriftTests` and the `InsightsEngine`
+public-pipeline half of `duplicateDay_*` remain for 17-08. Remaining pending: 17-07 (13), 17-08 (37) → 107 + 50 = 157.
 
 ## Additional guard tests (no Swift mirror)
 
