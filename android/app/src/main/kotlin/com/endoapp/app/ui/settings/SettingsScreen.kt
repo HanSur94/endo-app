@@ -59,6 +59,7 @@ import com.endoapp.app.designsystem.bloomBody
 import com.endoapp.app.designsystem.bloomButtonLabel
 import com.endoapp.app.designsystem.bloomCard
 import com.endoapp.app.designsystem.bloomH3
+import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.ui.onboarding.PrivacyPolicyScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -73,6 +74,8 @@ import kotlinx.coroutines.launch
  * @param onAddMedication / onArchiveMedication the consent-gated med write seams (add / soft-archive).
  * @param loadSuppressed reads the latest TreatmentState's suppressed flag for the toggle's initial value.
  * @param onSetSuppressed writes a fresh timestamped TreatmentState (latest wins) on toggle.
+ * @param reminders the daily-reminder facade the reminders section drives (null when not yet wired /
+ *   in isolation — the section then renders a default OFF state and stays inert).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +83,7 @@ fun SettingsScreen(
     onWithdraw: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    reminders: ReminderController? = null,
     medications: Flow<List<Medication>> = emptyFlow(),
     onAddMedication: suspend (Medication) -> Unit = {},
     onArchiveMedication: suspend (Medication) -> Unit = {},
@@ -124,9 +128,9 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // (1) RESERVED reminders slot — Plan 05 fills this. Intentionally empty: NO notification API
-            // lands this phase, so the reminder surface stays cleanly separable (design invariant §4).
-            Box(modifier = Modifier.testTag("settings.remindersSlot"))
+            // (1) Reminders — the daily check-in reminder (Plan 05). The ONLY UI touch point of the
+            // reminders package; the master toggle is the sole JIT POST_NOTIFICATIONS request site.
+            RemindersSection(controller = reminders)
 
             // (2) Manage meds.
             ManageMedsSection(

@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
                     consentStore = dependencies.consentStore,
                     router = dependencies.checkInRouter,
                     repository = dependencies.repository,
+                    reminders = dependencies.reminderController,
                 )
             }
         }

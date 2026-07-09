@@ -15,6 +15,7 @@ import com.endoapp.app.data.ConsentState
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.EndoRepository
 import com.endoapp.app.data.entities.TreatmentState
+import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.ui.onboarding.OnboardingScreen
 import com.endoapp.app.ui.shell.ConsentedShell
@@ -41,6 +42,7 @@ fun AppGate(
     consentStore: ConsentStore,
     router: CheckInRouter,
     repository: EndoRepository? = null,
+    reminders: ReminderController? = null,
 ) {
     val state by consentStore.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -83,6 +85,7 @@ fun AppGate(
                         ),
                     )
                 },
+                reminders = reminders,
                 today = today,
             )
         }

@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
+import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.ui.settings.SettingsScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -57,6 +58,7 @@ fun LogTabHost(
     archiveMedication: suspend (Medication) -> Unit = {},
     loadSuppressed: suspend () -> Boolean = { false },
     setSuppressed: suspend (Boolean) -> Unit = {},
+    reminders: ReminderController? = null,
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     val stack = rememberTrackingBackStack()
@@ -101,6 +103,7 @@ fun LogTabHost(
             TrackingRoute.Settings -> SettingsScreen(
                 onWithdraw = onWithdraw,
                 onBack = { stack.pop() },
+                reminders = reminders,
                 medications = medications,
                 onAddMedication = addMedication,
                 onArchiveMedication = archiveMedication,
