@@ -23,8 +23,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The ONE runtime permission: the daily check-in reminder's notification (Android 13+). -->
+    <!-- The ONE non-health runtime permission: the daily check-in reminder's notification (Android 13+). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Health Connect READ-ONLY permissions (Phase 21, AHC-02/AHC-04). EXACTLY the four health READ
+      permissions (one per mapped record family: menstruation flow+period, sleep, exercise, nutrition)
+      plus READ_HEALTH_DATA_HISTORY for the longitudinal window. ZERO health WRITE_*, NO
+      READ_HEALTH_DATA_IN_BACKGROUND (import is foreground-only), NO INTERNET. ManifestPermissionsTest
+      pins this allow-list (DOM-parsed, comment-safe) and fails on any injected WRITE/background/network.
+    -->
+    <uses-permission android:name="android.permission.health.READ_MENSTRUATION" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_NUTRITION" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 
     <application
         android:name=".App"
@@ -59,6 +72,35 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          DUAL permission-rationale declarations (Phase 21, AHC-02 / threat T-21-01b). BOTH surfaces
+          target the SAME rationale screen (.health.ui.PermissionsRationaleActivity, which renders the
+          read-only privacy content a Play reviewer opens). Missing EITHER yields a dead permission
+          flow on that OS generation (empty grant set) or Play rejection. ManifestPermissionsTest
+          asserts both are present (DOM-parsed, comment-safe).
+        -->
+
+        <!-- (a) Android 13 and lower (installable Health Connect app). -->
+        <activity
+            android:name=".health.ui.PermissionsRationaleActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
+        <!-- (b) Android 14+ (platform Health Connect module). -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".health.ui.PermissionsRationaleActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
 
     </application>
 
