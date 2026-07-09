@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+) backup/transfer rules (APER-04, threat T-18-03a).
+
+  PRIVACY INVARIANT: the Room health database (GDPR Art. 9 special-category data) is
+  EXCLUDED from BOTH cloud Auto Backup AND device-to-device transfer, together with its
+  WAL/SHM sidecars (Room runs in WAL mode, so `endo.db-wal` / `endo.db-shm` can hold
+  un-checkpointed health rows). Without this, Android would silently copy the health DB to
+  a Google-account-tied backup.
+
+  The DataStore preferences file (consent flag + reminder prefs) is deliberately NOT
+  excluded — it gates the DB but carries no health rows, and letting it back up preserves
+  the user's consent choice across a restore. `BackupRulesTest` pins both facts.
+
+  The DB file name is EndoDatabase.DB_NAME ("endo.db"); domain="database" resolves to the
+  app's `databases/` dir.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="database" path="endo.db" />
+        <exclude domain="database" path="endo.db-wal" />
+        <exclude domain="database" path="endo.db-shm" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="endo.db" />
+        <exclude domain="database" path="endo.db-wal" />
+        <exclude domain="database" path="endo.db-shm" />
+    </device-transfer>
+</data-extraction-rules>
