@@ -249,6 +249,27 @@ fun TrendChart(
                     }
                 }
             }
+
+            // The bespoke TalkBack semantics overlay (Plan 03) — the ONLY accessible surface for the
+            // otherwise-invisible Canvas. One focusable node per scrubbable day, resolved gap-honestly
+            // through the SAME `ChartScrubSelection.resolve` the visual scrub above uses. Additive +
+            // transparent + no `pointerInput`, so it never disturbs the scrub gesture or the visuals.
+            // `summary = null`: the visible summary `Text` above already carries the one-line meaning to
+            // TalkBack (no double announcement); the overlay's summary-node capability is for charts
+            // without a visible summary (Plan 05 event lanes).
+            val semanticNodes = remember(input) {
+                trendSemanticNodes(
+                    domainStart = input.windowStart,
+                    domainEnd = input.asOf,
+                    points = input.points,
+                    testTagRoot = "$root.chart",
+                    describeValue = { ChartsCopy.severityReadout(it.value) },
+                )
+            }
+            ChartSemanticsOverlay(
+                nodes = semanticNodes,
+                modifier = Modifier.matchParentSize(),
+            )
         }
     }
 }
