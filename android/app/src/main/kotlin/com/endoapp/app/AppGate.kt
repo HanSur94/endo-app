@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.endoapp.app.data.ConsentState
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.EndoRepository
+import com.endoapp.app.data.entities.TreatmentState
 import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.ui.onboarding.OnboardingScreen
 import com.endoapp.app.ui.shell.ConsentedShell
@@ -21,6 +22,7 @@ import com.endoapp.app.ui.tracking.LogPersistence
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.util.UUID
 
 /**
  * The consent-by-construction routing surface — the ENTIRE app is this plain three-way `when`-switch
@@ -65,6 +67,22 @@ fun AppGate(
                 loadYesterday = { repository?.let { LogPersistence.loadDay(it, today - 1) } },
                 loadDay = { day -> repository?.let { LogPersistence.loadDay(it, day) } },
                 deleteDay = { day -> repository?.deleteDay(day) },
+                // Settings med + treatment seams — bound HERE (Consented arm only). Add + soft-archive
+                // both go through upsertMedication (the archive med already carries isArchived=true);
+                // cycle-off writes a fresh timestamped TreatmentState (latest wins).
+                medications = repository?.observeMedications() ?: emptyFlow(),
+                addMedication = { med -> repository?.upsertMedication(med) },
+                archiveMedication = { med -> repository?.upsertMedication(med) },
+                loadSuppressed = { repository?.latestTreatment()?.modeRaw == "suppressed" },
+                setSuppressed = { on ->
+                    repository?.upsertTreatment(
+                        TreatmentState(
+                            id = UUID.randomUUID().toString(),
+                            startedAtMillis = System.currentTimeMillis(),
+                            modeRaw = if (on) "suppressed" else "naturallyCycling",
+                        ),
+                    )
+                },
                 today = today,
             )
         }

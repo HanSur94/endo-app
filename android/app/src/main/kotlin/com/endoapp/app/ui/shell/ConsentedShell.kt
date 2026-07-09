@@ -6,26 +6,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.content.PlaceholderCopy
-import com.endoapp.app.content.ShellCopy
 import com.endoapp.app.data.entities.DayEntry
+import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.designsystem.BloomNavigationBar
 import com.endoapp.app.designsystem.BloomTabIcons
-import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.ui.tracking.DayDraft
 import com.endoapp.app.ui.tracking.DayLogRows
 import com.endoapp.app.ui.tracking.LogTabHost
@@ -64,9 +59,13 @@ fun ConsentedShell(
     loadYesterday: suspend () -> DayDraft? = { null },
     loadDay: suspend (Long) -> DayDraft? = { null },
     deleteDay: suspend (Long) -> Unit = {},
+    medications: Flow<List<Medication>> = emptyFlow(),
+    addMedication: suspend (Medication) -> Unit = {},
+    archiveMedication: suspend (Medication) -> Unit = {},
+    loadSuppressed: suspend () -> Boolean = { false },
+    setSuppressed: suspend (Boolean) -> Unit = {},
     today: Long = LocalDate.now().toEpochDay(),
 ) {
-    val colors = LocalBloomColors.current
     var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) }
 
     // Predictive-back-to-Log: intercept back ONLY off the start tab, so a back gesture from
@@ -104,6 +103,11 @@ fun ConsentedShell(
                     loadYesterday = loadYesterday,
                     loadDay = loadDay,
                     deleteDay = deleteDay,
+                    medications = medications,
+                    addMedication = addMedication,
+                    archiveMedication = archiveMedication,
+                    loadSuppressed = loadSuppressed,
+                    setSuppressed = setSuppressed,
                     today = today,
                 )
                 ConsentedTab.Insights -> TabPlaceholder(
@@ -118,18 +122,6 @@ fun ConsentedShell(
                     body = PlaceholderCopy.EXPLORE_BODY,
                     testTag = "tab.explore.body",
                 )
-            }
-
-            // Temporary withdraw affordance so the withdraw-re-gate invariant is exercisable this
-            // phase; the real Settings entry (with a confirmation dialog) is Phase 20. Its label is
-            // registered in ShellCopy so it does not escape the CopyAudit gate.
-            TextButton(
-                onClick = onWithdraw,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .testTag("shell.withdraw"),
-            ) {
-                Text(ShellCopy.WITHDRAW, color = colors.inkMuted)
             }
         }
     }

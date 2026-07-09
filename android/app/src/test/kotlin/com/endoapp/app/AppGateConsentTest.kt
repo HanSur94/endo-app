@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.endoapp.app.data.ConsentState
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.designsystem.BloomTheme
@@ -92,16 +93,23 @@ class AppGateConsentTest {
         composeRule.onNodeWithTag("tab.log").assertIsSelected()
     }
 
-    // --- 3. Withdrawing consent re-gates ---
+    // --- 3. Withdrawing consent re-gates (via the graduated Settings control) ---
 
     @Test
-    fun withdrawingConsent_reGatesToOnboarding() {
+    fun withdrawingConsent_viaSettings_reGatesToOnboarding() {
         setGate(FakeConsentStore(ConsentState.Consented(grantedAtMillis = 0L)))
 
         // Precondition: consented → the shell is present.
         tabTags.forEach { composeRule.onNodeWithTag(it).assertExists() }
 
-        composeRule.onNodeWithTag("shell.withdraw").performClick()
+        // The Phase-19 temp shell.withdraw affordance is GONE — the withdraw control now lives in
+        // Settings (graduated). Drive it: Log-home gear → Settings → Withdraw consent → confirm dialog.
+        composeRule.onNodeWithTag("shell.withdraw").assertDoesNotExist()
+        composeRule.onNodeWithTag("log.settingsButton").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings.withdraw").performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings.withdrawConfirm").performClick()
         composeRule.waitForIdle()
 
         tabTags.forEach { composeRule.onNodeWithTag(it).assertDoesNotExist() }
