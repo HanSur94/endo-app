@@ -34,9 +34,9 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `BoundaryLintTests.swift` | 1 | `BoundaryLintTests.kt` | 1 | 17-01 | ✅ done |
 | `InsightCodableTests.swift` | 6 | `InsightCodableTests.kt` | 6 | 17-02 | ✅ done |
 | `CorrelationStatsTests.swift` | 26 | `CorrelationStatsTests.kt` | 26 | 17-03 | ✅ done |
-| `TrendsEngineTests.swift` | 11 | `TrendsEngineTests.kt` | pending | 17-04 | pending |
-| `CyclePhaseMapperTests.swift` | 8 | `CyclePhaseMapperTests.kt` | pending | 17-04 | pending |
-| `SuppressedFixtureTests.swift` | 2 | `SuppressedFixtureTests.kt` | pending | 17-04 | pending |
+| `TrendsEngineTests.swift` | 11 | `TrendsEngineTests.kt` | 11 | 17-04 | ✅ done |
+| `CyclePhaseMapperTests.swift` | 8 | `CyclePhaseMapperTests.kt` | 8 | 17-04 | ✅ done |
+| `SuppressedFixtureTests.swift` | 2 | `SuppressedFixtureTests.kt` | 2 | 17-04 | ✅ done |
 | `ChartScrubSelectionTests.swift` | 7 | `ChartScrubSelectionTests.kt` | pending | 17-05 | pending |
 | `ExploreSeriesCatalogTests.swift` | 9 | `ExploreSeriesCatalogTests.kt` | pending | 17-05 | pending |
 | `ExploreSeriesExtractionTests.swift` | 10 | `ExploreSeriesExtractionTests.kt` | pending | 17-05 | pending |
@@ -48,9 +48,10 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
 | `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | pending | 17-08 | pending |
 | `ContractTests.swift` | 7 | `ContractTests.kt` | pending | 17-08 | pending |
-| **TOTAL** | **157** | | **35** | | |
+| **TOTAL** | **157** | | **56** | | |
 
-Kotlin count so far: **35** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26).
+Kotlin count so far: **56** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26
++ TrendsEngineTests 11 + CyclePhaseMapperTests 8 + SuppressedFixtureTests 2).
 SnapshotFixtures.kt (0-case shared builder) is ported and available to plans 03–08.
 
 ## Additional guard tests (no Swift mirror)
