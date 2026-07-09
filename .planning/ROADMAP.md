@@ -43,7 +43,7 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
 - [x] **Phase 19: App Shell & Consent** - Consent-by-construction gate, Bloom design-system port, and a 3-tab Compose shell that declares no INTERNET permission ✅ (verified 4/4; consent-by-construction proven, Bloom shell, real APK, 99 app + 176 insights tests)
 - [x] **Phase 20: Tracking Screens** - Daily Check-In, Day Log editor + BodyMap, medications, and inexact reminders — nothing mandatory, absence ≠ 0 ✅ (verified 5/5; full-day logging persists to Room, accessible BodyMap, inexact reminder, 182 app + 176 insights tests)
 - [x] **Phase 21: Health Connect Import** - Read-only import of menstruation/sleep/exercise/nutrition with three-state availability gating, dual rationale declarations, and manual-wins/nil-honest merge ✅ (verified 4/4; read-only manifest+dual rationale, idempotent import, 3-state availability, 237 app + 176 insights tests)
-- [ ] **Phase 22: Insights Dashboard, Explore & Charts** - Gated insight cards, scrub-to-read trends, Explore lanes + descriptive scatter under the locked chart-honesty rules, TalkBack-accessible per data point
+- [x] **Phase 22: Insights Dashboard, Explore & Charts** - Gated insight cards, scrub-to-read trends, Explore lanes + descriptive scatter under the locked chart-honesty rules, TalkBack-accessible per data point ✅ (verified 5/5; honest Canvas charts, TalkBack overlay, flare in-app-only, 319 app + 176 insights tests)
 - [ ] **Phase 23: Encrypted Export/Import (INSERTED)** - Passphrase-encrypted SAF export/import (PBKDF2 + AES-GCM) — portability, device migration, and backup in one deliberate surface
 - [ ] **Phase 24: PDF Report** - Vector PDF doctor report for a chosen date range with per-source labels and share-intent export
 - [ ] **Phase 25: Play Store Prep** - Health apps declaration, truthful Data safety form, claims-audited store copy, targetSdk 36 compliance + pre-launch pass
@@ -207,7 +207,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 19. App Shell & Consent | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
 | 20. Tracking Screens | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
 | 21. Health Connect Import | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
-| 22. Insights Dashboard, Explore & Charts | v2.0 | 0/6 | Not started | - |
+| 22. Insights Dashboard, Explore & Charts | v2.0 | 6/6 | Complete ✅ | 2026-07-09 |
 | 23. Encrypted Export/Import | v2.0 | 0/TBD | Not started | - |
 | 24. PDF Report | v2.0 | 0/TBD | Not started | - |
 | 25. Play Store Prep | v2.0 | 0/TBD | Not started | - |
