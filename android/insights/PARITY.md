@@ -43,16 +43,17 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `ScatterPairingTests.swift` | 7 | `ScatterPairingTests.kt` | 7 | 17-05 | ✅ done |
 | `SeriesNormalizationTests.swift` | 6 | `SeriesNormalizationTests.kt` | 6 | 17-05 | ✅ done |
 | `CorrelationEngineTests.swift` | 12 | `CorrelationEngineTests.kt` | 12 | 17-06 | ✅ done |
-| `RecommendationsEngineTests.swift` | 7 | `RecommendationsEngineTests.kt` | pending | 17-07 | pending |
-| `FlareEngineTests.swift` | 6 | `FlareEngineTests.kt` | pending | 17-07 | pending |
+| `RecommendationsEngineTests.swift` | 7 | `RecommendationsEngineTests.kt` | 7 | 17-07 | ✅ done |
+| `FlareEngineTests.swift` | 6 | `FlareEngineTests.kt` | 6 | 17-07 | ✅ done |
 | `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
 | `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | pending | 17-08 | pending |
 | `ContractTests.swift` | 7 | `ContractTests.kt` | pending | 17-08 | pending |
-| **TOTAL** | **157** | | **95** | | |
+| **TOTAL** | **157** | | **108** | | |
 
-Kotlin count so far: **95** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26
+Kotlin count so far: **108** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26
 + TrendsEngineTests 11 + CyclePhaseMapperTests 8 + SuppressedFixtureTests 2 + ChartScrubSelectionTests 7
-+ ExploreSeriesCatalogTests 9 + ExploreSeriesExtractionTests 10 + ScatterPairingTests 7 + SeriesNormalizationTests 6).
++ ExploreSeriesCatalogTests 9 + ExploreSeriesExtractionTests 10 + ScatterPairingTests 7 + SeriesNormalizationTests 6
++ CorrelationEngineTests 12 + RecommendationsEngineTests 7 + FlareEngineTests 6).
 SnapshotFixtures.kt + SeriesTestSupport.kt (0-case shared builders) are ported and available to plans 06–08.
 
 **17-05 chart data-prep landed (39 cases):** `ChartScrubSelectionTests` 7, `ExploreSeriesCatalogTests` 9,
@@ -66,6 +67,16 @@ spot-checks, strong-association surfaces (non-causal copy), under-sampled (n=9) 
 (K≈100+ independent-hash noise) each → ZERO, suppressed-user no-cyclePhase (D-04), severity arm counts DAYS
 (WR-02), and output determinism. `ForbiddenTerms`/`ClaimsPolicyDriftTests` and the `InsightsEngine`
 public-pipeline half of `duplicateDay_*` remain for 17-08. Remaining pending: 17-07 (13), 17-08 (37) → 107 + 50 = 157.
+
+**17-07 Recommendations + Flare landed (13 cases):** `RecommendationsEngineTests` 7 (dominant-per-symptom
+collapse, ≤3 cap, direction-aware non-prescriptive copy, WR-01 bleeding-target collapse, exhaustive label
+audit, suppressed/flood/under-sampled → ZERO, determinism) + `FlareEngineTests` 6 (rising-spine required,
+suppressed/flat → ZERO, insufficiency cusp, bounded ≤ MEDIUM warning, WR-03 logged-severity proximity,
+determinism). Both engines carry byte-identical copy mirrors (`RecommendationCopy`/`FlareCopyText`) + public
+`RecommendationsDriftGuard`/`FlareDriftGuard` copy forwarders. The `ForbiddenTerms.*` list forwarders the
+Swift DriftGuards also expose are deferred to 17-08 (where `ForbiddenTerms` lands); the exhaustive-label /
+copy scans use inline banned-substring lists (the `CorrelationEngineTests` precedent) until then. Remaining
+pending: 17-08 (49 → HonestyGate 16 + InsightsEngine 14 + Contract 7 + the ForbiddenTerms forwarders/scans).
 
 ## Additional guard tests (no Swift mirror)
 
