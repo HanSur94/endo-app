@@ -80,7 +80,13 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
   3. Room v1 discipline is locked: `exportSchema` on with `schemas/` committed, migration test scaffold green, destructive migration structurally banned, and a backup-rules assertion proves the health database is excluded from Auto Backup (only the consent flag/prefs may back up)
   4. SnapshotProjector is the ONLY persistence↔domain meeting point — ported mapping tests green, and free text never crosses the bridge
   5. The Kotlin ClaimsPolicy port + CopyAudit JVM harness runs green BEFORE any UI copy exists, and the schema-versioned export format contract (platform-neutral JSON + crypto header spec + UUID identity) is committed
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 18-01-PLAN.md — `:app` module + Room/KSP/DataStore catalog wiring + CI lanes (AGP-9 built-in Kotlin) [wave 1]
+- [ ] 18-02-PLAN.md — 10 Room entities + DayScoped marker + DAOs + EndoDatabase v1 (exportSchema, committed schemas/1.json) + migration discipline (MigrationTestHelper, destructive-fallback ban) [wave 2]
+- [ ] 18-03-PLAN.md — Delete-day @Transaction cascade (incl. ImportedSample) + reflection completeness meta-test + ConsentStore + consent-gated EndoRepository [wave 3]
+- [ ] 18-04-PLAN.md — insightsbridge/SnapshotProjector + FactorKind + ImportedSignals + 24-case parity suite + consent-gated daySnapshots() [wave 4]
+- [ ] 18-05-PLAN.md — ClaimsPolicy (reuse :insights ForbiddenTerms) + AuditableCopy/CopyAudit harness before any UI copy [wave 2]
+- [ ] 18-06-PLAN.md — Backup exclusion (data_extraction_rules.xml + assertion test) + versioned ExportEnvelope/CryptoHeader format contract [wave 3]
 
 ### Phase 19: App Shell & Consent
 **Goal**: A user completes onboarding/consent and lands in a Bloom-styled 3-tab shell — health UI cannot exist before consent, by construction
@@ -175,7 +181,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 1–12 (archived) | v1.0 | 39/39 | Complete | 2026-06-10 |
 | 13–16 (archived) | v1.1 | 17/17 | Complete | 2026-06-17 |
 | 17. Insights Engine Port | v2.0 | 8/8 | Complete ✅ | 2026-07-09 |
-| 18. Room Persistence | v2.0 | 0/TBD | Not started | - |
+| 18. Room Persistence | v2.0 | 0/6 | Planned | - |
 | 19. App Shell & Consent | v2.0 | 0/TBD | Not started | - |
 | 20. Tracking Screens | v2.0 | 0/TBD | Not started | - |
 | 21. Health Connect Import | v2.0 | 0/TBD | Not started | - |
