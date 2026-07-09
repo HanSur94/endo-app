@@ -2,6 +2,7 @@ package com.endoapp.app.data
 
 import com.endoapp.app.data.daos.DayEntryDao
 import com.endoapp.app.data.daos.DeleteDayDao
+import com.endoapp.app.data.daos.ImportDao
 import com.endoapp.app.data.daos.InsightsDao
 import com.endoapp.app.data.daos.MedicationDao
 import com.endoapp.app.data.daos.SymptomDao
@@ -15,11 +16,14 @@ import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.data.entities.PainPoint
 import com.endoapp.app.data.entities.SymptomReading
 import com.endoapp.app.data.entities.TreatmentState
+import com.endoapp.app.export.ExportEnvelope
+import com.endoapp.app.export.ExportMapper
 import com.endoapp.app.insightsbridge.SnapshotProjector
 import com.endoapp.insights.DaySnapshot
 import com.endoapp.insights.Insight
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
+import java.time.Instant
 
 /**
  * The consent-gated facade over the health data store — the ONLY path through which health data is
@@ -46,6 +50,7 @@ class EndoRepository(
     private val medicationDao: MedicationDao,
     private val insightsDao: InsightsDao,
     private val deleteDayDao: DeleteDayDao,
+    private val importDao: ImportDao,
 ) {
 
     /**
@@ -274,6 +279,55 @@ class EndoRepository(
         return insightsDao.dismissedSignalKeys().toSet()
     }
 
+    // --- Encrypted export / import (each gated; APRT-01/02) ---
+
+    /**
+     * The consent-gated export SOURCE (APRT-01): gates FIRST (throws under Unknown / NotConsented,
+     * fail-closed — reading health data), then reads every entity's `all*()` list and delegates to the
+     * pure [ExportMapper.toEnvelope]. `CachedInsight` is deliberately NOT read (derived cache, excluded
+     * per the [ExportEnvelope] contract). Room entities never escape as such — only the platform-neutral
+     * [ExportEnvelope] (DTOs) crosses out. The repository owns the clock (`exportedAt = now`).
+     */
+    suspend fun exportSnapshot(): ExportEnvelope {
+        checkConsented()
+        return ExportMapper.toEnvelope(
+            dayEntries = dayEntryDao.all(),
+            symptomReadings = symptomDao.allSymptoms(),
+            painPoints = symptomDao.allPain(),
+            bleedingEvents = symptomDao.allBleeding(),
+            factorReadings = symptomDao.allFactors(),
+            medications = medicationDao.allMedications(),
+            treatmentStates = medicationDao.allTreatments(),
+            importedSamples = symptomDao.allImported(),
+            dismissedInsights = insightsDao.allDismissed(),
+            exportedAt = Instant.now().toString(),
+        )
+    }
+
+    /**
+     * The consent-gated import TARGET (APRT-02 / T-23-06): gates FIRST (throws under Unknown /
+     * NotConsented — import WRITES special-category health data, so it must fail closed), then maps the
+     * [ExportEnvelope] DTOs → entities via [ExportMapper.toEntities] and hands them to the single
+     * `@Transaction` [ImportDao.importAll]. Import is therefore ATOMIC (all-or-nothing) and IDEMPOTENT:
+     * re-importing the same envelope REPLACEs every row by its UUID primary key — no duplicates, no
+     * change. `CachedInsight` is never imported (regenerated on the next recompute).
+     */
+    suspend fun importEnvelope(envelope: ExportEnvelope) {
+        checkConsented()
+        val bundle = ExportMapper.toEntities(envelope)
+        importDao.importAll(
+            dayEntries = bundle.dayEntries,
+            symptomReadings = bundle.symptomReadings,
+            painPoints = bundle.painPoints,
+            bleedingEvents = bundle.bleedingEvents,
+            factorReadings = bundle.factorReadings,
+            medications = bundle.medications,
+            treatmentStates = bundle.treatmentStates,
+            importedSamples = bundle.importedSamples,
+            dismissedInsights = bundle.dismissedInsights,
+        )
+    }
+
     // --- Delete-day (gated; delegates to the single-transaction cascade) ---
 
     suspend fun deleteDay(epochDay: Long) {
@@ -300,6 +354,7 @@ class EndoRepository(
             medicationDao = db.medicationDao(),
             insightsDao = db.insightsDao(),
             deleteDayDao = db.deleteDayDao(),
+            importDao = db.importDao(),
         )
     }
 }

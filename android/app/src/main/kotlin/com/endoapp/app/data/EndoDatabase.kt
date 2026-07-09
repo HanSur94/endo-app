@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.endoapp.app.data.daos.DayEntryDao
 import com.endoapp.app.data.daos.DeleteDayDao
+import com.endoapp.app.data.daos.ImportDao
 import com.endoapp.app.data.daos.InsightsDao
 import com.endoapp.app.data.daos.MedicationDao
 import com.endoapp.app.data.daos.SymptomDao
@@ -61,6 +62,9 @@ abstract class EndoDatabase : RoomDatabase() {
 
     /** The GDPR Art. 17 delete-day cascade (single `@Transaction`, all 6 day-scoped types). */
     abstract fun deleteDayDao(): DeleteDayDao
+
+    /** The encrypted-import target: one `@Transaction` bulk REPLACE-upsert over the 9 exported types. */
+    abstract fun importDao(): ImportDao
 
     companion object {
         /** On-disk database file name (excluded from Android Auto Backup in Plan 06). */

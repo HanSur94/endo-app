@@ -2,6 +2,7 @@ package com.endoapp.app.data
 
 import com.endoapp.app.data.daos.DayEntryDao
 import com.endoapp.app.data.daos.DeleteDayDao
+import com.endoapp.app.data.daos.ImportDao
 import com.endoapp.app.data.daos.InsightsDao
 import com.endoapp.app.data.daos.MedicationDao
 import com.endoapp.app.data.daos.SymptomDao
@@ -15,6 +16,7 @@ import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.data.entities.PainPoint
 import com.endoapp.app.data.entities.SymptomReading
 import com.endoapp.app.data.entities.TreatmentState
+import com.endoapp.app.export.ExportEnvelope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,6 +56,9 @@ class RepositoryConsentTest {
         "importedForDay" to { importedForDay(0) },
         "daySnapshots" to { daySnapshots() },
         "deleteDay" to { deleteDay(0) },
+        // T-23-06: export READS health data, import WRITES health data — both must gate first.
+        "exportSnapshot" to { exportSnapshot() },
+        "importEnvelope" to { importEnvelope(ExportEnvelope(exportedAt = "2025-07-09T00:00:00Z")) },
     )
 
     @Test
@@ -92,6 +97,7 @@ class RepositoryConsentTest {
         medicationDao = FakeMedicationDao(),
         insightsDao = FakeInsightsDao(),
         deleteDayDao = FakeDeleteDayDao(),
+        importDao = FakeImportDao(),
     )
 
     // --- Fakes (no DB) ---
@@ -163,5 +169,18 @@ class RepositoryConsentTest {
         override suspend fun deleteImported(epochDay: Long) = Unit
         override suspend fun clearCachedInsights() = Unit
         // deleteDay() default method is inherited — it calls the no-op deletes above.
+    }
+
+    private class FakeImportDao : ImportDao {
+        override suspend fun insertDayEntries(rows: List<DayEntry>) = Unit
+        override suspend fun insertSymptomReadings(rows: List<SymptomReading>) = Unit
+        override suspend fun insertPainPoints(rows: List<PainPoint>) = Unit
+        override suspend fun insertBleedingEvents(rows: List<BleedingEvent>) = Unit
+        override suspend fun insertFactorReadings(rows: List<FactorReading>) = Unit
+        override suspend fun insertMedications(rows: List<Medication>) = Unit
+        override suspend fun insertTreatmentStates(rows: List<TreatmentState>) = Unit
+        override suspend fun insertImportedSamples(rows: List<ImportedSample>) = Unit
+        override suspend fun insertDismissedInsights(rows: List<DismissedInsight>) = Unit
+        // importAll() default method is inherited — it calls the no-op inserts above.
     }
 }
