@@ -33,7 +33,7 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `SmokeTests.swift` | 2 | `SmokeTests.kt` | 2 | 17-01 | ✅ done |
 | `BoundaryLintTests.swift` | 1 | `BoundaryLintTests.kt` | 1 | 17-01 | ✅ done |
 | `InsightCodableTests.swift` | 6 | `InsightCodableTests.kt` | 6 | 17-02 | ✅ done |
-| `CorrelationStatsTests.swift` | 26 | `CorrelationStatsTests.kt` | pending | 17-03 | pending |
+| `CorrelationStatsTests.swift` | 26 | `CorrelationStatsTests.kt` | 26 | 17-03 | ✅ done |
 | `TrendsEngineTests.swift` | 11 | `TrendsEngineTests.kt` | pending | 17-04 | pending |
 | `CyclePhaseMapperTests.swift` | 8 | `CyclePhaseMapperTests.kt` | pending | 17-04 | pending |
 | `SuppressedFixtureTests.swift` | 2 | `SuppressedFixtureTests.kt` | pending | 17-04 | pending |
@@ -48,9 +48,9 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
 | `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | pending | 17-08 | pending |
 | `ContractTests.swift` | 7 | `ContractTests.kt` | pending | 17-08 | pending |
-| **TOTAL** | **157** | | **9** | | |
+| **TOTAL** | **157** | | **35** | | |
 
-Kotlin count so far: **9** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6).
+Kotlin count so far: **35** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6 + CorrelationStatsTests 26).
 SnapshotFixtures.kt (0-case shared builder) is ported and available to plans 03–08.
 
 ## Additional guard tests (no Swift mirror)
@@ -63,7 +63,8 @@ They are standing structural / cross-platform-drift guards.
 | `VersionCatalogAuditTests.kt` | Fails the build if any analytics/auth/backend/networking coordinate enters `gradle/libs.versions.toml` (zero-dependency supply-chain guard) | AENG-07 | 17-01 | ✅ done |
 | `EnumRawValueParityTests.kt` | Swift-source scan (A) + golden JSON (B): fails on enum raw-value divergence vs `SnapshotEnums.swift` / `CyclePhase.swift` (2 tests, both proven red-capable) | AENG-05 | 17-02 | ✅ done |
 | `ClaimsPolicyDriftTests.kt` | Scans `ClaimsPolicy.swift`: fails if the app's forbidden-substring lists drift out of the Kotlin `ForbiddenTerms` superset | AENG-05 | 17-08 | pending |
-| `NumericDivergenceTests.kt` | NaN / ±0.0 / rounding ties / Mann-Whitney tied ranks (17-03) + DST/non-UTC day boundaries (17-08) | AENG-06 | 17-03, 17-08 | pending |
+| `NumericDivergenceTests.kt` | NaN / ±0.0 / rounding ties / Mann-Whitney tied ranks (17-03, 7 tests ✅) + DST/non-UTC day boundaries (17-08) | AENG-06 | 17-03, 17-08 | 🟡 stats/boundary half done; DST half pending 17-08 |
+| `SpecialFunctionsGoldenTests.kt` | Pins the hand-rolled `lgamma`/`erf`/`normalCDF` (Lanczos g=7 / NR3 Chebyshev) against Swift/libm golden values (`stats-goldens.json`) within relative 1e-9 — the AENG-06 tolerance gate (T-17-07) | AENG-06 | 17-03 | ✅ done |
 
 ## Notes
 
