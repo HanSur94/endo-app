@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
                     router = dependencies.checkInRouter,
                     repository = dependencies.repository,
                     reminders = dependencies.reminderController,
+                    healthConnect = dependencies.healthConnectController,
                 )
             }
         }

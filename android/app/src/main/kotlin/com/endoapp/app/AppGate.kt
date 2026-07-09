@@ -15,6 +15,7 @@ import com.endoapp.app.data.ConsentState
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.EndoRepository
 import com.endoapp.app.data.entities.TreatmentState
+import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.ui.onboarding.OnboardingScreen
@@ -43,6 +44,7 @@ fun AppGate(
     router: CheckInRouter,
     repository: EndoRepository? = null,
     reminders: ReminderController? = null,
+    healthConnect: HealthConnectController? = null,
 ) {
     val state by consentStore.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -86,6 +88,9 @@ fun AppGate(
                     )
                 },
                 reminders = reminders,
+                // The Health Connect connect/import seam — bound HERE (Consented arm ONLY), so the
+                // connect/import surface is unconstructible pre-consent by construction (T-21-05a).
+                healthConnect = healthConnect,
                 today = today,
             )
         }

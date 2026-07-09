@@ -19,6 +19,7 @@ import com.endoapp.app.CheckInRouter
 import com.endoapp.app.content.PlaceholderCopy
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
+import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.designsystem.BloomNavigationBar
 import com.endoapp.app.designsystem.BloomTabIcons
@@ -66,6 +67,7 @@ fun ConsentedShell(
     loadSuppressed: suspend () -> Boolean = { false },
     setSuppressed: suspend (Boolean) -> Unit = {},
     reminders: ReminderController? = null,
+    healthConnect: HealthConnectController? = null,
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) }
@@ -111,6 +113,7 @@ fun ConsentedShell(
                     loadSuppressed = loadSuppressed,
                     setSuppressed = setSuppressed,
                     reminders = reminders,
+                    healthConnect = healthConnect,
                     today = today,
                 )
                 ConsentedTab.Insights -> TabPlaceholder(

@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.testTag
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
+import com.endoapp.app.health.HealthConnectController
+import com.endoapp.app.health.ui.HealthImportHost
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.ui.settings.SettingsScreen
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +61,7 @@ fun LogTabHost(
     loadSuppressed: suspend () -> Boolean = { false },
     setSuppressed: suspend (Boolean) -> Unit = {},
     reminders: ReminderController? = null,
+    healthConnect: HealthConnectController? = null,
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     val stack = rememberTrackingBackStack()
@@ -104,12 +107,20 @@ fun LogTabHost(
                 onWithdraw = onWithdraw,
                 onBack = { stack.pop() },
                 reminders = reminders,
+                healthConnect = healthConnect,
+                onConnectHealth = { stack.push(TrackingRoute.HealthImport) },
                 medications = medications,
                 onAddMedication = addMedication,
                 onArchiveMedication = archiveMedication,
                 loadSuppressed = loadSuppressed,
                 onSetSuppressed = setSuppressed,
             )
+            // The Health Connect connect/import screen — reachable ONLY via the Settings connect entry,
+            // which is itself rendered only when a controller is threaded (Consented arm). Guarded on a
+            // non-null controller so an unwired build can never construct the import surface.
+            TrackingRoute.HealthImport -> healthConnect?.let { controller ->
+                HealthImportHost(controller = controller, onClose = { stack.pop() })
+            }
         }
     }
 }

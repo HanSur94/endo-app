@@ -27,6 +27,9 @@ sealed interface TrackingRoute {
 
     /** The Settings screen (Plan 04 fills this arm). */
     data object Settings : TrackingRoute
+
+    /** The Health Connect connect/import screen, reached from the Settings connect entry (Phase 21). */
+    data object HealthImport : TrackingRoute
 }
 
 /**
@@ -63,12 +66,14 @@ class TrackingBackStack(initial: List<TrackingRoute>) {
             TrackingRoute.CheckIn -> "C"
             is TrackingRoute.DayLog -> "D:${route.epochDay}"
             TrackingRoute.Settings -> "S"
+            TrackingRoute.HealthImport -> "HC"
         }
 
         private fun decode(token: String): TrackingRoute = when {
             token == "H" -> TrackingRoute.LogHome
             token == "C" -> TrackingRoute.CheckIn
             token == "S" -> TrackingRoute.Settings
+            token == "HC" -> TrackingRoute.HealthImport
             token.startsWith("D:") -> TrackingRoute.DayLog(token.removePrefix("D:").toLong())
             else -> TrackingRoute.LogHome
         }
