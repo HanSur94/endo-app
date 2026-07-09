@@ -15,6 +15,10 @@ kotlinxSerialization = "1.11.0"
 [libraries]
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
+# JUnit 6 unifies Platform + Jupiter under one version; the launcher is required on the
+# test runtime classpath (Gradle no longer auto-provides it) and is not a transitive dep
+# of the Jupiter aggregator. Version-aligned with junitJupiter via junit-bom 6.1.1.
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junitJupiter" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }              # :insights only

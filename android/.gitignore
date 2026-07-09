@@ -3,3 +3,9 @@
 build/
 local.properties
 *.hprof
+
+# The user's global gitignore (~/.gitignore) carries an Xcode-oriented `**/src/` rule
+# that would silently swallow the entire Kotlin source tree. Re-include it here so the
+# Gradle module sources are tracked (this .gitignore overrides the global one).
+!**/src/
+!**/src/**

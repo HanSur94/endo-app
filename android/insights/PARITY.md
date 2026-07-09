@@ -1,0 +1,76 @@
+# :insights Swift → Kotlin Parity Ledger
+
+**Phase 17 exit criterion.** This ledger maps every Swift test file in
+`EndoInsights/Tests/EndoInsightsTests/` to its Kotlin mirror in
+`android/insights/src/test/kotlin/com/endoapp/insights/`, tracking the `@Test`
+case count on both sides. The phase is "proven equivalent" only when the Kotlin
+column reaches the Swift column for every row and the total lands at **157**.
+
+## Parity methodology
+
+- **Count basis:** `grep -c "@Test" <file>` on the Swift side (line-based, the
+  verifier's mechanism) vs the JUnit XML `testcase` count on the Kotlin side.
+- **All 157 Swift cases are plain `@Test`** (zero `@Test(arguments:)` parameterized
+  suites — verified by grep), so the mapping is a straight 1:1 `@Test → @Test`.
+- **SmokeTests grep quirk (documented, not a defect):** `SmokeTests.swift` greps as
+  **2** because a doc-comment line also contains the string "@Test" (1 real `@Test`
+  method + 1 comment mention). The Kotlin `SmokeTests.kt` intentionally carries **2**
+  real `@Test` methods so the JUnit XML count matches the ledger's Swift column.
+  The real Swift `@Test`-*method* total is **156**; the grep-based parity total is **157**.
+- **Tolerance parity (stats):** `lgamma`/`erf` have no Kotlin/JVM stdlib equivalent and
+  are hand-rolled, so Fisher-exact and Mann-Whitney parity is **tolerance-based, not
+  bit-exact**, gated against Swift/libm golden values. This is documented in **plan 17-03**
+  (SpecialFunctions + CorrelationStats) and the `stats-goldens.json` fixture header.
+
+## Ported test files (Swift ⇔ Kotlin) — the 157-case parity target
+
+Two rows are **fixture-only** (0 cases) and must be ported before the files that read them.
+
+| Swift file | Swift @Test | Kotlin file | Kotlin count | Plan | Status |
+|------------|------------:|-------------|-------------:|------|--------|
+| `SnapshotFixtures.swift` | 0 | `SnapshotFixtures.kt` | — | 17-02 | pending |
+| `SeriesTestSupport.swift` | 0 | `SeriesTestSupport.kt` | — | 17-05 | pending |
+| `SmokeTests.swift` | 2 | `SmokeTests.kt` | 2 | 17-01 | ✅ done |
+| `BoundaryLintTests.swift` | 1 | `BoundaryLintTests.kt` | 1 | 17-01 | ✅ done |
+| `InsightCodableTests.swift` | 6 | `InsightCodableTests.kt` | pending | 17-02 | pending |
+| `CorrelationStatsTests.swift` | 26 | `CorrelationStatsTests.kt` | pending | 17-03 | pending |
+| `TrendsEngineTests.swift` | 11 | `TrendsEngineTests.kt` | pending | 17-04 | pending |
+| `CyclePhaseMapperTests.swift` | 8 | `CyclePhaseMapperTests.kt` | pending | 17-04 | pending |
+| `SuppressedFixtureTests.swift` | 2 | `SuppressedFixtureTests.kt` | pending | 17-04 | pending |
+| `ChartScrubSelectionTests.swift` | 7 | `ChartScrubSelectionTests.kt` | pending | 17-05 | pending |
+| `ExploreSeriesCatalogTests.swift` | 9 | `ExploreSeriesCatalogTests.kt` | pending | 17-05 | pending |
+| `ExploreSeriesExtractionTests.swift` | 10 | `ExploreSeriesExtractionTests.kt` | pending | 17-05 | pending |
+| `ScatterPairingTests.swift` | 7 | `ScatterPairingTests.kt` | pending | 17-05 | pending |
+| `SeriesNormalizationTests.swift` | 6 | `SeriesNormalizationTests.kt` | pending | 17-05 | pending |
+| `CorrelationEngineTests.swift` | 12 | `CorrelationEngineTests.kt` | pending | 17-06 | pending |
+| `RecommendationsEngineTests.swift` | 7 | `RecommendationsEngineTests.kt` | pending | 17-07 | pending |
+| `FlareEngineTests.swift` | 6 | `FlareEngineTests.kt` | pending | 17-07 | pending |
+| `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
+| `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | pending | 17-08 | pending |
+| `ContractTests.swift` | 7 | `ContractTests.kt` | pending | 17-08 | pending |
+| **TOTAL** | **157** | | **3** | | |
+
+Kotlin count so far: **3** (SmokeTests 2 + BoundaryLintTests 1).
+
+## Additional guard tests (no Swift mirror)
+
+These Kotlin tests have **no Swift counterpart** and are **NOT** part of the 157 count.
+They are standing structural / cross-platform-drift guards.
+
+| Kotlin guard test | Purpose | Req | Plan | Status |
+|-------------------|---------|-----|------|--------|
+| `VersionCatalogAuditTests.kt` | Fails the build if any analytics/auth/backend/networking coordinate enters `gradle/libs.versions.toml` (zero-dependency supply-chain guard) | AENG-07 | 17-01 | ✅ done |
+| `EnumRawValueParityTests.kt` | Swift-source scan (A) + golden JSON (B): fails on enum raw-value divergence vs `SnapshotEnums.swift` / `Factor.swift` / `CyclePhase.swift` | AENG-05 | 17-02 | pending |
+| `ClaimsPolicyDriftTests.kt` | Scans `ClaimsPolicy.swift`: fails if the app's forbidden-substring lists drift out of the Kotlin `ForbiddenTerms` superset | AENG-05 | 17-08 | pending |
+| `NumericDivergenceTests.kt` | NaN / ±0.0 / rounding ties / Mann-Whitney tied ranks (17-03) + DST/non-UTC day boundaries (17-08) | AENG-06 | 17-03, 17-08 | pending |
+
+## Notes
+
+- `FactorKind` is **deliberately not ported** into `:insights` — it is an app-side
+  Phase-18 persistence discriminator (research assumption A1). Its 7 raw values
+  (`food`, `activity`, `sleep`, `medication`, `stress`, `mood`, `other`) will be
+  recorded in the golden-JSON header (plan 17-02) so a Phase-18 app-side drift test
+  can adopt it later.
+- Day identity is `java.time.LocalDate` throughout (the injected Swift `Calendar` is
+  dropped per the locked decision); the DST/non-UTC fixture (17-08) proves no
+  `Instant`/epoch math leaked in.
