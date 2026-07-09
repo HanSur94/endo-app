@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
                     repository = dependencies.repository,
                     reminders = dependencies.reminderController,
                     healthConnect = dependencies.healthConnectController,
+                    exportImport = dependencies.exportImportViewModel,
                     insightsCoordinator = dependencies.insightsCoordinator,
                     exploreScatterRouter = dependencies.exploreScatterRouter,
                 )

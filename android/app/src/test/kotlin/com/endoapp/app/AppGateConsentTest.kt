@@ -8,6 +8,8 @@ import androidx.compose.ui.test.performScrollTo
 import com.endoapp.app.data.ConsentState
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.designsystem.BloomTheme
+import com.endoapp.app.export.ExportImportViewModel
+import com.endoapp.app.export.FakeDocumentIo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Rule
@@ -54,6 +56,22 @@ class AppGateConsentTest {
         composeRule.setContent {
             BloomTheme {
                 AppGate(consentStore = store, router = router)
+            }
+        }
+    }
+
+    /** A trivially-constructible export/import ViewModel over fakes (its seams are never invoked here —
+     *  the test only asserts the Settings surface's presence/absence, not a real export). */
+    private fun fakeExportImport(): ExportImportViewModel = ExportImportViewModel(
+        exportSnapshot = { error("unused in this test") },
+        importEnvelope = { },
+        documentIo = FakeDocumentIo(),
+    )
+
+    private fun setGateWithExportImport(store: ConsentStore) {
+        composeRule.setContent {
+            BloomTheme {
+                AppGate(consentStore = store, router = CheckInRouter(), exportImport = fakeExportImport())
             }
         }
     }
@@ -114,6 +132,30 @@ class AppGateConsentTest {
 
         tabTags.forEach { composeRule.onNodeWithTag(it).assertDoesNotExist() }
         composeRule.onNodeWithTag("consent.grantButton").assertExists()
+    }
+
+    // --- 3b. The export/import surface is consent-gated (T-23-10, consent-by-construction) ---
+
+    @Test
+    fun exportImportSeam_threaded_isUnreachablePreConsent() {
+        // Even with the seam THREADED, NotConsented never passes it to the shell (bound only in the
+        // Consented arm), so the "Your data" export/import entries are unconstructible pre-consent.
+        setGateWithExportImport(FakeConsentStore(ConsentState.NotConsented))
+
+        composeRule.onNodeWithTag("settings.export").assertDoesNotExist()
+        composeRule.onNodeWithTag("settings.import").assertDoesNotExist()
+        composeRule.onNodeWithTag("consent.grantButton").assertExists()
+    }
+
+    @Test
+    fun exportImportSeam_threaded_rendersYourDataEntriesWhenConsented() {
+        setGateWithExportImport(FakeConsentStore(ConsentState.Consented(grantedAtMillis = 0L)))
+
+        // Log-home gear → Settings; the "Your data" export + import entries render (seam threaded).
+        composeRule.onNodeWithTag("log.settingsButton").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings.export").performScrollTo().assertExists()
+        composeRule.onNodeWithTag("settings.import").performScrollTo().assertExists()
     }
 
     // --- 4. A deep-link flag set while NotConsented lands on the gate ---

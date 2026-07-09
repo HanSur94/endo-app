@@ -16,6 +16,8 @@ import com.endoapp.app.data.EndoRepository
 import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.data.entities.TreatmentState
 import com.endoapp.app.designsystem.BloomTheme
+import com.endoapp.app.export.ExportImportViewModel
+import com.endoapp.app.export.FakeDocumentIo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -153,6 +155,47 @@ class SettingsScreenTest {
         composeRule.onNodeWithTag("settings.withdrawConfirm").performClick()
         composeRule.waitForIdle()
         assertEquals("confirm calls the re-gate signal", 1, withdrew)
+    }
+
+    // --- The "Your data" export/import section: present only when the seam is threaded (T-23-10) ---
+
+    private fun fakeExportImport(): ExportImportViewModel = ExportImportViewModel(
+        exportSnapshot = { error("unused in this test") },
+        importEnvelope = { },
+        documentIo = FakeDocumentIo(),
+    )
+
+    @Test
+    fun yourDataSection_absent_whenExportImportSeamIsNull() {
+        composeRule.setContent {
+            BloomTheme {
+                SettingsScreen(onWithdraw = {}, onBack = {}) // no exportImport seam (isolation)
+            }
+        }
+        composeRule.onNodeWithTag("settings.yourData").assertDoesNotExist()
+        composeRule.onNodeWithTag("settings.export").assertDoesNotExist()
+        composeRule.onNodeWithTag("settings.import").assertDoesNotExist()
+    }
+
+    @Test
+    fun yourDataSection_rendersExportAndImportEntries_whenSeamThreaded_andOpenIsInvoked() {
+        var opened = 0
+        composeRule.setContent {
+            BloomTheme {
+                SettingsScreen(
+                    onWithdraw = {},
+                    onBack = {},
+                    exportImport = fakeExportImport(),
+                    onOpenExportImport = { opened++ },
+                )
+            }
+        }
+        composeRule.onNodeWithTag("settings.export").performScrollTo().assertExists()
+        composeRule.onNodeWithTag("settings.import").performScrollTo().assertExists()
+
+        composeRule.onNodeWithTag("settings.export").performClick()
+        composeRule.waitForIdle()
+        assertEquals("tapping an entry opens the export/import screen", 1, opened)
     }
 
     @Test

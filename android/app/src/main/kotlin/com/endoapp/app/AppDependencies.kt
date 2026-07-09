@@ -11,6 +11,8 @@ import com.endoapp.app.data.DataStoreConsentStore
 import com.endoapp.app.data.EndoDatabase
 import com.endoapp.app.data.EndoRepository
 import com.endoapp.app.data.entities.DismissedInsight
+import com.endoapp.app.export.ExportImportViewModel
+import com.endoapp.app.export.SafDocumentIo
 import com.endoapp.app.health.ChangesTokenStore
 import com.endoapp.app.health.HealthAvailability
 import com.endoapp.app.health.HealthConnectController
@@ -190,5 +192,25 @@ class AppDependencies(context: Context) {
             HealthImportCoordinator(reader, repository, changesTokenStore, consentStore)
         },
         hasImportedData = { repository.hasImportedData() },
+    )
+
+    // --- Encrypted export/import (Phase 23 Plan 05) ---
+    //
+    // The foreground-coroutine export/import brain, constructed over the consent-gated repository's
+    // snapshot/import seams (23-02) + the real SAF DocumentIo (23-03; `openOutputStream(uri, "wt")` +
+    // read-back). Threaded into the shell ONLY inside [AppGate]'s `Consented` arm (T-23-10), so the
+    // portability surface is unconstructible pre-consent. The codec's ~600k KDF runs off-main inside the
+    // ViewModel; this composition root imports NO androidx.work / notification API (the separation
+    // invariant) — the reminders package stays the SOLE notification owner. Zero storage permission (SAF).
+
+    /**
+     * The export/import ViewModel the Settings "Your data" surface drives — bound into the shell ONLY
+     * inside [AppGate]'s `Consented` arm, so export (which reads all health data) and import (which
+     * writes it) are both unconstructible pre-consent by construction (T-23-10).
+     */
+    val exportImportViewModel: ExportImportViewModel = ExportImportViewModel(
+        exportSnapshot = repository::exportSnapshot,
+        importEnvelope = repository::importEnvelope,
+        documentIo = SafDocumentIo(appContext.contentResolver),
     )
 }

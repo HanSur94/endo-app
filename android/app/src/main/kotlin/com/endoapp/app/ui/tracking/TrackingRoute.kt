@@ -30,6 +30,9 @@ sealed interface TrackingRoute {
 
     /** The Health Connect connect/import screen, reached from the Settings connect entry (Phase 21). */
     data object HealthImport : TrackingRoute
+
+    /** The encrypted export/import screen, reached from the Settings "Your data" entry (Phase 23). */
+    data object ExportImport : TrackingRoute
 }
 
 /**
@@ -67,6 +70,7 @@ class TrackingBackStack(initial: List<TrackingRoute>) {
             is TrackingRoute.DayLog -> "D:${route.epochDay}"
             TrackingRoute.Settings -> "S"
             TrackingRoute.HealthImport -> "HC"
+            TrackingRoute.ExportImport -> "EX"
         }
 
         private fun decode(token: String): TrackingRoute = when {
@@ -74,6 +78,7 @@ class TrackingBackStack(initial: List<TrackingRoute>) {
             token == "C" -> TrackingRoute.CheckIn
             token == "S" -> TrackingRoute.Settings
             token == "HC" -> TrackingRoute.HealthImport
+            token == "EX" -> TrackingRoute.ExportImport
             token.startsWith("D:") -> TrackingRoute.DayLog(token.removePrefix("D:").toLong())
             else -> TrackingRoute.LogHome
         }

@@ -22,6 +22,8 @@ import androidx.compose.ui.platform.testTag
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
+import com.endoapp.app.export.ExportImportViewModel
+import com.endoapp.app.export.ui.ExportImportHost
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.health.ui.HealthImportHost
 import com.endoapp.app.reminders.ReminderController
@@ -62,6 +64,7 @@ fun LogTabHost(
     setSuppressed: suspend (Boolean) -> Unit = {},
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
+    exportImport: ExportImportViewModel? = null,
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     val stack = rememberTrackingBackStack()
@@ -109,6 +112,8 @@ fun LogTabHost(
                 reminders = reminders,
                 healthConnect = healthConnect,
                 onConnectHealth = { stack.push(TrackingRoute.HealthImport) },
+                exportImport = exportImport,
+                onOpenExportImport = { stack.push(TrackingRoute.ExportImport) },
                 medications = medications,
                 onAddMedication = addMedication,
                 onArchiveMedication = archiveMedication,
@@ -120,6 +125,12 @@ fun LogTabHost(
             // non-null controller so an unwired build can never construct the import surface.
             TrackingRoute.HealthImport -> healthConnect?.let { controller ->
                 HealthImportHost(controller = controller, onClose = { stack.pop() })
+            }
+            // The encrypted export/import screen — reachable ONLY via the Settings "Your data" entry,
+            // itself rendered only when the seam is threaded (Consented arm). Guarded on a non-null
+            // ViewModel so an unwired build can never construct the export/import surface (T-23-10).
+            TrackingRoute.ExportImport -> exportImport?.let { viewModel ->
+                ExportImportHost(viewModel = viewModel, onClose = { stack.pop() })
             }
         }
     }

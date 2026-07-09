@@ -50,6 +50,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.endoapp.app.content.ExportImportCopy
 import com.endoapp.app.content.SettingsCopy
 import com.endoapp.app.content.ShellCopy
 import com.endoapp.app.content.WithdrawConsentCopy
@@ -59,6 +60,7 @@ import com.endoapp.app.designsystem.bloomBody
 import com.endoapp.app.designsystem.bloomButtonLabel
 import com.endoapp.app.designsystem.bloomCard
 import com.endoapp.app.designsystem.bloomH3
+import com.endoapp.app.export.ExportImportViewModel
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.health.ui.HealthConnectSection
 import com.endoapp.app.reminders.ReminderController
@@ -82,6 +84,10 @@ import kotlinx.coroutines.launch
  *   the connect section is then omitted entirely, keeping Settings inert; the exact reminders posture).
  * @param onConnectHealth the AVAILABLE happy-path callback the host wires to the Health Connect import
  *   screen (the composition-root wiring lands in Plan 05).
+ * @param exportImport the encrypted export/import seam (null when not yet wired / in isolation — the
+ *   "Your data" section is then omitted entirely, so the portability surface is unconstructible
+ *   pre-consent by construction, T-23-10; the exact healthConnect null-guard posture).
+ * @param onOpenExportImport opens the export/import screen (the host pushes the ExportImport route).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +98,8 @@ fun SettingsScreen(
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
     onConnectHealth: () -> Unit = {},
+    exportImport: ExportImportViewModel? = null,
+    onOpenExportImport: () -> Unit = {},
     medications: Flow<List<Medication>> = emptyFlow(),
     onAddMedication: suspend (Medication) -> Unit = {},
     onArchiveMedication: suspend (Medication) -> Unit = {},
@@ -166,6 +174,14 @@ fun SettingsScreen(
                 HealthConnectSection(controller = healthConnect, onConnect = onConnectHealth)
             }
 
+            // (3c) Your data — the deliberate encrypted export/import surface (Phase 23). Omitted
+            // entirely when no seam is threaded (isolation / not yet wired / pre-consent), so the
+            // portability surface is unconstructible pre-consent by construction (T-23-10) and Settings
+            // stays inert. Both entries open the same combined export/import screen.
+            if (exportImport != null) {
+                YourDataSection(onOpen = onOpenExportImport)
+            }
+
             // (4) Privacy → the Phase-19 PrivacyPolicyScreen.
             SettingsRow(label = SettingsCopy.PRIVACY, testTag = "settings.privacy") { showPrivacy = true }
 
@@ -236,6 +252,26 @@ private fun CycleOffCard(on: Boolean, onToggle: (Boolean) -> Unit) {
             )
         }
         Text(text = SettingsCopy.CYCLE_OFF_FOOTER, style = bloomBody, color = colors.inkSecondary)
+    }
+}
+
+/**
+ * The "Your data" section — the export + import entries opening the combined export/import screen. A
+ * passive pair of Bloom rows; both navigate via [onOpen]. Rendered only when the export/import seam is
+ * threaded (Consented arm), so the portability surface is unconstructible pre-consent (T-23-10).
+ */
+@Composable
+private fun YourDataSection(onOpen: () -> Unit) {
+    val colors = LocalBloomColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = ExportImportCopy.SECTION_HEADER,
+            style = bloomH3,
+            color = colors.ink,
+            modifier = Modifier.testTag("settings.yourData"),
+        )
+        SettingsRow(label = ExportImportCopy.EXPORT_LABEL, testTag = "settings.export", onClick = onOpen)
+        SettingsRow(label = ExportImportCopy.IMPORT_LABEL, testTag = "settings.import", onClick = onOpen)
     }
 }
 

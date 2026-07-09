@@ -15,6 +15,7 @@ import com.endoapp.app.data.ConsentState
 import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.EndoRepository
 import com.endoapp.app.data.entities.TreatmentState
+import com.endoapp.app.export.ExportImportViewModel
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.insights.InsightsCoordinator
 import com.endoapp.app.reminders.ReminderController
@@ -46,6 +47,7 @@ fun AppGate(
     repository: EndoRepository? = null,
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
+    exportImport: ExportImportViewModel? = null,
     insightsCoordinator: InsightsCoordinator? = null,
     exploreScatterRouter: ExploreScatterRouter = ExploreScatterRouter(),
 ) {
@@ -98,6 +100,10 @@ fun AppGate(
                 // The Health Connect connect/import seam — bound HERE (Consented arm ONLY), so the
                 // connect/import surface is unconstructible pre-consent by construction (T-21-05a).
                 healthConnect = healthConnect,
+                // The encrypted export/import seam — bound HERE (Consented arm ONLY), mirroring the
+                // healthConnect/insightsCoordinator posture, so the portability surface is
+                // unconstructible pre-consent by construction (T-23-10). Referenced in NO other arm.
+                exportImport = exportImport,
                 // The insights coordinator — bound HERE (Consented arm ONLY), mirroring the reminders /
                 // healthConnect posture, so the dashboard's health-derived surface is unconstructible
                 // pre-consent by construction (consent-by-construction, T-19-01).
