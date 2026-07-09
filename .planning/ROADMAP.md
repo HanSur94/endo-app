@@ -132,7 +132,13 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
   2. A manifest test proves zero write permissions and BOTH rationale declarations (the Android 13- rationale activity AND the 14+ alias)
   3. User imports menstruation, sleep, exercise, and nutrition records with "from Health Connect" provenance labels; the manual-wins/nil-honest merge holds and re-import is idempotent
   4. The 30-day history window is handled deliberately — either `READ_HEALTH_DATA_HISTORY` is requested with rationale, or the import window is honestly labeled on the import screen
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 21-01-PLAN.md — connect-client + read-only manifest (4 READ + history) + dual rationale + three-state availability gate + rationale screen + registered copy surface (AHC-01/02/04)
+- [ ] 21-02-PLAN.md — injectable HealthReader seam + pure record→ImportedSample mapper + iOS-parity day-bucketing (DST/travel/midnight) + real HealthConnectReader adapter (AHC-03)
+- [ ] 21-03-PLAN.md — delete-by-hcRecordId DAO + gated repo method + ChangesTokenStore + HealthImportCoordinator + FakeHealthReader (idempotency/deletion/nil-honest/provenance) (AHC-03/04)
+- [ ] 21-04-PLAN.md — Bloom connect/import UI off seams: Settings entry + availability states + import screen + honest window label + provenance badge (AHC-01/03/04)
+- [ ] 21-05-PLAN.md — composition-root wiring + foreground import trigger + PermissionController contract + end-to-end flow + health-package separation scan (AHC-01/03/04)
 **UI hint**: yes
 
 ### Phase 22: Insights Dashboard, Explore & Charts
