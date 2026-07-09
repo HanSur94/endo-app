@@ -20,10 +20,14 @@
 // Kotlin side.
 package com.endoapp.insights
 
-/** The package-local non-causal language policy (mirrors the app's `ClaimsPolicy` forbidden lists,
- *  the causal list extended with the D-08 causal connectives). Package-internal — only `HonestyGate`
- *  and the drift test consume it. */
-internal object ForbiddenTerms {
+/** The non-causal language policy (mirrors the app's `ClaimsPolicy` forbidden lists, the causal list
+ *  extended with the D-08 causal connectives). SINGLE SOURCE OF TRUTH for the shared forbidden
+ *  substrings on the Kotlin side. Consumed by `HonestyGate` + the `ClaimsPolicyDriftTests` drift guard
+ *  in `:insights`, AND — since Phase 18-05 — REUSED by `:app`'s `ClaimsPolicy` (widened from `internal`
+ *  to `public` so the app layer references these lists rather than forking a second divergent copy;
+ *  RESEARCH Pitfall 2 / T-18-11). The app layer adds ONLY app-only lists (gendered / false-precision
+ *  tokens, allowedFraming); it NEVER re-declares causal/imperative/alarmist. */
+public object ForbiddenTerms {
 
     /** Causal / medical-purpose terms that must NEVER appear in an emitted insight's headline or detail.
      *
