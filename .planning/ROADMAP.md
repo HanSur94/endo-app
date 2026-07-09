@@ -151,7 +151,13 @@ Plans:
   3. User scrubs/taps trend charts to read the exact day + value; a gap day reads "not logged" and a logged severity-0 reads a real zero
   4. User combines logged series in Explore as aligned per-scale overlay lanes + event-marker lanes on a shared time axis, and reaches the descriptive-only count-encoded scatter (no fitted line, no r-value) from a possible-association card
   5. Chart-honesty tests pin no-dual-y-axis, no-silent-normalization, and gaps-stay-gaps (never zeros, never interpolation) on the data-prep layer, and every rendered data point is TalkBack-readable via overlay semantics
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 22-01-PLAN.md — InsightsCoordinator: off-main recompute + fingerprint CachedInsight cache + non-destructive dismiss + StateFlow (AINS-01) [wave 1]
+- [ ] 22-02-PLAN.md — Trend Canvas chart + reusable draw primitives + run-segmentation + chart-honesty tests (gaps=breaks, absence≠0, exact-day scrub) (AINS-06, AINS-03) [wave 1]
+- [ ] 22-03-PLAN.md — Bespoke per-data-point TalkBack semantics overlay from the gap-honest resolver + semantics-tree test (AINS-07, AINS-03) [wave 2]
+- [ ] 22-04-PLAN.md — Insights dashboard: 5 sections (flare FIRST/calm), plain-language confidence pill, honest states, pinned disclaimer, non-destructive dismiss, flare no-alarm-visual + insights notification-free scans (AINS-01, AINS-02) [wave 3]
+- [ ] 22-05-PLAN.md — Explore lanes: suppression-filtered picker + aligned per-scale overlay lanes + event lanes + multi-series scrub (no dual-y, no normalization) (AINS-04) [wave 4]
+- [ ] 22-06-PLAN.md — Descriptive-only count-encoded scatter (no fitted line/r-value) + ScatterDeepLink + cross-tab router from a Possible-association card (AINS-05) [wave 5]
 **UI hint**: yes
 
 ### Phase 23: Encrypted Export/Import (INSERTED)
@@ -201,7 +207,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 19. App Shell & Consent | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
 | 20. Tracking Screens | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
 | 21. Health Connect Import | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
-| 22. Insights Dashboard, Explore & Charts | v2.0 | 0/TBD | Not started | - |
+| 22. Insights Dashboard, Explore & Charts | v2.0 | 0/6 | Not started | - |
 | 23. Encrypted Export/Import | v2.0 | 0/TBD | Not started | - |
 | 24. PDF Report | v2.0 | 0/TBD | Not started | - |
 | 25. Play Store Prep | v2.0 | 0/TBD | Not started | - |
