@@ -50,6 +50,8 @@ fun LogTabHost(
     onDayLogged: () -> Unit = {},
     persistDay: suspend (DayLogRows) -> Unit = {},
     loadYesterday: suspend () -> DayDraft? = { null },
+    loadDay: suspend (Long) -> DayDraft? = { null },
+    deleteDay: suspend (Long) -> Unit = {},
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     val stack = rememberTrackingBackStack()
@@ -83,16 +85,17 @@ fun LogTabHost(
                 onDismiss = { stack.pop() },
                 modifier = Modifier.testTag("log.route.checkIn"),
             )
-            is TrackingRoute.DayLog -> RoutePlaceholder("log.route.dayLog")
+            is TrackingRoute.DayLog -> DayLogEditorScreen(
+                epochDay = route.epochDay,
+                loadDay = loadDay,
+                persistDay = persistDay,
+                deleteDay = deleteDay,
+                onDayLogged = onDayLogged,
+                onDismiss = { stack.pop() },
+            )
             TrackingRoute.Settings -> SettingsPlaceholder(onWithdraw)
         }
     }
-}
-
-/** A temporary inline placeholder for a route a later plan fills. No user-facing copy (just a testTag). */
-@Composable
-private fun RoutePlaceholder(testTag: String) {
-    Box(modifier = Modifier.fillMaxSize().testTag(testTag), contentAlignment = Alignment.Center) {}
 }
 
 /**
