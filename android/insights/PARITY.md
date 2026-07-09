@@ -28,11 +28,11 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 
 | Swift file | Swift @Test | Kotlin file | Kotlin count | Plan | Status |
 |------------|------------:|-------------|-------------:|------|--------|
-| `SnapshotFixtures.swift` | 0 | `SnapshotFixtures.kt` | — | 17-02 | pending |
+| `SnapshotFixtures.swift` | 0 | `SnapshotFixtures.kt` | — | 17-02 | ✅ done |
 | `SeriesTestSupport.swift` | 0 | `SeriesTestSupport.kt` | — | 17-05 | pending |
 | `SmokeTests.swift` | 2 | `SmokeTests.kt` | 2 | 17-01 | ✅ done |
 | `BoundaryLintTests.swift` | 1 | `BoundaryLintTests.kt` | 1 | 17-01 | ✅ done |
-| `InsightCodableTests.swift` | 6 | `InsightCodableTests.kt` | pending | 17-02 | pending |
+| `InsightCodableTests.swift` | 6 | `InsightCodableTests.kt` | 6 | 17-02 | ✅ done |
 | `CorrelationStatsTests.swift` | 26 | `CorrelationStatsTests.kt` | pending | 17-03 | pending |
 | `TrendsEngineTests.swift` | 11 | `TrendsEngineTests.kt` | pending | 17-04 | pending |
 | `CyclePhaseMapperTests.swift` | 8 | `CyclePhaseMapperTests.kt` | pending | 17-04 | pending |
@@ -48,9 +48,10 @@ Two rows are **fixture-only** (0 cases) and must be ported before the files that
 | `HonestyGateTests.swift` | 16 | `HonestyGateTests.kt` | pending | 17-08 | pending |
 | `InsightsEngineTests.swift` | 14 | `InsightsEngineTests.kt` | pending | 17-08 | pending |
 | `ContractTests.swift` | 7 | `ContractTests.kt` | pending | 17-08 | pending |
-| **TOTAL** | **157** | | **3** | | |
+| **TOTAL** | **157** | | **9** | | |
 
-Kotlin count so far: **3** (SmokeTests 2 + BoundaryLintTests 1).
+Kotlin count so far: **9** (SmokeTests 2 + BoundaryLintTests 1 + InsightCodableTests 6).
+SnapshotFixtures.kt (0-case shared builder) is ported and available to plans 03–08.
 
 ## Additional guard tests (no Swift mirror)
 
@@ -60,7 +61,7 @@ They are standing structural / cross-platform-drift guards.
 | Kotlin guard test | Purpose | Req | Plan | Status |
 |-------------------|---------|-----|------|--------|
 | `VersionCatalogAuditTests.kt` | Fails the build if any analytics/auth/backend/networking coordinate enters `gradle/libs.versions.toml` (zero-dependency supply-chain guard) | AENG-07 | 17-01 | ✅ done |
-| `EnumRawValueParityTests.kt` | Swift-source scan (A) + golden JSON (B): fails on enum raw-value divergence vs `SnapshotEnums.swift` / `Factor.swift` / `CyclePhase.swift` | AENG-05 | 17-02 | pending |
+| `EnumRawValueParityTests.kt` | Swift-source scan (A) + golden JSON (B): fails on enum raw-value divergence vs `SnapshotEnums.swift` / `CyclePhase.swift` (2 tests, both proven red-capable) | AENG-05 | 17-02 | ✅ done |
 | `ClaimsPolicyDriftTests.kt` | Scans `ClaimsPolicy.swift`: fails if the app's forbidden-substring lists drift out of the Kotlin `ForbiddenTerms` superset | AENG-05 | 17-08 | pending |
 | `NumericDivergenceTests.kt` | NaN / ±0.0 / rounding ties / Mann-Whitney tied ranks (17-03) + DST/non-UTC day boundaries (17-08) | AENG-06 | 17-03, 17-08 | pending |
 
