@@ -71,6 +71,9 @@ dependencies {
     ksp(libs.room.compiler)
     // DataStore — consent flag + reminder prefs, outside the health database.
     implementation(libs.datastore.preferences)
+    // WorkManager — the daily check-in reminder's INEXACT periodic scheduling (com.endoapp.app.reminders,
+    // the app's ONLY notification/alarm surface). Never an exact alarm; survives reboot on its own.
+    implementation(libs.work.runtime)
     // kotlinx-serialization — the versioned export/import JSON DTOs (contract lands this phase).
     implementation(libs.kotlinx.serialization.json)
 
@@ -90,6 +93,9 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
+    // WorkManager test lane — WorkManagerTestInitHelper/TestDriver proves the reminder enqueues an
+    // INEXACT periodic unique work (and never an exact alarm) on the JVM Robolectric lane.
+    testImplementation(libs.work.testing)
     // ui-test-manifest contributes the <activity androidx.activity.ComponentActivity> that
     // createComposeRule() launches. It must merge into the DEBUG manifest (debugImplementation),
     // not the test classpath — Robolectric reads the merged debug manifest, so a testImplementation

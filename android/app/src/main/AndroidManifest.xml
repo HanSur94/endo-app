@@ -1,17 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Minimal :app manifest for Phase 18 (data layer only). Deliberately declares ZERO
-  permissions — critically NO network/INTERNET permission and NO health WRITE_* permission
-  (this app never writes health data back and never talks to the network). No <activity>
-  yet — the Compose shell arrives in Phase 19, which also lands the no-network-permission
-  manifest assertion against this clean baseline.
+  :app manifest. Declares exactly ONE runtime permission: POST_NOTIFICATIONS (Phase 20-05, the daily
+  check-in reminder — the app's ONLY notification surface). Still NO network/INTERNET permission, NO
+  exact-alarm permission (the reminder uses WorkManager INEXACT scheduling only, never
+  SCHEDULE_EXACT_ALARM), and NO health WRITE_* permission (the app never writes health data back and
+  never talks to the network). ManifestPermissionsTest pins the allow-list {POST_NOTIFICATIONS} AND the
+  deny-list (no INTERNET / SCHEDULE_EXACT_ALARM / health WRITE) — comment-safe (DOM-parsed).
+
+  WorkManager (androidx.work) transitively merges WAKE_LOCK / ACCESS_NETWORK_STATE /
+  RECEIVE_BOOT_COMPLETED / FOREGROUND_SERVICE into the MERGED manifest — all benign (RECEIVE_BOOT lets
+  WorkManager reschedule the reminder across reboot itself; ACCESS_NETWORK_STATE is NOT INTERNET, no
+  data path). We declare none of these ourselves. WorkManager's default androidx.startup initializer is
+  DISABLED below so all androidx.work init stays inside com.endoapp.app.reminders (on-demand init) — the
+  no-flare-notification separation invariant keeps every notification/alarm/WorkManager API in one
+  package.
 
   Backup rules (Plan 06, APER-04): the Room health DB is EXCLUDED from Auto Backup and
   device transfer via @xml/data_extraction_rules (API 31+) and @xml/full_backup_content
   (API 26-30); only the DataStore consent/prefs may back up. BackupRulesTest pins the
   exclusion.
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- The ONE runtime permission: the daily check-in reminder's notification (Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".App"
@@ -20,6 +33,22 @@
         android:fullBackupContent="@xml/full_backup_content"
         android:label="Endo"
         android:theme="@style/Theme.EndoApp">
+
+        <!--
+          Disable WorkManager's automatic androidx.startup initialization so NO androidx.work
+          initialization code lives outside com.endoapp.app.reminders (the separation invariant).
+          The reminder scheduler initializes WorkManager on demand (ReminderScheduler.resolveWorkManager).
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
         <activity
             android:name=".MainActivity"

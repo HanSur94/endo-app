@@ -45,6 +45,7 @@ object CopyAuditRegistry {
         CheckInCopy,
         DayLogCopy,
         SettingsCopy,
+        ReminderCopy,
     )
 
     /** The union of every registered source's auditable strings — the surface `CopyAudit` scans. */

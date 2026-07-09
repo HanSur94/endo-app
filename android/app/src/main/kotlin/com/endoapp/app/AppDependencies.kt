@@ -9,6 +9,10 @@ import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.data.DataStoreConsentStore
 import com.endoapp.app.data.EndoDatabase
 import com.endoapp.app.data.EndoRepository
+import com.endoapp.app.reminders.ReminderController
+import com.endoapp.app.reminders.ReminderNotifier
+import com.endoapp.app.reminders.ReminderScheduler
+import com.endoapp.app.reminders.ReminderSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -54,4 +58,32 @@ class AppDependencies(context: Context) {
      * persists and reloads in the running app while consent-by-construction is preserved.
      */
     val repository: EndoRepository = EndoRepository.from(consentStore, database)
+
+    // --- Daily check-in reminder (Phase-20 Plan 05) ---
+    //
+    // The reminder prefs live in their OWN Preferences DataStore (built here OUTSIDE the Room health
+    // DB, mirroring the consent store) — reminder prefs are not health data. [reminderScheduler] and
+    // [reminderNotifier] take only a Context, so NO androidx.work / notification import leaks into this
+    // composition root (the no-flare-notification separation invariant, CONTEXT §5): every scheduling
+    // and notification API stays inside com.endoapp.app.reminders.
+
+    private val reminderDataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
+        scope = applicationScope,
+        produceFile = {
+            context.applicationContext.preferencesDataStoreFile(ReminderSettings.FILE_NAME)
+        },
+    )
+
+    /** The reminder-prefs store (enabled / times / quiet hours) — read by the worker + the Settings UI. */
+    val reminderSettings: ReminderSettings = ReminderSettings(reminderDataStore)
+
+    /** Posts the single generic notification through the one channel — read by the reminder worker. */
+    val reminderNotifier: ReminderNotifier = ReminderNotifier(context.applicationContext)
+
+    /** Schedules the INEXACT periodic reminder via WorkManager (resolved from Context internally). */
+    private val reminderScheduler: ReminderScheduler = ReminderScheduler(context.applicationContext)
+
+    /** The reminder facade the Settings reminders section drives (enable/disable/time/quiet hours). */
+    val reminderController: ReminderController =
+        ReminderController(reminderSettings, reminderScheduler, reminderNotifier)
 }
