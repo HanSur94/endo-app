@@ -115,7 +115,12 @@ All v1.1 automated criteria are green; these are device/host-gated (per each pha
   3. User adds/archives medications and records treatment state; entries survive a log-persist-reload round trip
   4. The daily check-in reminder uses inexact scheduling only, with just-in-time POST_NOTIFICATIONS, survives reboot, and reminder code stays physically separate from flare code (structural test green)
   5. Untouched optional sections read "not logged" everywhere — never 0 — through full UI round trips
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 20-01-PLAN.md — Log-home host + intra-Log nav + nil-honest draft/persistence model + shared SeverityControl/section-rows + registered vocabulary [wave 1]
+- [ ] 20-02-PLAN.md — Daily Check-In fast-log flow: nothing mandatory, empty-confirm adherence marker, same-as-yesterday sticky-context-only [wave 2]
+- [ ] 20-03-PLAN.md — Day Log editor + accessible BodyMap (per-region ≥48dp TalkBack hotspots + list fallback) + severity sheet + guarded delete [wave 3]
+- [ ] 20-04-PLAN.md — Medications add/soft-archive + treatment state + Settings (cycle-off, privacy, graduated withdraw) [wave 4]
+- [ ] 20-05-PLAN.md — Daily reminder: WorkManager inexact, JIT POST_NOTIFICATIONS, one channel, deep-link-to-gate, manifest + notification-separation guards [wave 5]
 **UI hint**: yes
 
 ### Phase 21: Health Connect Import
@@ -188,7 +193,7 @@ Phases execute in numeric order: 17 → 18 → 19 → 20 → 21 → 22 → 23 �
 | 17. Insights Engine Port | v2.0 | 8/8 | Complete ✅ | 2026-07-09 |
 | 18. Room Persistence | v2.0 | 6/6 | Complete ✅ | 2026-07-09 |
 | 19. App Shell & Consent | v2.0 | 5/5 | Complete ✅ | 2026-07-09 |
-| 20. Tracking Screens | v2.0 | 0/TBD | Not started | - |
+| 20. Tracking Screens | v2.0 | 0/5 | Not started | - |
 | 21. Health Connect Import | v2.0 | 0/TBD | Not started | - |
 | 22. Insights Dashboard, Explore & Charts | v2.0 | 0/TBD | Not started | - |
 | 23. Encrypted Export/Import | v2.0 | 0/TBD | Not started | - |
