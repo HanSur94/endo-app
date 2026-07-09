@@ -185,7 +185,12 @@ Plans:
   1. User generates a vector PDF report (selectable text, not raster) for a chosen date range, with per-source labels and prominent self-tracked-not-diagnostic framing
   2. User shares the report via the system share sheet with no silent upload, and report files are cleaned from cache afterward
   3. All report copy passes the copy audit
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 24-01-PLAN.md — Provenance read (A3 daySnapshotSources) + CycleMath/CycleSummary port (the store/domain inputs the model needs) [wave 1]
+- [ ] 24-02-PLAN.md — Pure ReportModel + SectionSource + ReportRangeMapping + registered ReportCopy (honesty + copy core) [wave 2]
+- [ ] 24-03-PLAN.md — ReportCanvas draw-seam + ReportPdfRenderer (two-pass VECTOR) + ChartPrimitives PDF bridge + drawText-not-bitmap proof [wave 3]
+- [ ] 24-04-PLAN.md — FileProvider + ACTION_SEND share (no silent upload) + cache cleanup + no-network scan + manifest [wave 4]
+- [ ] 24-05-PLAN.md — Settings "Export report" UI (range picker + generate + share) + Consented-arm wiring [wave 5]
 **UI hint**: yes
 
 ### Phase 25: Play Store Prep
