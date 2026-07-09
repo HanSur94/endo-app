@@ -1,0 +1,21 @@
+# Zero-dependency audit surface for the pure-JVM :insights module (Phase 17).
+#
+# This catalog is deliberately minimal: Kotlin/JVM + kotlinx-serialization + JUnit Jupiter.
+# It is the greppable proof that no analytics / auth / backend / networking coordinate
+# ever enters the build graph — VersionCatalogAuditTests fails the build if one does.
+#
+# Downstream phases (18+) extend this catalog with the Android/Compose/Room coordinates
+# from .planning/research/STACK.md. Do NOT pre-add them here.
+
+[versions]
+kotlin = "2.3.21"
+junitJupiter = "6.1.1"
+kotlinxSerialization = "1.11.0"
+
+[libraries]
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }              # :insights only
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

@@ -1,0 +1,5 @@
+# Android/Gradle build artifacts — scoped to the android/ tree.
+.gradle/
+build/
+local.properties
+*.hprof
