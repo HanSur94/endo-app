@@ -10,6 +10,10 @@
 kotlin = "2.3.21"
 agp = "9.2.0"
 ksp = "2.3.9"                    # standalone versioning since KSP 2.3.0; works with Kotlin 2.2+
+composeBom = "2026.06.00"        # single version knob for all androidx.compose artifacts (Phase 19 UI)
+activityCompose = "1.13.0"       # ComponentActivity.setContent host; own release train (not BOM-managed)
+lifecycle = "2.10.0"             # lifecycle-runtime-compose; latest stable compatible with compileSdk 36 (2.11.0 requires compileSdk 37)
+robolectric = "4.16.1"           # JVM Compose test harness; SDK 36 support requires JDK 21 (toolchain pinned)
 room = "2.8.4"
 datastore = "1.2.0"
 junitJupiter = "6.1.1"
@@ -31,6 +35,19 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 # DataStore (preferences) — consent flag + reminder prefs, OUTSIDE the health database.
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+# Jetpack Compose + Material 3 (Phase 19 UI shell). The BOM is the single version knob:
+# every androidx.compose artifact below is declared versionless and pinned by compose-bom.
+# All first-party androidx / JetBrains — never an analytics/auth/backend/networking coordinate.
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }                              # version from BOM
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }         # version from BOM
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" } # version from BOM
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }     # version from BOM
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" } # version from BOM
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+# Robolectric — the JVM Compose test lane (renders composables on the JVM, no emulator).
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 # JUnit 4 — the :app unit-test framework (AGP-native; Jupiter stays in :insights).
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 # androidx.test.ext:junit — the AndroidJUnit4 runner base for :app androidTest.
@@ -39,6 +56,8 @@ androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }              # :insights only
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+# Compose compiler ships WITH Kotlin since 2.0 — pinned at the Kotlin version, never a separate compiler.
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 # AGP application plugin (built-in Kotlin under AGP 9 — :app does NOT apply kotlin.android).
 android-application = { id = "com.android.application", version.ref = "agp" }
 # KSP — Room's annotation processor (never kapt).
