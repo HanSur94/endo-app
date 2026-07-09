@@ -88,6 +88,16 @@ class EndoRepository(
         symptomDao.upsertImported(sample)
     }
 
+    /**
+     * Propagate a Health Connect deletion (T-21-02 / T-21-02d): gates FIRST (throws under Unknown /
+     * NotConsented, the same fail-closed posture as [upsertImported]), then removes the imported row
+     * whose `hcRecordId` matches. The single consent-gated deletion path the import coordinator drives.
+     */
+    suspend fun deleteImportedByHcRecordId(hcRecordId: String) {
+        checkConsented()
+        symptomDao.deleteImportedByHcRecordId(hcRecordId)
+    }
+
     suspend fun upsertMedication(medication: Medication) {
         checkConsented()
         // Length-bound the free-text name/note HERE (the seam), never in the UI (UI-SPEC §Section-row

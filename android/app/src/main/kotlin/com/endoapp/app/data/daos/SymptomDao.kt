@@ -90,4 +90,13 @@ interface SymptomDao {
 
     @Query("DELETE FROM ImportedSample WHERE epochDay = :epochDay")
     suspend fun deleteImportedForDay(epochDay: Long)
+
+    /**
+     * Propagate a Health Connect deletion: remove the imported row whose `hcRecordId` matches (the HC
+     * `metadata.id`). A non-matching id is a no-op. This is the deletion half of the differential
+     * changes-token sync (Plan 03) — an `UpsertionChange` re-imports idempotently by `hcRecordId`, a
+     * `DeletionChange` removes here, so an HC deletion propagates to the day model on re-sync (T-21-02).
+     */
+    @Query("DELETE FROM ImportedSample WHERE hcRecordId = :hcRecordId")
+    suspend fun deleteImportedByHcRecordId(hcRecordId: String)
 }
