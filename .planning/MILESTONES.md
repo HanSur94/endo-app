@@ -1,5 +1,25 @@
 # Milestones
 
+## v2.0 — Android Version (Port) (Feature-complete: 2026-07-10)
+
+**Phases completed:** 9 phases (17–25), 42 plans · ~230 commits · +39,507 LOC across 294 Kotlin files (new `android/` monorepo) · audit PASSED (42/42 requirements, 636 tests green as one system — 460 `:app` + 176 `:insights`, real 15.98 MB APK, lint clean). iOS tree provably UNTOUCHED across the whole milestone.
+
+**What shipped:** a native Android port of Endo-App, feature-equivalent to iOS v1.1, built in an `android/` directory alongside the untouched iOS app — Kotlin + Jetpack Compose + Room + Health Connect, local-only storage with passphrase-encrypted export/import, no backend, no accounts, no `INTERNET` permission.
+
+**Key accomplishments:**
+
+- **The insights engine ported first as the correctness anchor (Phase 17):** the entire pure-Swift `EndoInsights` package reborn as a pure-Kotlin-JVM `:insights` module — all six engines behind one `HonestyGate` producer, with **157-case test parity** against the shipped Swift suite (statistical parity tolerance-gated against Swift/libm-generated goldens since Kotlin lacks `lgamma`/`erf`), plus red-capable guards: boundary-lint (no android imports), enum + ClaimsPolicy drift scans against the live Swift sources, a numeric-divergence pack (NaN/±0.0/rounding-ties/tied-ranks/DST), and a zero-analytics version-catalog audit.
+- **Room data layer with the iOS lifecycle guarantees, born complete (Phase 18):** 10 entities, a consent-gated repository, migration discipline (`exportSchema`, committed schemas, destructive-fallback banned), and a delete-day `@Transaction` cascade that is **more complete than iOS** — it includes `ImportedSample`, closing a latent iOS orphan bug, enforced by a reflection completeness meta-test. Plus the `SnapshotProjector` bridge (notes never cross), the ClaimsPolicy/CopyAudit harness, and the versioned export-format contract.
+- **Consent-by-construction Compose shell + Bloom design system (Phase 19):** an `AppGate` `when`-switch where health UI is unconstructible pre-consent (test-proven, no nav library), the 17-token Bloom theme ported byte-for-byte, edge-to-edge + predictive back, and a no-`INTERNET` manifest test — the Data-safety anchor.
+- **Full-day logging that persists (Phase 20):** Daily Check-In (nothing mandatory, empty-confirm honesty), the accessible BodyMap (≥48dp focusable hotspot per region + non-visual list fallback), medications, and a WorkManager **inexact** reminder physically isolated from any flare code.
+- **Read-only Health Connect import (Phase 21):** the manifest is the auditable artifact — only 4 READ perms + history, zero WRITE, dual rationale declarations; three-state availability gating, idempotent import with manual-wins/nil-honest merge and deletion propagation.
+- **Honest, accessible charts (Phase 22):** the payoff — a gated insight dashboard (flare-first/calm), Compose Canvas trend charts (gap = line break, never 0), Explore per-scale lanes (no dual-y/normalization) + descriptive-only scatter (no fitted line/r-value), and a bespoke per-data-point **TalkBack overlay** (Android has no Audio Graph) reading the same gap-honest resolver as the visual scrub.
+- **Data portability with zero cloud (Phase 23):** zero-dependency `javax.crypto` PBKDF2+AES-GCM export/import through SAF (zero storage permissions), a committed golden fixture pinning the platform-neutral format, read-back-verify-before-success, idempotent import, and a gentle 3-message error taxonomy.
+- **Doctor-ready vector PDF (Phase 24):** a selectable-text `PdfDocument` report (proven vector, not raster, via a draw-instruction spy), reusing the Phase-22 chart geometry, per-source labels, a not-diagnostic disclaimer, and no-silent-upload FileProvider sharing.
+- **Honest Play Store prep (Phase 25):** store copy through the same claims audit, an all-"No" Data-safety declaration mechanically bound to the no-INTERNET/no-analytics code, targetSdk 36, and a committed release doc set — with the org-account/D-U-N-S kickoff and the Console submission honestly documented as human-gated, nothing faked.
+
+**Remaining before Play submission (device/Console/human-gated, documented in `docs/release/RELEASE-CHECKLIST.md`):** organization developer account + D-U-N-S verification (start early — weeks of latency), hosting the privacy policy + replacing the `PRIVACY_POLICY_URL` placeholder, finalizing app identity placeholders, the Play Console form submissions, and the pre-launch report on real Android 13-/14+ devices — plus the per-phase device manual checks (real Health Connect dialogs, TalkBack sweeps, chart haptic/pixel feel, SAF pickers, PDF visual credibility).
+
 ## v1.1 — Interactive Charts & Explore (Shipped: 2026-06-17)
 
 **Phases completed:** 4 phases (13–16), 17 plans · 137 commits · +5,568 / −77 LOC across 39 source files · audit PASSED (15/15 requirements, 7/7 integration, 3/3 E2E flows).
