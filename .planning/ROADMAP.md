@@ -202,7 +202,10 @@ Plans:
   2. The privacy policy URL is identical across Play Console, the rationale surface, and the website; store copy passes the claims audit with the disclaimer in the first paragraph of the store description
   3. The Play developer account is verified organization-type (D-U-N-S) — checked at milestone kickoff, confirmed green in this phase
   4. targetSdk 36 compliance holds and the pre-launch report passes on both an Android 13- and an Android 14+ device
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 25-01-PLAN.md — Store listing copy registered + ClaimsPolicy-audited, disclaimer in the first paragraph (AREL-03)
+- [ ] 25-02-PLAN.md — Data-safety↔manifest cross-check + targetSdk 36 + single PRIVACY_POLICY_URL (AREL-03, AREL-05)
+- [ ] 25-03-PLAN.md — Committed Console doc set + human-gated release checklist, org-account first (AREL-03, AREL-04, AREL-05)
 
 ## Progress
 
