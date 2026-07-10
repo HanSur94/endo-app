@@ -29,6 +29,23 @@ object PrivacyPolicyText {
     const val contactEmail = "sannahrush@googlemail.com"
 
     /**
+     * The SINGLE source for the public privacy-policy URL (AREL-05, threat T-25-04). Play requires the
+     * SAME privacy-policy URL in (a) the Console store listing / Data safety form, (b) the in-app
+     * Health Connect permissions-rationale surface, and (c) the hosted website — a divergent or
+     * malformed URL is a rejection trigger. Everywhere a URL is shown must reference THIS constant;
+     * `PrivacyPolicyUrlConsistencyTest` asserts it is the only privacy-policy https literal in the
+     * content package.
+     *
+     * PLACEHOLDER — the USER MUST REPLACE THIS BEFORE SUBMISSION (ASSUMED A4). The app currently has no
+     * hosted privacy page; the user hosts a public, non-geofenced HTML page (NOT a PDF) whose content
+     * mirrors [body], then replaces this value with that page's URL and enters the SAME URL in Play
+     * Console. The `replace-me` host makes it unmistakably a placeholder — it is well-formed `https://`
+     * (satisfies the format guard) but is deliberately NOT a live/real URL (nothing is fabricated as
+     * hosted). Surfaced in Plan 03's RELEASE-CHECKLIST as a required pre-submission human step.
+     */
+    const val PRIVACY_POLICY_URL = "https://replace-me.github.io/endo-app/privacy-policy"
+
+    /**
      * Plain-language policy body — Android-adapted (local-only, no iCloud/sync). Built from paragraph
      * blocks joined by blank lines so each paragraph renders as continuous flowing text (source-line
      * wraps must never leak into the rendered copy as hard breaks).
