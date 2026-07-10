@@ -51,6 +51,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.endoapp.app.content.ExportImportCopy
+import com.endoapp.app.content.ReportCopy
 import com.endoapp.app.content.SettingsCopy
 import com.endoapp.app.content.ShellCopy
 import com.endoapp.app.content.WithdrawConsentCopy
@@ -61,6 +62,7 @@ import com.endoapp.app.designsystem.bloomButtonLabel
 import com.endoapp.app.designsystem.bloomCard
 import com.endoapp.app.designsystem.bloomH3
 import com.endoapp.app.export.ExportImportViewModel
+import com.endoapp.app.report.ui.ReportBuilderViewModel
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.health.ui.HealthConnectSection
 import com.endoapp.app.reminders.ReminderController
@@ -88,6 +90,10 @@ import kotlinx.coroutines.launch
  *   "Your data" section is then omitted entirely, so the portability surface is unconstructible
  *   pre-consent by construction, T-23-10; the exact healthConnect null-guard posture).
  * @param onOpenExportImport opens the export/import screen (the host pushes the ExportImport route).
+ * @param report the PDF report builder seam (null when not yet wired / in isolation — the "Export
+ *   report" entry is then omitted entirely, so the report surface is unconstructible pre-consent by
+ *   construction, T-24-11; the exact exportImport/healthConnect null-guard posture).
+ * @param onOpenReport opens the report builder (the host pushes the Report route).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +106,8 @@ fun SettingsScreen(
     onConnectHealth: () -> Unit = {},
     exportImport: ExportImportViewModel? = null,
     onOpenExportImport: () -> Unit = {},
+    report: ReportBuilderViewModel? = null,
+    onOpenReport: () -> Unit = {},
     medications: Flow<List<Medication>> = emptyFlow(),
     onAddMedication: suspend (Medication) -> Unit = {},
     onArchiveMedication: suspend (Medication) -> Unit = {},
@@ -180,6 +188,13 @@ fun SettingsScreen(
             // stays inert. Both entries open the same combined export/import screen.
             if (exportImport != null) {
                 YourDataSection(onOpen = onOpenExportImport)
+            }
+
+            // (3d) Export report — the doctor-ready PDF report builder (Phase 24). Omitted entirely when
+            // no seam is threaded (isolation / not yet wired / pre-consent), so the report surface is
+            // unconstructible pre-consent by construction (T-24-11) and Settings stays inert.
+            if (report != null) {
+                ExportReportSection(onOpen = onOpenReport)
             }
 
             // (4) Privacy → the Phase-19 PrivacyPolicyScreen.
@@ -272,6 +287,20 @@ private fun YourDataSection(onOpen: () -> Unit) {
         )
         SettingsRow(label = ExportImportCopy.EXPORT_LABEL, testTag = "settings.export", onClick = onOpen)
         SettingsRow(label = ExportImportCopy.IMPORT_LABEL, testTag = "settings.import", onClick = onOpen)
+    }
+}
+
+/**
+ * The "Export report" section — the doctor-ready PDF report entry + the honest on-device footer. A
+ * passive Bloom row navigating via [onOpen]. Rendered only when the report seam is threaded (Consented
+ * arm), so the report surface is unconstructible pre-consent (T-24-11).
+ */
+@Composable
+private fun ExportReportSection(onOpen: () -> Unit) {
+    val colors = LocalBloomColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SettingsRow(label = ReportCopy.SETTINGS_ENTRY_LABEL, testTag = "settings.report", onClick = onOpen)
+        Text(text = ReportCopy.SETTINGS_ENTRY_FOOTER, style = bloomBody, color = colors.inkSecondary)
     }
 }
 

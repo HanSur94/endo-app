@@ -33,6 +33,9 @@ sealed interface TrackingRoute {
 
     /** The encrypted export/import screen, reached from the Settings "Your data" entry (Phase 23). */
     data object ExportImport : TrackingRoute
+
+    /** The PDF report builder, reached from the Settings "Export report" entry (Phase 24). */
+    data object Report : TrackingRoute
 }
 
 /**
@@ -71,6 +74,7 @@ class TrackingBackStack(initial: List<TrackingRoute>) {
             TrackingRoute.Settings -> "S"
             TrackingRoute.HealthImport -> "HC"
             TrackingRoute.ExportImport -> "EX"
+            TrackingRoute.Report -> "RP"
         }
 
         private fun decode(token: String): TrackingRoute = when {
@@ -79,6 +83,7 @@ class TrackingBackStack(initial: List<TrackingRoute>) {
             token == "S" -> TrackingRoute.Settings
             token == "HC" -> TrackingRoute.HealthImport
             token == "EX" -> TrackingRoute.ExportImport
+            token == "RP" -> TrackingRoute.Report
             token.startsWith("D:") -> TrackingRoute.DayLog(token.removePrefix("D:").toLong())
             else -> TrackingRoute.LogHome
         }

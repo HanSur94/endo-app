@@ -20,6 +20,8 @@ import com.endoapp.app.health.HealthConnectReader
 import com.endoapp.app.health.HealthImportCoordinator
 import com.endoapp.app.health.RealHealthConnectController
 import com.endoapp.app.insights.InsightsCoordinator
+import com.endoapp.app.report.ReportPdfRenderer
+import com.endoapp.app.report.ui.ReportBuilderViewModel
 import com.endoapp.app.reminders.ReminderController
 import com.endoapp.app.reminders.ReminderNotifier
 import com.endoapp.app.reminders.ReminderScheduler
@@ -212,5 +214,29 @@ class AppDependencies(context: Context) {
         exportSnapshot = repository::exportSnapshot,
         importEnvelope = repository::importEnvelope,
         documentIo = SafDocumentIo(appContext.contentResolver),
+    )
+
+    // --- PDF report builder (Phase 24 Plan 05) ---
+    //
+    // The doctor-ready report builder brain, constructed over the consent-gated repository's projection
+    // reads (24-01 daySnapshots / daySnapshotSources, latest-treatment suppressed, dismissed keys), the
+    // LOCKED :insights engine, and the Plan-03 ReportPdfRenderer writing the vector PDF into the app-private
+    // cacheDir/reports/ (the Plan-04 ReportShareHost then shares it via FileProvider + ACTION_SEND).
+    // Threaded into the shell ONLY inside AppGate's Consented arm (T-24-11), so the report surface — which
+    // reads all health data to assemble the PDF — is unconstructible pre-consent. This composition root
+    // imports NO androidx.work / notification / networking API (the report path stays network-free — the
+    // reminders package stays the SOLE notification owner). Zero new dependency (PdfDocument is first-party).
+
+    /**
+     * The report builder ViewModel the Settings "Export report" surface drives — bound into the shell ONLY
+     * inside [AppGate]'s `Consented` arm, so the report generation (which reads every health snapshot) is
+     * unconstructible pre-consent by construction (T-24-11).
+     */
+    val reportBuilderViewModel: ReportBuilderViewModel = ReportBuilderViewModel(
+        loadSnapshots = repository::daySnapshots,
+        loadSources = repository::daySnapshotSources,
+        loadSuppressed = { repository.latestTreatment()?.modeRaw == "suppressed" },
+        loadDismissed = repository::dismissedSignalKeys,
+        render = { model -> ReportPdfRenderer.render(model, appContext.cacheDir) },
     )
 }

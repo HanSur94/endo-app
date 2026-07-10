@@ -10,6 +10,7 @@ import com.endoapp.app.data.ConsentStore
 import com.endoapp.app.designsystem.BloomTheme
 import com.endoapp.app.export.ExportImportViewModel
 import com.endoapp.app.export.FakeDocumentIo
+import com.endoapp.app.report.ui.ReportBuilderViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Rule
@@ -72,6 +73,24 @@ class AppGateConsentTest {
         composeRule.setContent {
             BloomTheme {
                 AppGate(consentStore = store, router = CheckInRouter(), exportImport = fakeExportImport())
+            }
+        }
+    }
+
+    /** A trivially-constructible report builder over fakes (its seams are never invoked here — the test
+     *  only asserts the Settings entry's presence/absence, not a real generate). */
+    private fun fakeReport(): ReportBuilderViewModel = ReportBuilderViewModel(
+        loadSnapshots = { emptyList() },
+        loadSources = { emptyMap() },
+        loadSuppressed = { false },
+        loadDismissed = { emptySet() },
+        render = { null },
+    )
+
+    private fun setGateWithReport(store: ConsentStore) {
+        composeRule.setContent {
+            BloomTheme {
+                AppGate(consentStore = store, router = CheckInRouter(), report = fakeReport())
             }
         }
     }
@@ -156,6 +175,28 @@ class AppGateConsentTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("settings.export").performScrollTo().assertExists()
         composeRule.onNodeWithTag("settings.import").performScrollTo().assertExists()
+    }
+
+    // --- 3c. The report surface is consent-gated (T-24-11, consent-by-construction) ---
+
+    @Test
+    fun reportSeam_threaded_isUnreachablePreConsent() {
+        // Even with the seam THREADED, NotConsented never passes it to the shell (bound only in the
+        // Consented arm), so the "Export report" entry is unconstructible pre-consent.
+        setGateWithReport(FakeConsentStore(ConsentState.NotConsented))
+
+        composeRule.onNodeWithTag("settings.report").assertDoesNotExist()
+        composeRule.onNodeWithTag("consent.grantButton").assertExists()
+    }
+
+    @Test
+    fun reportSeam_threaded_rendersExportReportEntryWhenConsented() {
+        setGateWithReport(FakeConsentStore(ConsentState.Consented(grantedAtMillis = 0L)))
+
+        // Log-home gear → Settings; the "Export report" entry renders (seam threaded).
+        composeRule.onNodeWithTag("log.settingsButton").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("settings.report").performScrollTo().assertExists()
     }
 
     // --- 4. A deep-link flag set while NotConsented lands on the gate ---

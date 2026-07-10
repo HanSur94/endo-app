@@ -18,6 +18,7 @@ import com.endoapp.app.data.entities.TreatmentState
 import com.endoapp.app.designsystem.BloomTheme
 import com.endoapp.app.export.ExportImportViewModel
 import com.endoapp.app.export.FakeDocumentIo
+import com.endoapp.app.report.ui.ReportBuilderViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -196,6 +197,47 @@ class SettingsScreenTest {
         composeRule.onNodeWithTag("settings.export").performClick()
         composeRule.waitForIdle()
         assertEquals("tapping an entry opens the export/import screen", 1, opened)
+    }
+
+    // --- The "Export report" section: present only when the report seam is threaded (T-24-11) ---
+
+    /** A trivially-constructible report builder over fakes (its seams are never invoked here — the test
+     *  only asserts the Settings entry's presence/absence, not a real generate). */
+    private fun fakeReport(): ReportBuilderViewModel = ReportBuilderViewModel(
+        loadSnapshots = { emptyList() },
+        loadSources = { emptyMap() },
+        loadSuppressed = { false },
+        loadDismissed = { emptySet() },
+        render = { null },
+    )
+
+    @Test
+    fun exportReportEntry_absent_whenReportSeamIsNull() {
+        composeRule.setContent {
+            BloomTheme {
+                SettingsScreen(onWithdraw = {}, onBack = {}) // no report seam (isolation)
+            }
+        }
+        composeRule.onNodeWithTag("settings.report").assertDoesNotExist()
+    }
+
+    @Test
+    fun exportReportEntry_rendersAndNavigates_whenReportSeamThreaded() {
+        var opened = 0
+        composeRule.setContent {
+            BloomTheme {
+                SettingsScreen(
+                    onWithdraw = {},
+                    onBack = {},
+                    report = fakeReport(),
+                    onOpenReport = { opened++ },
+                )
+            }
+        }
+        composeRule.onNodeWithTag("settings.report").performScrollTo().assertExists()
+        composeRule.onNodeWithTag("settings.report").performClick()
+        composeRule.waitForIdle()
+        assertEquals("tapping Export report opens the builder", 1, opened)
     }
 
     @Test

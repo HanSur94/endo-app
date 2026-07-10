@@ -21,6 +21,7 @@ import com.endoapp.app.content.PlaceholderCopy
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.export.ExportImportViewModel
+import com.endoapp.app.report.ui.ReportBuilderViewModel
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.insights.InsightsCoordinator
 import com.endoapp.app.reminders.ReminderController
@@ -76,6 +77,7 @@ fun ConsentedShell(
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
     exportImport: ExportImportViewModel? = null,
+    report: ReportBuilderViewModel? = null,
     insightsCoordinator: InsightsCoordinator? = null,
     exploreScatterRouter: ExploreScatterRouter = ExploreScatterRouter(),
     today: Long = LocalDate.now().toEpochDay(),
@@ -125,6 +127,7 @@ fun ConsentedShell(
                     reminders = reminders,
                     healthConnect = healthConnect,
                     exportImport = exportImport,
+                    report = report,
                     today = today,
                 )
                 ConsentedTab.Insights ->

@@ -24,6 +24,8 @@ import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
 import com.endoapp.app.export.ExportImportViewModel
 import com.endoapp.app.export.ui.ExportImportHost
+import com.endoapp.app.report.ui.ReportBuilderViewModel
+import com.endoapp.app.report.ui.ReportBuilderHost
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.health.ui.HealthImportHost
 import com.endoapp.app.reminders.ReminderController
@@ -65,6 +67,7 @@ fun LogTabHost(
     reminders: ReminderController? = null,
     healthConnect: HealthConnectController? = null,
     exportImport: ExportImportViewModel? = null,
+    report: ReportBuilderViewModel? = null,
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     val stack = rememberTrackingBackStack()
@@ -114,6 +117,8 @@ fun LogTabHost(
                 onConnectHealth = { stack.push(TrackingRoute.HealthImport) },
                 exportImport = exportImport,
                 onOpenExportImport = { stack.push(TrackingRoute.ExportImport) },
+                report = report,
+                onOpenReport = { stack.push(TrackingRoute.Report) },
                 medications = medications,
                 onAddMedication = addMedication,
                 onArchiveMedication = archiveMedication,
@@ -131,6 +136,12 @@ fun LogTabHost(
             // ViewModel so an unwired build can never construct the export/import surface (T-23-10).
             TrackingRoute.ExportImport -> exportImport?.let { viewModel ->
                 ExportImportHost(viewModel = viewModel, onClose = { stack.pop() })
+            }
+            // The PDF report builder — reachable ONLY via the Settings "Export report" entry, itself
+            // rendered only when the seam is threaded (Consented arm). Guarded on a non-null ViewModel so
+            // an unwired build can never construct the report surface (T-24-11).
+            TrackingRoute.Report -> report?.let { viewModel ->
+                ReportBuilderHost(viewModel = viewModel, onClose = { stack.pop() })
             }
         }
     }
