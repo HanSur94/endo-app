@@ -63,6 +63,25 @@
                 tools:node="remove" />
         </provider>
 
+        <!--
+          FileProvider (Phase 24-04, AREL-02 / threats T-24-01 / T-24-09 / T-24-10). Vends the rendered
+          doctor-report PDF from the app-private cache as a scoped, revocable content:// URI so the OS
+          ACTION_SEND chooser can hand it to a USER-chosen target — the ONLY egress. It is NOT exported
+          (exported="false"), grants per-Intent read access (grantUriPermissions="true" + the sender adds
+          FLAG_GRANT_READ_URI_PERMISSION), and — via @xml/file_paths — vends ONLY cacheDir/reports/, never
+          external storage. Adds NO permission: no INTERNET (no network path), no storage (SAF/FileProvider
+          need none). ReportManifestTest pins the provider shape + the still-NO-INTERNET anchor.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
