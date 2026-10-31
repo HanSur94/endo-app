@@ -9,7 +9,7 @@
 <meta property="og:description" content="Free and open source. No account, no server, no analytics. Your data stays on your device.">
 <meta property="og:image" content="screenshots/02-home.png">
 <meta name="theme-color" content="#efe0e6">
-<link rel="icon" href="assets/favicon.svg">
+<link rel="icon" href="assets/app-icon.png">
 <style>
   :root{
     --canvas:#e9e0e6; --surface:#fbf8fa; --sunken:#f3ecf0; --card:#ffffff;
@@ -32,7 +32,8 @@
 
   header{position:sticky; top:0; z-index:10; background:rgba(233,224,230,.86); backdrop-filter:saturate(1.4) blur(14px); border-bottom:1px solid var(--stroke)}
   nav{display:flex; align-items:center; gap:28px; height:64px}
-  .wordmark{font-family:var(--serif); font-size:21px; font-weight:600; text-decoration:none; color:var(--ink)}
+  .wordmark{display:inline-flex; align-items:center; gap:10px; font-family:var(--serif); font-size:21px; font-weight:600; text-decoration:none; color:var(--ink)}
+  .wordmark img{width:30px; height:30px; border-radius:8px; box-shadow:0 2px 6px rgba(110,33,83,.18)}
   .wordmark span{color:var(--rose-deep)}
   nav .links{display:flex; gap:22px; margin-left:auto}
   nav a.plain{color:var(--ink2); text-decoration:none; font-size:15px}
@@ -54,6 +55,7 @@
   .cta{display:flex; flex-wrap:wrap; gap:12px; margin-top:32px}
   .meta{display:flex; flex-wrap:wrap; gap:18px; margin-top:26px; font-size:14px; color:var(--ink3)}
   .meta span{display:inline-flex; align-items:center; gap:7px}
+  .mark{width:64px; height:64px; border-radius:16px; margin-bottom:22px; box-shadow:0 10px 24px rgba(110,33,83,.22)}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--rose)}
 
   .phones{display:flex; justify-content:center; align-items:flex-end; gap:16px}
@@ -121,7 +123,7 @@
 
 <header>
   <nav class="wrap">
-    <a class="wordmark" href="#top">Open<span>Endo</span></a>
+    <a class="wordmark" href="#top"><img src="assets/app-icon.png" alt="OpenEndo app icon" width="30" height="30">Open<span>Endo</span></a>
     <div class="links">
       <a class="plain" href="#how">How it works</a>
       <a class="plain" href="#screens">Screens</a>
@@ -137,6 +139,7 @@
   <div class="hero">
     <div class="wrap hero-grid">
       <div>
+        <img class="mark" src="assets/app-icon.png" alt="OpenEndo app icon" width="64" height="64">
         <p class="eyebrow">Free · Open source · No account</p>
         <h1>A quieter way to keep track of <em>endo.</em></h1>
         <p class="lede">Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.</p>
@@ -269,7 +272,7 @@
 <footer>
   <div class="wrap">
     <div class="foot">
-      <span class="wordmark" style="font-size:17px">Open<span>Endo</span></span>
+      <span class="wordmark" style="font-size:17px"><img src="assets/app-icon.png" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:6px">Open<span>Endo</span></span>
       <span><a href="https://github.com/HanSur94/endo-app/blob/main/docs/privacy.md">Privacy</a> · <a href="https://github.com/HanSur94/endo-app/issues">Support</a> · <a href="https://github.com/HanSur94/endo-app">GitHub</a> · MIT</span>
     </div>
     <p class="disclaimer">OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.</p>
