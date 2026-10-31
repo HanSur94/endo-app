@@ -10,6 +10,7 @@
 <meta property="og:image" content="screenshots/02-home.png">
 <meta name="theme-color" content="#efe0e6">
 <link rel="icon" href="assets/app-icon.png">
+<script>document.documentElement.classList.add("js")</script>
 <style>
   :root{
     --canvas:#e9e0e6; --surface:#fbf8fa; --sunken:#f3ecf0; --card:#ffffff;
@@ -92,10 +93,21 @@
   .checks svg{flex:0 0 auto; margin-top:4px}
   .band .btn-ghost{background:transparent; color:#fff; border-color:rgba(255,255,255,.34); box-shadow:none}
   .band .btn-ghost:hover{background:rgba(255,255,255,.1)}
-  .quote{font-family:var(--serif); font-size:22px; line-height:1.45; color:#fff; border-left:3px solid var(--rose); padding-left:22px; margin:0}
-  .quote small{display:block; font-family:var(--sans); font-size:13.5px; color:#d3b3c4; margin-top:14px; letter-spacing:.02em}
+  .checks{margin-top:0}
 
   .oss{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+  /* data + plotting */
+  .plots{display:grid; grid-template-columns:1.1fr .9fr; gap:52px; align-items:center}
+  .shot{margin:0}
+  .shots{display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start}
+  .shot.phone{max-width:100%}
+  .shot figcaption{font-size:12.5px; margin-top:11px}
+  .plot-copy h3{font-size:22px; margin:26px 0 8px}
+  .plot-copy h3:first-child{margin-top:0}
+  .plot-copy p{color:var(--ink2); margin:0; font-size:16px}
+  .chips{display:flex; flex-wrap:wrap; gap:10px; margin:22px 0 0}
+  .chip{background:var(--card); border:1px solid var(--stroke); border-radius:999px; padding:7px 14px; font-size:13.5px; color:var(--ink2); box-shadow:0 2px 6px rgba(110,33,83,.05)}
+  .chip b{color:var(--plum); font-weight:600}
   .stat{background:var(--surface); border:1px solid var(--stroke); border-radius:18px; padding:22px}
   .stat b{display:block; font-family:var(--serif); font-size:30px; color:var(--plum); line-height:1.1; margin-bottom:6px}
   .stat span{font-size:14px; color:var(--ink2)}
@@ -109,7 +121,9 @@
     .lede{max-width:100%}
     .phones{justify-content:flex-start; gap:12px}
     .phone.mid{transform:translateY(-8px)}
-    .cards,.band-grid,.oss{grid-template-columns:1fr}
+    .cards,.band-grid,.oss,.plots{grid-template-columns:1fr}
+    .shots{grid-template-columns:1fr 1fr; gap:12px}
+    .shot figcaption{font-size:12px}
     .card{grid-template-columns:1fr 96px; gap:16px}
     .peek{width:96px; height:140px}
     nav .links{display:none}
@@ -117,30 +131,15 @@
     .hero{padding-top:44px}
   }
 
-  /* ---- section-to-section reveal: CSS scroll-driven, no JS ---- */
-  @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) {
-      @keyframes bloomRise {
-        from { opacity: 0; transform: translateY(26px) scale(.995); }
-        to   { opacity: 1; transform: none; }
-      }
-      main > section {
-        animation: bloomRise linear both;
-        animation-timeline: view();
-        animation-range: entry 2% entry 42%;
-      }
-      .cards .card, .oss .stat {
-        animation: bloomRise linear both;
-        animation-timeline: view();
-        animation-range: entry 0% entry 34%;
-      }
-      .cards .card:nth-child(2), .oss .stat:nth-child(2) { animation-range: entry 6% entry 40%; }
-      .cards .card:nth-child(3), .oss .stat:nth-child(3) { animation-range: entry 10% entry 44%; }
-      .cards .card:nth-child(4) { animation-range: entry 14% entry 48%; }
-      .hero .phones { animation: bloomRise linear both; animation-timeline: view(); animation-range: entry 0% entry 30%; }
-    }
-  }
-  @media (prefers-reduced-motion:reduce){*{transition:none!important; scroll-behavior:auto!important}}
+  /* ---- section-to-section flow: fade + rise on entry ---- */
+  .js .reveal{opacity:0; transform:translateY(38px); transition:opacity .85s cubic-bezier(.22,.61,.36,1), transform .85s cubic-bezier(.22,.61,.36,1)}
+  .js .reveal.in{opacity:1; transform:none}
+  .js .reveal .card, .js .reveal .stat, .js .reveal .shot{opacity:0; transform:translateY(20px); transition:opacity .7s cubic-bezier(.22,.61,.36,1), transform .7s cubic-bezier(.22,.61,.36,1)}
+  .js .reveal.in .card, .js .reveal.in .stat, .js .reveal.in .shot{opacity:1; transform:none}
+  .js .reveal.in .card:nth-child(2), .js .reveal.in .stat:nth-child(2), .js .reveal.in .shot:nth-child(2){transition-delay:.09s}
+  .js .reveal.in .card:nth-child(3), .js .reveal.in .stat:nth-child(3), .js .reveal.in .shot:nth-child(3){transition-delay:.18s}
+  .js .reveal.in .card:nth-child(4), .js .reveal.in .shot:nth-child(4){transition-delay:.27s}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important; scroll-behavior:auto!important} .js .reveal,.js .reveal .card,.js .reveal .stat,.js .reveal .shot{opacity:1!important; transform:none!important}}
 </style>
 </head>
 <body>
@@ -161,7 +160,7 @@
 <main id="top">
 
   <div class="hero">
-    <div class="wrap hero-grid">
+    <div class="wrap hero-grid reveal">
       <div>
         <img class="mark" src="assets/app-icon.png" alt="OpenEndo app icon" width="64" height="64">
         <h1>A quieter way to keep track of <em>endo.</em></h1>
@@ -185,7 +184,7 @@
     </div>
   </div>
 
-  <section id="how">
+  <section id="how" class="reveal">
     <div class="wrap">
       <div class="section-head">
         <p class="eyebrow">How it works</p>
@@ -229,12 +228,12 @@
     </div>
   </section>
 
-  <section id="screens" style="background:var(--surface); border-block:1px solid var(--stroke)">
+  <section id="screens" class="reveal" style="background:var(--surface); border-block:1px solid var(--stroke)">
     <div class="wrap">
       <div class="section-head">
         <p class="eyebrow">Screens</p>
-        <h2>Every screenshot here is the shipping app.</h2>
-        <p>Captured from the real build with demo data by an automated UI test — not a mockup, not a redesign.</p>
+        <h2>Check-in, insights, explore, report.</h2>
+        <p>The whole loop, top to bottom.</p>
       </div>
       <div class="rail">
         <figure class="phone"><img src="screenshots/02-home.png" alt="Home"><figcaption>Home — cycle estimate and today</figcaption></figure>
@@ -247,12 +246,43 @@
     </div>
   </section>
 
-  <section id="privacy" class="band">
+  <section id="data" class="reveal">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">The data</p>
+        <h2>Two axes, one point per logged day.</h2>
+        <p>Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.</p>
+      </div>
+      <div class="plots">
+        <div class="shots">
+          <figure class="shot phone"><img src="screenshots/10-explore-scatter.png" alt="Scatter plot with one dot per logged day for two chosen signals"><figcaption>Scatter — one dot per logged day</figcaption></figure>
+          <figure class="shot phone"><img src="screenshots/09-explore-lanes.png" alt="Lanes view with one row per signal across the same date range"><figcaption>Lanes — the same days as a timeline</figcaption></figure>
+        </div>
+        <div class="plot-copy">
+          <h3>What a pattern card actually says</h3>
+          <p>Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.</p>
+          <div class="chips">
+            <span class="chip"><b>Days</b> behind the card</span>
+            <span class="chip"><b>Direction</b> of the movement</span>
+            <span class="chip"><b>Confidence</b> from logged days</span>
+          </div>
+          <h3>Your own baseline, never anyone else’s</h3>
+          <p>Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.</p>
+          <h3>Built to be checked</h3>
+          <p>The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" class="band reveal">
     <div class="wrap band-grid">
       <div>
         <p class="eyebrow">Privacy</p>
         <h2>There is no server to send your data to.</h2>
         <p style="margin-top:16px">No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.</p>
+      </div>
+      <div>
         <ul class="checks">
           <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Data lives in the app's own store on your phone</span></li>
           <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Backups go through your own iCloud or Android backup, if you use one</span></li>
@@ -263,16 +293,10 @@
           <a class="btn btn-ghost" href="https://github.com/HanSur94/endo-app/blob/main/docs/privacy.md">Read the privacy policy</a>
         </div>
       </div>
-      <div>
-        <blockquote class="quote">
-          &ldquo;Tracking is the one thing I can actually do between appointments. I wanted a tool that stops asking for an account and starts showing me what I already wrote down.&rdquo;
-          <small>Why OpenEndo exists</small>
-        </blockquote>
-      </div>
     </div>
   </section>
 
-  <section id="source">
+  <section id="source" class="reveal">
     <div class="wrap">
       <div class="section-head">
         <p class="eyebrow">Open source</p>
@@ -302,5 +326,20 @@
   </div>
 </footer>
 
+<script>
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      els.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
 </body>
 </html>

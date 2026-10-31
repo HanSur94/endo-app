@@ -61,7 +61,27 @@ final class StoreScreenshotTour: XCTestCase {
 
         tab(app, "tab.explore").tap()
         sleep(3)
-        shot(app, "06-explore")
+        shot(app, "08-explore")
+
+        // Lanes: the same data as a per-signal timeline, one swipe down.
+        app.swipeUp()
+        sleep(2)
+        shot(app, "09-explore-lanes")
+
+        // Scatter: the mode toggle sits at the top of Explore, so scroll back up and switch.
+        app.swipeDown()
+        app.swipeDown()
+        let scatter = app.descendants(matching: .any)["explore.mode.scatter"].firstMatch
+        if scatter.waitForExistence(timeout: 8) {
+            scatter.tap()
+            sleep(2)
+            // Two axes must be chosen before any dot is drawn; pick the first option for X and the
+            // second for Y so the shot is a real spread rather than the self-vs-self diagonal.
+            pickAxis(app, "explore.scatter.axisX", option: 0)
+            pickAxis(app, "explore.scatter.axisY", option: 1)
+            sleep(3)
+            shot(app, "10-explore-scatter")
+        }
 
         // Report preview: Settings → Export report → generate. Best effort — a missing preview must not
         // fail the tour, the other screens are already captured.
@@ -104,6 +124,17 @@ final class StoreScreenshotTour: XCTestCase {
     private func tab(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         let inBar = app.tabBars.buttons[id]
         return inBar.exists ? inBar : app.descendants(matching: .any)[id].firstMatch
+    }
+
+    /// Opens one scatter axis menu and taps an option by position (the option ids embed the series id,
+    /// so position is the only stable selector available to the tour).
+    private func pickAxis(_ app: XCUIApplication, _ stem: String, option: Int) {
+        let menu = app.descendants(matching: .any)[stem].firstMatch
+        guard menu.waitForExistence(timeout: 8) else { return }
+        menu.tap()
+        let options = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", stem + "."))
+        guard options.count > option else { return }
+        options.element(boundBy: option).tap()
     }
 
     private func shot(_ app: XCUIApplication, _ name: String) {
