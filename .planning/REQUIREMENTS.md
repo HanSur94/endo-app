@@ -85,9 +85,9 @@ Languages: English (source), German, French, Spanish. Platforms: Android (`andro
 |-------------|-------|--------|
 
 **Coverage:**
-- v2.1 requirements: 30 total
+- v2.1 requirements: 27 total
 - Mapped to phases: 0 (filled by roadmap)
-- Unmapped: 30 ⚠️
+- Unmapped: 27 ⚠️
 
 ---
 *Requirements defined: 2026-10-31*
