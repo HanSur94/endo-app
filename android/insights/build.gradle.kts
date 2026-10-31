@@ -28,7 +28,7 @@ val l10nDir = rootDir.parentFile.resolve("l10n")
 
 // SAFE-01 (Pitfall 8 on Android): copy ONLY the three policy files onto the main classpath at
 // `/l10n/claims-policy.<tag>.json`. The glossary and README are test-only/doc data and never ship.
-val syncL10nPolicy by tasks.registering(Sync::class) {
+val syncL10nPolicy = tasks.register<Sync>("syncL10nPolicy") {
     from(l10nDir) {
         include("claims-policy.*.json")
         into("l10n")
