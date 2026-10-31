@@ -7,6 +7,11 @@
 // `ClaimsPolicy.forLanguage(lang)`. An unregistered string silently escapes the audit, so registration
 // IS the enforcement, not a convenience. Later phases add one source line each (27 insight messages,
 // 29 Android `values-*` strings, 30 xcstrings, 33 store copy), never a new mechanism.
+//
+// TRIPWIRE (SC4, T-26-11): `looksLocalized` recognises every localized-looking path, and
+// `L10nTripwireTest` fails on any such file no source claims. The include patterns of the
+// `localizedFiles` test input in `android/app/build.gradle.kts` mirror `looksLocalized`, so a new file
+// reruns the tests.
 package com.endoapp.app.l10n
 
 import com.endoapp.app.content.ClaimsPolicy
@@ -39,7 +44,8 @@ data class L10nSource(
 
 object L10nSourceRegistry {
 
-    /** Directory names never walked: VCS and tool state, planning notes, build output. */
+    /** Directory names never walked: VCS and tool state, planning notes, build output. A directory below
+     *  the root that holds its own `.git` (nested worktree or checkout, Pitfall 6) is skipped too. */
     private val EXCLUDED_DIRS: Set<String> = setOf(
         ".git", ".planning", ".claude", "build", ".gradle", ".kotlin", ".idea", "DerivedData", ".build",
         ".swiftpm", "node_modules",
@@ -68,7 +74,34 @@ object L10nSourceRegistry {
                 "so they are not DE/FR/ES text and are not extracted.",
             extract = ::extractGlossaryApproved,
         ),
+        L10nSource(
+            pathPattern = Regex("""l10n/README\.md"""),
+            role = SourceRole.DOCUMENTATION,
+            reason = "Translator documentation and the normative matching spec. It is never shipped, and it " +
+                "quotes forbidden terms on purpose to explain the rules.",
+            extract = { emptyList() },
+        ),
     )
+
+    private const val TAGS = "de|fr|es"
+
+    private const val ANDROID_RES_TYPES =
+        "values|drawable|mipmap|layout|raw|xml|menu|font|anim|animator|color|navigation|transition|interpolator"
+
+    /** An Android resource directory with a de/fr/es qualifier: `values-de`, `values-es-rUS`,
+     *  `values-night-fr`, BCP-47 `values-b+es+419`. */
+    private val ANDROID_RES_DIR = Regex(
+        """($ANDROID_RES_TYPES)(-[A-Za-z0-9]+)*-(($TAGS)(-r[A-Z]{2})?|b\+($TAGS)(\+[A-Za-z0-9]+)*)(-[A-Za-z0-9]+)*""",
+    )
+
+    /** An Apple localization directory: `de.lproj`, `fr-CA.lproj`, `es_419.lproj`. */
+    private val LPROJ_DIR = Regex("""($TAGS)([-_][A-Za-z0-9]+)*\.lproj""")
+
+    /** A store-metadata locale directory: `de-DE`, `fr-FR`, `es-ES`, `es-419` (and other regions). */
+    private val REGION_DIR = Regex("""($TAGS)-([A-Z]{2}|419)""")
+
+    /** A file name tagged with a language: `store-copy.es.txt`, `release-fr.md`. */
+    private val TAGGED_FILE = Regex(""".+[.-]($TAGS)\.[^/]+""")
 
     /** The source claiming [relPath] (repo-relative, `/` separators), or null when none does. */
     fun claim(relPath: String): L10nSource? = sources.firstOrNull { it.pathPattern.matches(relPath) }
@@ -117,7 +150,25 @@ object L10nSourceRegistry {
         }
     }
 
-    /** Repo-relative paths (`/` separators) of every file under [root], skipping [EXCLUDED_DIRS]. */
+    /** True when [relPath] (repo-relative, `/` separators) looks like a localized file. */
+    fun looksLocalized(relPath: String): Boolean {
+        val segments = relPath.split('/')
+        val dirs = segments.dropLast(1)
+        val name = segments.last()
+        return relPath.startsWith("l10n/") ||
+            name.endsWith(".xcstrings") ||
+            TAGGED_FILE.matches(name) ||
+            dirs.any { ANDROID_RES_DIR.matches(it) || LPROJ_DIR.matches(it) || REGION_DIR.matches(it) }
+    }
+
+    /** Every localized-looking file under [root], walked top-down with the exclusions. */
+    fun localizedCandidates(root: File): List<String> = repoFiles(root).filter(::looksLocalized)
+
+    /** The localized-looking files under [root] that no registered source claims. */
+    fun unregisteredLocalizedFiles(root: File): List<String> = localizedCandidates(root).filter { claim(it) == null }
+
+    /** Repo-relative paths (`/` separators) of every file under [root], skipping [EXCLUDED_DIRS] and any
+     *  nested checkout below the root. */
     internal fun repoFiles(root: File): List<String> {
         val out = ArrayList<String>()
         fun walk(dir: File, prefix: String) {
@@ -125,7 +176,8 @@ object L10nSourceRegistry {
             for (child in children) {
                 val rel = if (prefix.isEmpty()) child.name else "$prefix/${child.name}"
                 if (child.isDirectory) {
-                    if (child.name !in EXCLUDED_DIRS) walk(child, rel)
+                    val nestedCheckout = File(child, ".git").exists()
+                    if (child.name !in EXCLUDED_DIRS && !nestedCheckout) walk(child, rel)
                 } else {
                     out.add(rel)
                 }
