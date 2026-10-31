@@ -29,6 +29,13 @@ targets:
     platform: iOS
     sources:
       - Sources/EndoApp
+      # SAFE-01/SAFE-02: the shared DE/FR/ES claims-policy data, bundled as resources so the app decodes
+      # the reviewed files at runtime. glossary.json and README.md are deliberately NOT bundled (test-only
+      # data, read through #filePath), and `xcodegen generate` must re-run after any edit here.
+      - path: l10n
+        includes:
+          - "claims-policy.*.json"
+        buildPhase: resources
     dependencies:
       # App depends on the package library product (product defaults to the package name).
       - package: EndoInsights
