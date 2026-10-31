@@ -30,7 +30,7 @@ enum SyncMode {
 /// The CloudKit container identifier for the private database (D-02/D-21). MUST match the
 /// `com.apple.developer.icloud-container-identifiers` value in EndoApp.entitlements. Used only when
 /// the caller resolved `syncMode == .cloudKit`.
-private let cloudKitContainerIdentifier = "iCloud.com.endoapp.ios"
+private let cloudKitContainerIdentifier = "iCloud.app.openendo.ios"
 
 /// Builds the app's `ModelContainer` for the CURRENT schema (`SchemaV6`) behind the `SyncMode` flag,
 /// wiring the additive `EndoMigrationPlan` (V1→V2→V3→V4→V5→V6, D-11/D-10/D-14/D-01) so an existing

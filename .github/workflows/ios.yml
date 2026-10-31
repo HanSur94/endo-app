@@ -1,0 +1,71 @@
+name: ios
+
+# iOS build + test lane. Path-filtered so Android-only changes don't burn macOS minutes.
+# Also guards the one thing that is easy to drift: the hosted privacy policy vs the in-app string.
+on:
+  push:
+    paths:
+      - 'Sources/**'
+      - 'Tests/**'
+      - 'EndoInsights/**'
+      - 'project.yml'
+      - 'docs/privacy.md'
+      - '.github/workflows/ios.yml'
+  pull_request:
+    paths:
+      - 'Sources/**'
+      - 'Tests/**'
+      - 'EndoInsights/**'
+      - 'project.yml'
+      - 'docs/privacy.md'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+    inputs:
+      ui_tests:
+        description: 'Also run the UI suite (slow and simulator-flaky; not part of the default gate)'
+        type: boolean
+        default: false
+
+jobs:
+  build-test:
+    name: 'build + test (simulator)'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Privacy policy parity
+        run: ./scripts/sync-privacy.sh --check
+
+      - name: Pick an available iPhone simulator
+        id: sim
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['name'] for rt in sorted(d) for x in d[rt] if x['name'].startswith('iPhone')))")
+          echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
+
+      - name: Run unit tests
+        run: |
+          # ponytail: the UI suite is opt-in (workflow_dispatch → ui_tests). It takes ~15 min on a
+          # cold simulator and hangs on some runners; flip it on when UI coverage must gate a release.
+          EXTRA=""
+          if [ "${{ inputs.ui_tests }}" != "true" ]; then EXTRA="-skip-testing:EndoAppUITests"; fi
+          xcodebuild test \
+            -scheme EndoApp \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            $EXTRA \
+            -quiet
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: build/*.xcresult
+          if-no-files-found: warn

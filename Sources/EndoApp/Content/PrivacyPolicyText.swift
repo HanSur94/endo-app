@@ -21,12 +21,12 @@ enum PrivacyPolicyText {
     Your privacy is the whole point.
 
     Where your data lives
-    Everything you log in Endo-App is stored on-device. If you turn on sync, your data is \
+    Everything you log in OpenEndo is stored on-device. If you turn on sync, your data is \
     kept only in your own private iCloud account — the same private storage your iPhone backups \
     use. Apple cannot read it, and neither can we.
 
     No servers, no accounts
-    Endo-App has no servers of its own. There is no account to create and no login. Your health \
+    OpenEndo has no servers of its own. There is no account to create and no login. Your health \
     data never travels to any backend we operate, because we do not operate one.
 
     No third-party sharing, no analytics

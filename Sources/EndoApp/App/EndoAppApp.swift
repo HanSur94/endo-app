@@ -2,7 +2,7 @@
 import SwiftUI
 import UserNotifications
 
-/// The composition root (D-22) of Endo-App.
+/// The composition root (D-22) of OpenEndo.
 ///
 /// Builds `AppDependencies` (the SwiftData `ModelContainer` behind the `SyncMode` flag — `.none`
 /// local-only by default — the `ConsentStore`, the `NotificationScheduler`, and the `CheckInRouter`),

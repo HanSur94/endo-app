@@ -1,166 +1,216 @@
 # Feature Research
 
-**Domain:** Chart interactivity (scrub/tooltip) + multi-series "explore" overlays + scatter views in consumer health/cycle-tracking apps (v1.1 milestone of Endo-App)
-**Researched:** 2026-06-10
-**Confidence:** MEDIUM — synthesized from competitor support docs (Bearable, Guava), Apple platform conventions (Health/Stocks, Swift Charts WWDC material), and dataviz literature (dual-axis critiques, Xiong et al. VIS 2019 on causality perception). No hands-on audit of competitor builds; UI specifics may have drifted.
+**Domain:** Multilingual support (EN/DE/FR/ES) with in-app language selection, for an existing endometriosis self-tracking and insights app (Android Kotlin/Compose + iOS SwiftUI)
+**Researched:** 2026-10-31
+**Confidence:** MEDIUM overall. Platform mechanics are HIGH (official docs, corroborated). Competitor behaviour is MEDIUM (vendor help pages). Patient terminology and per-language claims lists are MEDIUM/LOW: drafted from patient-org and health-portal usage. A native speaker must review them before release, and that review is already a human-gated step in PROJECT.md.
 
-> Scope note: this file covers ONLY the v1.1 features (interactive trend charts, Explore overlay screen, scatter view). The v1.0 feature landscape this milestone builds on lives in `.planning/milestones/` history and PROJECT.md Validated requirements. Do not re-derive v1.0 scope from this file.
+> Scope: only what v2.1 adds. Everything in PROJECT.md "Validated" is treated as existing infrastructure that this work depends on.
 
-## Benchmark Summary
+## How good period/health apps handle language (observed behaviour)
 
-| Product | Scrub/tooltip | Multi-series overlay | Scatter | Notable for us |
-|---------|---------------|----------------------|---------|----------------|
-| **Apple Health** | Touch-and-hold a chart → lollipop readout of day + exact value; drag to scrub; segmented time-range picker (W/M/6M/Y) | Only curated "Highlights" pair two related metrics; no free-form user overlay (a gap third-party apps like Health Hive exist to fill) | None | THE iOS gesture vocabulary users arrive with. Match it or feel broken. |
-| **Bearable** | Tooltips on charts; less polished than Apple | Best-in-class: rotate to landscape on Insights → comparison graph; toggle Mood/Symptoms/Energy/Sleep/measurements via buttons below chart; **binary Factors shown as highlighted days, not lines** | No raw scatter — shows computed "% effect" of factors instead | Closest comparator for Explore. Its factor-day-highlight pattern validates an event-lane approach for binary tags. Its % effect numbers are exactly what our honesty policy forbids. |
-| **Guava** | Tap calendar/chart entries for detail | Per-symptom detail has a "Compare" button to overlay other symptoms/metrics; toggles for frequency vs severity and time period | No raw scatter — correlation/insight cards instead | Validates "start from one metric, add comparisons" as an alternate entry path to a blank Explore canvas. |
-| **Clue** | Basic chart taps | Cycle-length line of last 6 cycles vs ACOG range; Analysis tab tools — **no free-form overlay** | None | Mainstream cycle apps don't do user-driven overlays at all — Explore is genuinely beyond category norm. |
-| **Flo** | Basic | Graphs & Reports: cycle duration charts only | None | Same — confirms Explore is a differentiator, not table stakes, for the cycle-app category. |
+| App | Where the picker lives | Default | Switch behaviour | Notes |
+|-----|------------------------|---------|------------------|-------|
+| **Clue** (27 languages) | **iOS:** system per-app language (Settings › Clue › Language). **Android:** follows the device language, with no in-app picker documented. | Device language | iOS relaunches the app. On Android some OEMs (Xiaomi) needed a reinstall. | Clue added no in-app picker. It relies on the OS. |
+| **Flo** | **iOS:** in-app (Menu › Settings › Change Language). **Android:** device language only. | Device language | iOS needs a force-quit and reopen | A "restart required" picker is an old, clunky pattern that gets user complaints. |
+| **Endo-App (DiGA)** | German-first, with only the website/FAQ in English | German | n/a | It is a medical device (Class I, PZN listed). Its copy can say "Therapie"; ours cannot. Its German content uses "Endo-Belly" / "Blähbauch". |
+| **Bearable** | Could not verify (LOW) | n/a | n/a | n/a |
 
-**Strategic read:** Scrub-to-read-value is iOS table stakes (Apple Health trained everyone). A user-driven multi-series Explore is a *differentiator* — only Bearable/Guava have anything close, and both hide honest raw data behind computed claims. A raw scatter view is rarer still and aligns unusually well with this app's honesty invariants: visualization research (Xiong et al., VIS 2019) found scatter plots elicit the *lowest* causality ratings of common chart types — the least causally-suggestive way to show an association.
+**Platform reality (HIGH):**
+- **Android 13+** has system per-app language (`LocaleManager`, plus `locales_config.xml` and `android:localeConfig`, which also list the app under System Settings › App languages). **AndroidX AppCompat** `AppCompatDelegate.setApplicationLocales()` backports this to older API levels. It persists the choice (`autoStoreLocales`) and **recreates the Activity**, so there is no app restart. An empty list means "follow system". **Dependency:** the app is `ComponentActivity` with minSdk 26 and has no AppCompat. The backport for API 26–32 needs `androidx.appcompat` and `AppCompatActivity`, or an API-33-only path plus a manual fallback. This is a STACK/ARCHITECTURE decision.
+- **iOS 13+** has system per-app language under Settings › App › Language. The app relaunches on change. Apple discourages custom in-app language choosers and recommends deep-linking to Settings (`UIApplication.openSettingsURLString`). The Language row is hidden when the user has only one preferred language. The workaround is the Info.plist key `UIPrefersShowingLanguageSettings = YES` (MEDIUM: forum-sourced, verify against the current SDK).
+
+**Opinionated recommendation:** Settings › "Language" on both platforms, showing the current language and a "System default" option.
+- **Android:** a true in-app list (System default / English / Deutsch / Français / Español) via AppCompat per-app locales. It switches live through Activity recreation.
+- **iOS:** an in-app row that names the current language and opens the system per-app language page. Do **not** override `AppleLanguages` or hot-swap `Bundle`s. This still meets "chosen inside the app": the entry point is in the app, the OS does the switch, and the app relaunches without data loss.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Missing these = the new surfaces feel broken or below iOS platform standard.
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Touch-and-hold + drag scrub with lollipop tooltip** (vertical rule + date + exact value) | Apple Health/Stocks trained every iOS user; "tap chart, see number" is the platform reflex | **LOW–MED** | iOS 17+ `.chartXSelection` binding + `RuleMark` + `.annotation` is the canonical implementation; gesture recognition is handled by the framework. Applies to all existing dashboard trend charts. |
-| **Tooltip readout pinned above the finger / chart top** | Finger occludes the point; Health/Stocks pin the readout at the top edge | **LOW** | Annotation position + collision handling near chart edges (first/last days) is the only fiddly part. |
-| **Gap-honest tooltip** ("Not logged" on unlogged days, never 0) | This app's own v1.0 invariant (absence ≠ 0) extended to the new surface; a tooltip showing 0 on a gap day would silently break it | **LOW–MED** | Scrub selection must resolve to *logged days only* or explicitly render a "no entry" state. This is the one place generic Swift Charts tutorials will mislead — they interpolate to nearest point. |
-| **Selection haptic on day change** | Health/Stocks do it; scrubbing feels dead without it | **LOW** | `UISelectionFeedbackGenerator` on day boundary crossings. |
-| **Tooltip dismissal** (release-to-dismiss or tap-elsewhere) | Standard; a stuck tooltip reads as a bug | **LOW** | Decide persist-on-tap vs live-only-while-touching; Health uses live-while-touching. |
-| **Series picker as toggle chips/buttons** on Explore | Bearable (buttons below chart) and Guava (Compare button) both converge on this; users expect add/remove per tap, not a settings form | **MED** | Needs a unified "series catalog" (every loggable metric with id, display name, unit, scale type, kind: continuous/ordinal/binary). This catalog is the real work of Explore. |
-| **Distinct series colors + legend** | Basic legibility for any overlay | **LOW** | Color assignments must be stable per metric across sessions and color-blind-safe; reuse insight-dashboard palette where metrics already have colors. |
-| **Shared time axis + existing time-range control on Explore** | Consistency with v1.0 dashboard (absolute dates, range presets) | **LOW–MED** | Reuse v1.0 axis/gap rendering. Do not introduce a second axis vocabulary. |
-| **Empty/sparse states** ("pick at least one series", "not enough overlapping days for a scatter") | Explore with 0–1 selected series or a scatter with 2 shared days must not render nonsense | **LOW–MED** | Mirrors v1.0 withheld-when-insufficient discipline; copy goes through ClaimsPolicy scan. |
-| **Scrub works on Explore overlay too** (one tooltip listing each visible series' value for that day) | Once charts are scrubbable, an inert Explore chart feels inconsistent | **MED** | Multi-series tooltip layout (n values + "not logged" per missing series) is a small design problem of its own. |
-| **Accessibility parity** (VoiceOver summaries / Audio Graphs on new charts) | Platform expectation for charts; v1.0 charts presumably ship descriptors — new surfaces can't regress | **MED** | Swift Charts provides accessibility descriptors; multi-series + scatter need bespoke audio-graph descriptions. |
+| Feature | Why Expected | Complexity | Notes / Dependencies |
+|---------|--------------|------------|----------------------|
+| **Default = system language, with fallback to English** | Every reference app does this. Users never want to pick on first launch. | LOW | An unsupported system locale (e.g. `it`) falls back to English. Regional variants (`de-AT`, `de-CH`, `es-MX`, `fr-CA`) resolve to the base language. Use base-language resources only, no regional variants in v2.1. |
+| **Language row in Settings**, listing each language by its own name ("Deutsch", not "German"), plus "System default" | Users must be able to find a way back if the device language is wrong | LOW (Android), LOW (iOS deep-link) | Depends on the existing Settings screen (`SettingsCopy`). Endonyms also mean the row stays readable while the app is in the wrong language. |
+| **Switch without losing in-progress data** | A check-in half done when the language changes must survive | MEDIUM | Android recreation needs state in ViewModel/`rememberSaveable`. The v2.0 emulator pass fixed check-in persistence, so re-verify the day editor and body-map state across recreation. iOS relaunch needs state restoration or autosaved drafts. |
+| **All UI copy localized** (~700 strings per platform) | A half-translated health app reads as untrustworthy | HIGH (volume, not difficulty) | Android has **no `strings.xml`**: copy lives in Kotlin `*Copy.kt` objects (`content/`). It must move to resources, or to a locale-aware copy layer, while keeping `AuditableCopy`/ClaimsPolicy able to scan every string in every language. iOS has no String Catalog yet, so `Localizable.xcstrings` would be added. |
+| **Insight sentences localized** (trends, correlations, recommendations, flare) | Insights are the core value. English insights in a German UI break the product promise. | HIGH | The `:insights` module (pure JVM, mirrored in Swift `EndoInsights`) **builds English sentences inside the engine** (`TrendsEngine`, `CorrelationEngine`, `RecommendationsEngine`; `Locale.ROOT` number formatting). It must emit **structured results (template key plus typed args)**, rendered per locale in the app layer. Templates should be whole sentences per language, never concatenated fragments, because German word order and FR/ES gender agreement break concatenation. The 157-case parity suite and the HonestyGate must keep passing. |
+| **Plurals and grammatical agreement** | "1 Tage" / "2 day" errors look broken | MEDIUM | Android `<plurals>` / ICU, iOS String Catalog plural variants. FR/ES add gender agreement. See the TerminologyPreference row. |
+| **Locale-aware dates, numbers, units in the app** | A German user expects `31.10.2026`, `7,5 h` and a Monday week start | MEDIUM | Several places hardcode `Locale.US` (`ReportPdfRenderer`, `ReportBuilderScreen`) and `Locale.ROOT` in the insights. Use `DateTimeFormatter.ofLocalizedDate`/skeletons and `Date.FormatStyle` instead of fixed patterns. All four languages use metric, so no unit conversion is needed. Only the formatting (decimal comma) and the symbols (`h`, `min`, `Std.`) change. |
+| **First day of week follows locale/region** | DE/FR/ES calendars start on Monday. A Sunday start feels American and wrong. | LOW–MEDIUM | Affects the check-in calendar, weekly trend buckets in charts/Explore, and the PDF. Take it from **region** (`WeekFields.of(locale)`, `Calendar.current.firstWeekday`), not language. An en-GB user also expects Monday. **Insight math must not change with locale.** Keep engine bucketing locale-independent or pinned, otherwise the same data yields different insights per language (a parity and honesty risk). |
+| **Notifications in the current language** | A German UI with English reminders feels broken | LOW (Android), MEDIUM (iOS) | Android `ReminderNotifier` builds text at fire time, so resolving via a locale-aware `Context` is enough. iOS `UNNotificationContent` is frozen at schedule time, so pending reminders must be **rescheduled on language change and at launch**. Depends on Reminders. The no-flare-push invariant is unaffected. |
+| **PDF doctor report localized**, including dates and numbers | The report is shown to a local clinician | MEDIUM | `ReportPdfRenderer` runs outside the UI, so it must take an **explicit locale** rather than the ambient one. The "self-tracked, not diagnostic" framing must be translated and audited. Longer DE/FR strings break fixed-width vector layout. Budget about 30% expansion and test pagination per language. The v1.1 "byte-identical PDF" guard on iOS needs re-baselining per locale. |
+| **Onboarding, consent and in-app privacy policy localized** | GDPR Art. 9 consent must be understandable, and consent given in a language the user can't read is weak | MEDIUM | `OnboardingCopy`, `PrivacyPolicyText` (both platforms), `Disclaimer`. Legal text needs a human/legal review per language, not just a translation review. Decide which version is authoritative: German for the home market, or a statement that all versions are equivalent. |
+| **Store listings in 4 languages** (Play + App Store), with localized screenshots | Store search and conversion are per locale. German users filter on German listings. | MEDIUM | `StoreListingCopy` is already ClaimsPolicy-audited (incl. store copy), so extend the audit per language. Screenshots per locale can be generated from the emulator/simulator. Play Data Safety and App Privacy answers don't change. Hosted privacy-policy URLs are needed per language (release-checklist item). |
+| **Health Connect / HealthKit rationale strings localized** | The permission sheet appears in the system language next to our rationale | LOW | iOS `NSHealthShareUsageDescription` goes through `InfoPlist.xcstrings`. Android `HealthConnectCopy` plus the rationale activity. The system sheet itself is localized by the OS. |
+| **User free text stays untouched** | Notes and medication names are the user's own words | LOW | Never translate, transliterate or re-case `note`, `Medication.name` or similar fields. Display them as-is in any UI language and in the PDF. Label them in the report as "your notes (verbatim)". A language-agnostic ClaimsPolicy must **not** scan user text. |
+| **Export/import works across languages** | The user exports in German and imports on a phone set to Spanish (also the iOS↔Android handoff idea) | LOW, if kept that way | Entities store **locale-independent raw keys** (`typeRaw`) and ISO dates. That is correct. Invariant to add: **no localized string is ever persisted or exported**, and numbers are serialized with `Locale.ROOT`. Add a round-trip test (export under `de`, import under `es`, assert equality). Export *file names* and any human-readable header can be localized, but the parser must never depend on them. |
+| **ClaimsPolicy / CopyAudit per language** | A translated health app can slip into medical-device claims that the English audit cannot see | HIGH | Separate curated forbidden lists per language, **not translations of the English list**. See "Claims boundary by language". The audit must also fail if any key lacks a translation (completeness check), to prevent a silent English fallback in release. |
 
 ### Differentiators (Competitive Advantage)
 
-Where v1.1 beats the category — all flow from the same honesty positioning as v1.0.
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Honest mixed-scale overlay: aligned lanes / banded layout instead of dual-axis spaghetti** | Dataviz consensus: dual independent y-axes mislead (arbitrary crossovers, scale manipulation). Stacked per-scale lanes sharing one time axis keep every series in honest units — no competitor does this deliberately | **MED–HIGH** | E.g. severity (0–10) lane, hours lane, 1–5 lane vertically aligned on one x-axis; or one plot area with per-series labeled bands. This is the core design decision of Explore — prototype early. |
-| **Binary tags as an event-marker lane** (tick strip under the plot), not fake 0/1 lines | Bearable's day-highlight pattern proves it; a 0/1 line series is visual noise and implies a scale that doesn't exist | **MED** | One row of date-aligned ticks per selected tag (e.g. "dairy" dots under the chart). Also the honest home for bleeding-intensity if treated as ordinal events. |
-| **Raw scatter view, one point = one logged day** | The "show me the actual data" move no mainstream cycle app makes; research says scatter is the least causality-implying encoding — a perfect fit for the descriptive-only policy | **MED** | Day-pairing: only days where BOTH factors are logged become points (absence ≠ 0 again). Discrete scales (0–10 vs 1–5) collide on a grid — needs jitter or count-encoded point size to handle overplotting honestly. |
-| **Tap a scatter point → see the exact day, jump to that day's log** | Turns an abstract cloud into "oh, that was the day I…" — uniquely useful for lay users; nobody in category does it | **MED** | Needs point→date identity and a navigation hook into the existing log/day view. |
-| **Cross-link from gated correlation cards → prefilled Explore/scatter** ("see the days behind this") | The correlation engine says "possible association"; Explore lets the user inspect the raw evidence — deepens trust, exercises the differentiator | **LOW–MED** | Pure wiring: correlation card carries (factorA, factorB) → opens scatter preconfigured. High leverage per effort. |
-| **Descriptive-only chart chrome by design** (no r-values, no trend lines, no "% impact") | Bearable sells "% effect on your mood" — statistically shaky on n≈30 self-tracked days; our restraint is the brand | **LOW** | Mostly a *negative* spec (see anti-features) plus one neutral caption pattern, ClaimsPolicy-scanned. |
-| **Portrait-first Explore** | Bearable forces landscape rotation for its comparison graph — a known friction point | **LOW–MED** | Lanes layout works in portrait; landscape can be a later enhancement, not a prerequisite. |
+| Feature | Value Proposition | Complexity | Notes / Dependencies |
+|---------|-------------------|------------|----------------------|
+| **Separate "Report language" in the PDF builder** (defaults to app language) | Endo patients are often expats or travel for specialists, e.g. an English-speaking user seeing a German gynaecologist. None of Clue, Flo or the DiGA offer this. Strong fit with the doctor-report value. | LOW–MEDIUM (once the renderer takes an explicit locale, which it needs anyway) | A one-row picker in `ReportBuilderScreen`. Also offer clinician-register terms in the report with the lay term in parentheses (e.g. "Dyspareunie (Schmerzen beim Sex)"). Free text stays verbatim with a note "Notes are in the patient's own words". Highest value-to-cost item in the milestone. |
+| **Live switching on Android, no restart** | Flo and Clue need a restart or reinstall, so this one is noticeably smoother | LOW (comes with AppCompat per-app locales) | Needs the state-survival work from Table Stakes. |
+| **Listed in Android 13+ system "App languages"** | Users can change it from where they expect, consistent with iOS | LOW | `locales_config.xml` plus manifest attribute. Must stay in sync with the in-app list. |
+| **Patient-friendly, inclusive terminology per language** (not literal translation) | Most trackers translate clinically or use "women" by default. Endo patients feel seen by lay terms like "Endo-Belly". | MEDIUM (glossary work plus native review) | One shared cross-platform glossary (milestone goal). Neutral, non-gendered phrasing: in DE "Menschen mit Endometriose", not "Patientinnen"/"Frauen", consistent with ONBD-03 and the app-only gendered-token list. |
+| **Honest translation status** ("translations reviewed by a native speaker: yes/pending") | Transparency fits the honesty positioning | LOW | Optional. Only ship a language publicly after its review gate passes. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **Dual independent y-axes** (two scales overlaid in one plot area) | "Just put sleep hours and pain on the same chart" — obvious-seeming ask | Crossover points are arbitrary; independent scales manufacture fake visual relationships; unclear which line owns which axis. Dataviz literature near-unanimously warns against it | Aligned per-scale lanes sharing the x-axis; or an explicitly labeled "shape view" normalization (below) |
-| **Silent normalization to 0–100 "to fit everything on one axis"** | Makes the overlay look clean | Hides real units; a 6→7 severity move and a 5→8h sleep move become visually identical; violates the honest-axis invariant | If offering a normalized mode at all, label it loudly ("shapes, not values"), keep per-series real-unit readout in the scrub tooltip, and keep lanes as the default |
-| **Trend/regression line + correlation coefficient on the scatter** | "The classic correlation look" includes a fitted line; users may ask for it | A fitted line is a visual causal/strength claim; numeric r is exactly the numeric-confidence framing v1.0 forbids; meaningless at sparse n | Raw points only; neutral caption ("each point is one logged day"); the *gated* correlation engine remains the only thing allowed to say "possible association" |
-| **Smoothing / moving averages that bridge gaps** | Self-tracked data is jagged; smoothed lines look nicer | Interpolating across unlogged days fabricates data (absence ≠ 0); a moving average that spans gaps double-fabricates | Keep v1.0 gap breaks. If smoothing is ever added, compute only within contiguous logged runs and label it — defer entirely from v1.1 |
-| **Unlimited series in one overlay** | "Why can I only add N?" | Overplotting spaghetti; tooltip becomes a wall; lane layout degrades; Bearable's own chart gets noisy fast | Cap at 3–4 quantitative series + a couple of event lanes; clear "remove one to add another" affordance |
-| **On-the-fly correlation/insight badges inside Explore** ("these two look related!") | Feels helpful, "smart" | Bypasses every v1.0 honesty gate (sufficiency thresholds, suppression, claims policy); turns a descriptive surface into an ungated claims engine | Explore stays descriptive; the only bridge is the *inbound* link from already-gated correlation cards |
-| **Causal/affirmative copy in new chrome** ("trigger found", "X affects Y") | Marketing-style copy is the category default (Bearable/Guava both use causal verbs) | Violates ClaimsPolicy and the app's positioning; legal/positioning risk for a wellness app | All v1.1 copy through existing ClaimsPolicy scans; descriptive verbs only ("logged together", "on days you logged X…") |
-| **Pinch-zoom / free pan on the time axis** | Power-user expectation from finance apps | High implementation cost; `chartScrollableAxes` + selection gestures interact poorly; range presets already cover the need | Keep segmented range presets (consistent with dashboard); revisit only on user demand |
-| **Binary tags rendered as 0/1 line series** | Simplest implementation of "add food tag to chart" | Implies a continuous scale that doesn't exist; lines between 0s and 1s are pure noise | Event-marker lane (tick strip), per Bearable's day-highlight precedent |
+| **Runtime / machine translation** (on-device MT or a translation API) | "Cover more languages for free" | An API breaks the no-`INTERNET` invariant. MT output bypasses the curated ClaimsPolicy, so a correct English insight can become a causal or diagnostic claim. | Bundled, human-reviewed strings only. Add languages one at a time behind the audit. |
+| **Translating user free text / notes in the PDF** | "My doctor doesn't read English" | Alters the patient's words in a medical context, needs MT, and creates liability for mistranslated symptoms | Report language chooser for app-generated text. Notes stay verbatim and are labelled as such. |
+| **Persisting localized labels** (e.g. storing "Blähbauch" in the DB or export) | Seems simpler to display | Breaks import across languages, breaks insight grouping (the same factor gets two keys), and breaks parity | Persist raw enum keys and localize only at render time |
+| **Per-locale insight logic** (thresholds or week bucketing changing with locale) | Falls out of using `Locale.current` in the engine | The same data gives different correlations and flare output per language, which breaks the parity suite and is dishonest | The engine stays locale-free (ISO weeks or a pinned calendar). Only the presentation layer is localized. |
+| **iOS in-app override via `AppleLanguages` / custom Bundle swizzling** | Matches the Android UX exactly | Unsupported by Apple, leaves the system UI, HealthKit sheet and date formatters inconsistent, and is fragile across iOS releases | An in-app row that deep-links to system per-app language settings |
+| **Forcing a language pick on first launch** | "Make sure users choose" | Adds friction to an already-heavy onboarding with consent. The system language is right for nearly everyone. | System default, with the picker in Settings and optionally a subtle link on the first onboarding screen |
+| **Regional variants in v2.1** (de-CH "ss", es-MX, fr-CA) | Completeness | Multiplies review and audit cost for little gain | Base languages only, using neutral pan-regional wording (e.g. ES avoids Spain-only slang, prefers "regla"/"período" over "periodo" regionalisms). Revisit later. |
+| **Literal translation of the English forbidden-term list** | Quick way to get a per-language audit | It both misses and over-matches. "will" maps to German "wird", which appears in nearly every sentence. French "prévenir" also means "to notify". Spanish "se trata de" means "it's about". | Curated per-language lists with documented collisions (the existing SUBSTRING SHARP EDGE note) |
+
+## Claims boundary by language
+
+The existing English policy forbids causal and medical-purpose verbs and connectives, imperatives, and alarmist terms. Below are draft per-language equivalents for the curated lists. **Confidence: MEDIUM.** A native speaker review is needed, plus ideally a German-market MDR-aware reviewer for DE, since German is the home market of the DiGA comparator and the most scrutinized.
+
+| Concept | DE (avoid) | FR (avoid) | ES (avoid) | Safe framing |
+|---------|-----------|-----------|-----------|--------------|
+| Diagnose / detect | diagnostizieren, Diagnose, feststellen, nachweisen | diagnostiquer, diagnostic, détecter, dépister | diagnosticar, diagnóstico, detectar | DE "fällt auf", "zeigt sich in deinen Einträgen"; FR "on observe", "vos données montrent"; ES "se observa", "tus registros muestran" |
+| Treat / cure / prevent / therapy | behandeln, Behandlung, Therapie, heilen, vorbeugen, verhindern, lindern | traiter, traitement, thérapie, guérir, soulager, prévenir* | tratar*, tratamiento, terapia, curar, prevenir, aliviar | Medication logging is "Medikamente eintragen" / "noter vos médicaments" / "registrar medicamentos", never "Therapie" |
+| Cause / trigger | verursacht, Ursache, auslösen, Auslöser, Trigger (common German loanword), führt zu, wegen, weil, aufgrund, verschlimmert, verbessert | cause, causer, à cause de, déclencheur, déclenche, provoque, entraîne, parce que, en raison de, aggrave, améliore | causa, causar, provoca, desencadena, desencadenante, porque, debido a, empeora, mejora | "tritt häufiger zusammen auf mit" / "apparaît souvent en même temps que" / "suele coincidir con"; "mögliche Zusammenhänge" / "association possible" / "posible asociación" |
+| Prediction certainty (EN "will") | wird … haben/bekommen as a prediction, voraussagen, Prognose | vous allez avoir, prédire, prévision | vas a tener, predecir, pronóstico | "könnte", "möglicherweise" / "pourrait", "possiblement" / "podría", "posiblemente". Use a phrase-level list, not a bare "wird"/"va" substring. |
+| Alarmist | gefährlich, Gefahr, Notfall, dringend, Alarm, Warnung (for the flare card) | danger, dangereux, urgence, urgent, alerte, alarme | peligro, peligroso, urgencia, urgente, alerta, alarma | Flare card: DE "Hinweis auf einen möglichen Schub", FR "signe d'une possible poussée", ES "indicio de un posible brote" |
+| Imperatives (medical) | "nimm", "setze … ab", "du solltest" | "prenez", "arrêtez", "vous devez" | "toma", "deja de", "debes" | "Vielleicht möchtest du das mit deiner Ärztin/deinem Arzt besprechen" / "Vous pourriez en parler à votre médecin" / "Podrías comentarlo con tu médico" |
+
+\* Collisions to document in the per-language SHARP EDGE notes: FR *prévenir* also means "notify" (reminder copy), ES *tratar* sits inside "se trata de", DE *weil*/*wird* are high-frequency. These need word-boundary or phrase matching, or curated copy that avoids them.
+
+**Also cross the line in any language:** a symptom score labelled as a "Befund"/"résultat"/"resultado clínico", a "Risiko" score, "Endometriose-Test", "Schweregrad deiner Endometriose", or stage language ("Stadium", "stade", "estadio"). Wellness wording such as Tagebuch/journal/diario, Muster/tendances/patrones and Zusammenhänge/associations/asociaciones is safe.
+
+## Patient-friendly symptom terminology (draft glossary seed)
+
+| Concept | DE (UI) | FR (UI) | ES (UI) | Clinical term (PDF, in parentheses) |
+|---------|---------|---------|---------|------------------------|
+| Endo belly | Blähbauch (Endo-Belly) | ventre gonflé (endo belly) / ballonnements | hinchazón abdominal (endo belly) | DE Meteorismus; FR/ES distension abdominale/distensión abdominal |
+| Painful sex | Schmerzen beim oder nach dem Sex | douleurs pendant ou après les rapports | dolor durante o después de las relaciones sexuales | Dyspareunie / dyspareunie / dispareunia |
+| Period pain | Regelschmerzen / Periodenschmerzen | règles douloureuses | dolor menstrual | Dysmenorrhoe / dysménorrhée / dismenorrea |
+| Painful bowel movements | Schmerzen beim Stuhlgang | douleurs en allant à la selle | dolor al ir al baño (defecar) | Dyschezie / dyschésie / disquecia |
+| Painful urination | Schmerzen beim Wasserlassen | douleurs en urinant | dolor al orinar | Dysurie / dysurie / disuria |
+| Pelvic / lower-abdominal pain | Unterleibsschmerzen | douleurs pelviennes (bas-ventre) | dolor pélvico (bajo vientre) | n/a |
+| Fatigue | Erschöpfung | fatigue | cansancio / fatiga | Fatigue |
+| Brain fog | Konzentrationsprobleme (Brain Fog) | brouillard mental | niebla mental | n/a |
+| Spotting | Schmierblutung | spotting / petits saignements | manchado | n/a |
+| Flare | Schub | poussée | brote | n/a |
+| Bleeding / period / menstruation (TerminologyPreference) | Blutung / Periode / Menstruation (all feminine) | saignements (m. pl.) / règles (f. pl.) / menstruation (f.) | sangrado (m.) / regla (f.) / menstruación (f.) | n/a |
+
+**Register:** use informal address (DE "du", ES "tú"), matching Clue, Flo and the German Endo-App. FR is less settled. "vous" is the safer health-app default (MEDIUM, so decide in the glossary phase). **TerminologyPreference dependency:** the existing bleeding/period/menstruation choice is currently substituted as a bare noun (`noun = rawValue`). That works in DE (all feminine) but breaks FR/ES articles and agreement ("le/les/la", "el/la", adjectives). Sentences containing the term need **per-term full-sentence variants** (or ICU `select`), not noun interpolation. The pronoun field is free text and stays as entered.
 
 ## Feature Dependencies
 
 ```
-[Scrub/tooltip on dashboard charts]
-    └──requires──> [v1.0 dashboard trend charts (Phase 8)]   ✓ exists
-    └──requires──> [v1.0 gap rendering / absence≠0 model]    ✓ exists (must be honored by selection logic)
+Locale-free insights engine (structured keys + args)
+    └──requires──> refactor of :insights / EndoInsights sentence builders (parity suite must stay green)
+                       └──enables──> localized insight sentences
+                                         └──requires──> per-language ClaimsPolicy / HonestyGate lists
 
-[Explore overlay screen]
-    └──requires──> [Series catalog abstraction]  ← NEW: unified metadata for every loggable metric
-                       └──requires──> [v1.0 logging models + ImportedSample merge]  ✓ exists
-    └──requires──> [Scrub/tooltip mechanics]     (reuse; multi-series tooltip variant)
-    └──requires──> [Event-lane rendering]        ← NEW: binary/ordinal lanes
-    └──requires──> [ClaimsPolicy scan coverage for new copy]  ✓ exists, extend
+String extraction (Android *Copy.kt → resources; iOS → String Catalog)
+    └──requires──> AuditableCopy / CopyAudit able to enumerate every locale
+    └──enables──> all UI / onboarding / privacy / store copy translations
 
-[Scatter view]
-    └──requires──> [Series catalog abstraction]  (same NEW dependency)
-    └──requires──> [Day-pairing logic]           ← NEW: both-logged-day intersection
-    └──enhances──> [v1.0 gated correlation cards]  via prefilled deep-link ("see the days behind this")
+Shared cross-platform glossary ──required by──> every translation task (do it first)
 
-[Tap-point → day log navigation] ──enhances──> [Scatter view]
-[Multi-series tooltip] ──requires──> [single-series tooltip] (build single first)
+Locale-aware formatting helpers (dates, numbers, week start)
+    └──required by──> app UI, charts/Explore, PDF report
 
-[On-the-fly explore insights] ──conflicts──> [v1.0 honesty gate architecture]  (anti-feature)
-[Dual y-axes / silent normalization] ──conflicts──> [honest-axis invariant]    (anti-feature)
+In-app language picker
+    ├──requires (Android)──> AppCompat per-app locales (ComponentActivity → AppCompatActivity) + locales_config
+    ├──requires (iOS)──> UIPrefersShowingLanguageSettings + Settings deep-link + state restoration
+    └──requires──> state survives recreation/relaunch (day editor, body map, check-in draft)
+
+PDF renderer takes explicit locale ──enables──> separate "Report language" (differentiator)
+Reminders ──requires (iOS)──> reschedule pending notifications on language change
+Export/import ──requires──> invariant: no localized strings persisted; cross-locale round-trip test
+TerminologyPreference ──conflicts──> noun interpolation in FR/ES (needs sentence variants)
+Machine translation ──conflicts──> no-INTERNET invariant + ClaimsPolicy
 ```
 
 ### Dependency Notes
 
-- **Series catalog is the keystone:** Both Explore and Scatter need one registry describing each metric's unit, scale (0–10 ordinal, hours continuous, 1–5 ordinal, binary tag, bleeding ordinal), source (manual vs HealthKit-imported), and gap semantics. Build it once, first; both screens consume it.
-- **Scrub before Explore:** The tooltip/selection mechanics built on the existing single-series dashboard charts are reused (and complicated) by the multi-series overlay — sequencing scrub first de-risks Explore.
-- **Scatter is independent of the overlay chart** beyond the shared catalog + day-pairing — it can land in a separate phase/parallel track.
-- **Correlation-card deep-link is post-scatter glue:** trivial once scatter accepts a (factorA, factorB) configuration; schedule it after scatter works.
-- **ClaimsPolicy extension is cross-cutting:** every new copy string (tooltips, empty states, captions, series names in sentences) enters the existing forbidden-phrasing scans; treat as acceptance criteria on every v1.1 phase, not a separate feature.
+- **The glossary comes first:** all string work and both platforms consume it. Doing translations before it exists guarantees Android and iOS diverge.
+- **The engine refactor comes before insight translation:** the engine currently produces English text. Localizing downstream of the engine would mean parsing English sentences.
+- **Per-language claims audit before shipping any language:** the audit plus a completeness check is the release gate, together with the human native review.
+- **Explicit-locale PDF renderer:** required anyway, because rendering is off the UI path. It makes the report-language differentiator nearly free.
 
 ## MVP Definition
 
-### Launch With (v1.1)
+### Launch With (v2.1)
 
-- [ ] Scrub/tap-to-read on all existing dashboard trend charts (rule mark + lollipop, gap-honest "not logged", haptic) — the table-stakes core of the milestone
-- [ ] Series catalog abstraction — prerequisite for everything else
-- [ ] Explore screen: 2–4 quantitative series in aligned per-scale lanes on a shared time axis, toggle-chip picker, shared range presets, multi-series scrub tooltip
-- [ ] Binary food tags (+ bleeding, if treated as events) as event-marker lanes in Explore
-- [ ] Scatter view: factor vs factor, one point per both-logged day, overplotting handled (jitter or count-sized points), descriptive caption, empty-state gating
-- [ ] ClaimsPolicy scan coverage over all new copy — invariant, not optional
+- [ ] Shared glossary (EN/DE/FR/ES) incl. symptom terms, register and flare wording, because every translation depends on it
+- [ ] String extraction on both platforms plus a per-locale CopyAudit with completeness check, because this is the safety gate
+- [ ] Locale-free engine output (keys + args) and localized insight templates, because insights are the core value
+- [ ] Per-language ClaimsPolicy lists (curated, collision-documented), because the regulatory boundary must hold in every language
+- [ ] Language picker: Android in-app via AppCompat, iOS in-app row to system setting; default = system with EN fallback
+- [ ] Locale-aware dates, numbers and week start in the UI, charts and PDF (engine math pinned)
+- [ ] Localized notifications (iOS reschedule on change)
+- [ ] Localized PDF report (explicit locale) with free text verbatim
+- [ ] Localized onboarding, consent, privacy policy and Health rationale strings
+- [ ] Export/import cross-locale round-trip test
+- [ ] Store listing copy ×4 (audited)
 
-### Add After Validation (v1.1.x)
+### Add After Validation (v2.x)
 
-- [ ] Tap-a-scatter-point → that day's log — once scatter ships and navigation hook is confirmed cheap
-- [ ] Correlation card → prefilled scatter deep-link — once both ends exist; high leverage, low cost
-- [ ] Saved/recent Explore configurations — if users demonstrably rebuild the same comparison repeatedly
-- [ ] Landscape-optimized Explore layout — if portrait lanes feel cramped with 3–4 series in real use
+- [ ] Separate PDF "Report language" picker. It is cheap, so pull it into v2.1 if the renderer refactor lands early.
+- [ ] Localized store screenshots (can follow the copy)
+- [ ] Clinician-term parentheses in the PDF
 
-### Future Consideration (v2+)
+### Future Consideration
 
-- [ ] Lag-shifted comparison ("factor day N vs symptom day N+1") — Bearable does timing-aware association internally; exposing a lag control is powerful but a UX + honesty-framing project of its own
-- [ ] Explore chart export into the PDF report — wait until Explore configurations prove valuable
-- [ ] Pinch-zoom/pan time axis — only on demonstrated demand; conflicts with selection gestures
+- [ ] More languages (IT, PT, NL, PL) once the per-language audit pipeline is proven
+- [ ] Regional variants (de-CH, es-419, fr-CA)
+- [ ] RTL languages (AR/HE), which would need a layout and chart mirroring audit
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Scrub/tooltip on existing charts | HIGH | LOW–MED | P1 |
-| Series catalog | (enabler) | MED | P1 |
-| Explore overlay (lanes + chips + tooltip) | HIGH | HIGH | P1 |
-| Event lanes for binary tags | MEDIUM | MED | P1 |
-| Scatter view (raw points, gated empty states) | HIGH | MED | P1 |
-| Multi-series scrub tooltip | MEDIUM | MED | P1 (with Explore) |
-| Accessibility parity on new charts | MEDIUM | MED | P1 (non-negotiable platform bar) |
-| Scatter point → day log | MEDIUM | LOW–MED | P2 |
-| Correlation card → scatter deep-link | MEDIUM | LOW | P2 |
-| Saved Explore configs | LOW–MED | MED | P3 |
-| Lag-shifted comparison | MEDIUM | HIGH | P3 |
-| Pinch-zoom/pan | LOW | HIGH | P3 |
+| Glossary | HIGH (indirect) | LOW | P1 |
+| UI string extraction + translation | HIGH | HIGH | P1 |
+| Localized insight sentences (engine refactor) | HIGH | HIGH | P1 |
+| Per-language ClaimsPolicy + completeness audit | HIGH (safety) | MEDIUM | P1 |
+| Language picker + system default | HIGH | LOW–MEDIUM | P1 |
+| Locale formatting + week start | MEDIUM | MEDIUM | P1 |
+| Localized notifications | MEDIUM | LOW–MEDIUM | P1 |
+| Localized PDF report | HIGH | MEDIUM | P1 |
+| Onboarding/consent/privacy localized | HIGH (legal) | MEDIUM | P1 |
+| Export cross-locale invariant/test | MEDIUM | LOW | P1 |
+| Store listings ×4 | MEDIUM | LOW | P1 |
+| Separate report language | MEDIUM–HIGH | LOW | P2 |
+| Android system "App languages" listing | LOW–MEDIUM | LOW | P2 (comes with the picker) |
+| Localized screenshots | MEDIUM | MEDIUM | P2 |
 
 ## Competitor Feature Analysis
 
-| Feature | Apple Health | Bearable | Guava | Our Approach |
-|---------|--------------|----------|-------|--------------|
-| Scrub/tooltip | Touch-and-hold lollipop, drag scrub, haptic — the reference implementation | Tooltips, less refined | Tap-for-detail | Match Apple Health's gesture vocabulary exactly, plus gap-honest "not logged" readouts they don't need (their data has no absence-≠-0 problem) |
-| Multi-series overlay | Curated Highlights pairs only; no user control | Landscape comparison graph, button toggles, factor day-highlights | Per-symptom "Compare" button | User-driven like Bearable but portrait-first, lanes instead of one shared/normalized plot area, event lanes for binaries |
-| Mixed scales | Avoided (pairs are curated to compatible units) | Single plot; scale handling undocumented/implicit | Undocumented | Explicit per-scale lanes; any normalized mode loudly labeled — the honesty differentiator |
-| Scatter | None | None (shows computed "% effect" instead) | None (correlation cards instead) | Raw day-points scatter, no fit line, no coefficient — show evidence, let gated engine make the (hedged) claims |
-| Causal framing | Neutral | "% effect of factor on mood" — affirmative numeric claims | "find what could be causing flare-ups" — softened causal | Strictly descriptive; ClaimsPolicy-scanned; "possible associations" language only via existing gated engine |
+| Feature | Clue | Flo | Endo-App (DiGA) | Our Approach |
+|---------|------|-----|-----------------|--------------|
+| Language choice | OS-driven (iOS per-app setting) | In-app on iOS (restart), OS on Android | German-first | Android: live in-app. iOS: in-app row to OS setting. |
+| Languages | 27 | Many | DE (+ EN web) | EN/DE/FR/ES, each audited |
+| Report in other language | No | n/a | n/a | Optional separate report language |
+| Medical framing | Wellness | Wellness | Medical device ("Therapie" allowed) | Wellness. Per-language claims audit so translations never borrow DiGA vocabulary. |
+| Endo-specific lay terms | Generic | Generic | "Endo-Belly / Blähbauch" | Shared lay glossary, clinical terms only in the PDF |
 
 ## Sources
 
-- [Bearable — How to find correlations](https://bearable.app/support/howto/how-to-find-correlations/), [Visualising your health data in many forms](https://bearable.app/support/tips/visualise-your-health-data-in-many-forms/) — comparison graph mechanics, factor highlighting, data-sufficiency thresholds (MEDIUM confidence: vendor docs, cross-checked)
-- [Guava — Tracking and Visualizing Symptoms](https://guavahealth.com/article/tracking-and-visualizing-symptoms-in-guava), [Ultimate Guide](https://guavahealth.com/article/guava-ultimate-guide) — Compare button, frequency/severity toggles (MEDIUM)
-- [Apple Support — View your health data](https://support.apple.com/guide/iphone/view-your-health-data-iphe3d379c32/ios) + [Health Hive: Compare Metrics](https://apps.apple.com/us/app/health-hive-compare-metrics/id1613535038) — Health chart interaction model; third-party compare-gap evidence (MEDIUM; gesture specifics partly from platform knowledge, verify on device)
-- Dual-axis critique: [PolicyViz](https://policyviz.com/2022/10/06/avoiding-the-dual-axis-chart/), [Flourish](https://flourish.studio/blog/dual-axis-charts/), [Data Revelations](https://www.datarevelations.com/be-careful-with-dual-axis-charts/), [Why Two Y-Axes (Y2Y)](https://uncharted.software/assets/WhyTwoYAxes_Y2Y.pdf) (MEDIUM, convergent)
-- Causality perception: [Xiong et al., "Illusion of Causality in Visualized Data", IEEE VIS 2019](https://users.eecs.northwestern.edu/~jhullman/VIS_2019_Correlation_Causation_CR.pdf) — scatter plots elicit lowest causality ratings (MEDIUM)
-- Swift Charts interactivity: [WWDC23 — Explore pie charts and interactivity in Swift Charts](https://developer.apple.com/videos/play/wwdc2023/10037/), [Swift with Majid — Mastering charts: Selection](https://swiftwithmajid.com/2023/07/18/mastering-charts-in-swiftui-selection/) (MEDIUM; implementation detail belongs in STACK)
-- Cycle-app baseline: [Clue — Cycle Phase Insights](https://helloclue.com/articles/about-clue/discover-cycle-phase-insights-understand-your-body-feel-empowered), [Flo — Analyzing your cycles and symptoms](https://help.flo.health/hc/en-us/articles/4407228784276-Analyzing-your-cycles-and-symptoms) (MEDIUM)
+- [Android: Per-app language preferences](https://developer.android.com/guide/topics/resources/app-languages) (HIGH)
+- [Zendesk Android SDK app-language notes](https://developer.zendesk.com/documentation/zendesk-web-widget-sdks/sdks/android/app_language/), [DEV: Compose multilingual](https://dev.to/sagar0_0/add-multilingual-support-multiple-languages-to-your-android-app-3ihf), [Kotlin Slack on Compose recreation](https://slack-chats.kotlinlang.org/t/2442867/reading-through-the-per-app-language-https-developer-android) (MEDIUM)
+- [WWDC19 403 Creating Great Localized Experiences](https://developer.apple.com/wwdc19/403), [WWDC notes](https://wwdcnotes.com/notes/wwdc19/403) (HIGH)
+- [Apple Developer Forums 721302: language setting hidden / UIPrefersShowingLanguageSettings](https://developer.apple.com/forums/thread/721302) (MEDIUM)
+- [Clue: How to change the language](https://support.helloclue.com/hc/en-us/articles/4404372946580-How-can-I-change-the-language-in-the-app), [Clue DE article](https://helloclue.com/de/artikel/nutzung-von-clue/wie-man-die-sprache-in-clue-aendert) (MEDIUM)
+- [Flo: How can I change the language](https://help.flo.health/hc/en-us/articles/360015114832-How-can-I-change-the-language-of-Flo) (MEDIUM)
+- [Endo-App: Endo-Belly or Bloated Belly](https://endometriose.app/en/endometriosis-symptom-endobelly-or-bloated-belly/), [Endo-App Gebrauchsanweisung](https://diga.endometriose.app/wp-content/uploads/2024/03/Gebrauchsanweisung_Endo_App.pdf), [Verordnungshilfe](https://endometriose.app/wp-content/uploads/2024/01/Verordnungshilfe.pdf) (MEDIUM)
+- [sante.fr: La dyspareunie](https://www.sante.fr/endometriose/la-dyspareunie-douleurs-lors-des-rapports-sexuels), [sante.fr: symptômes](https://www.sante.fr/node/1263779), [EndoFrance](https://www.endofrance.org/wp-content/uploads/2022/07/Endometriose-et-Vie-Affective-et-Sexuelle.pdf) (MEDIUM)
+- [Endo Belly narrative review (PMC10671958)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10671958/) (HIGH for concept)
+- Codebase inspection: `android/app/src/main/kotlin/com/endoapp/app/content/*Copy.kt`, `report/ReportPdfRenderer.kt` (`Locale.US`), `insights/*Engine.kt` (`Locale.ROOT`, English sentence building), `insights/ForbiddenTerms.kt`, `reminders/ReminderNotifier.kt`, `MainActivity.kt` (`ComponentActivity`, minSdk 26), `Sources/EndoApp/Terminology/TerminologyPreference.swift`
+- ES/DE claims lists and glossary: drafted (LOW–MEDIUM). Native-speaker review is required.
 
 ---
-*Feature research for: Endo-App v1.1 — Interactive Charts & Explore*
-*Researched: 2026-06-10*
+*Feature research for: multilingual (EN/DE/FR/ES) endometriosis tracker, v2.1*
+*Researched: 2026-10-31*

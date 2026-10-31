@@ -23,7 +23,7 @@ struct OnboardingView: View {
                             .font(.system(size: 44))
                             .foregroundStyle(Color.rose)
                             .accessibilityHidden(true)
-                        Text("Welcome to Endo-App")
+                        Text("Welcome to OpenEndo")
                             .bloomTitle()
                             .multilineTextAlignment(.center)
                         // Warm, validating, non-clinical (D-01). Copy routes through Terminology.

@@ -12,3 +12,19 @@ build/
 # Swift Package Manager
 .build/
 .swiftpm/
+
+# Android build outputs / local tooling
+android/**/build/
+android/local.properties
+android/keystore.properties
+android/**/*.jks
+android/**/*.keystore
+
+# Release artifacts — never commit binaries
+*.apk
+*.aab
+*.ipa
+
+# Hermes / agent scratch
+.hermes/
+.claude/worktrees/

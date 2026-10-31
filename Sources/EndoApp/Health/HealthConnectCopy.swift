@@ -23,7 +23,7 @@ enum HealthConnectCopy {
     static let rationaleHeadline = "Connect Apple Health"
 
     /// The read-only line (D-06). "read" is fine; avoids any forbidden verb.
-    static let rationaleReadOnly = "Endo-App only reads from Apple Health. It never changes or adds anything."
+    static let rationaleReadOnly = "OpenEndo only reads from Apple Health. It never changes or adds anything."
 
     /// The private line (D-06). "stays on your device and in your private iCloud" — no gendered token.
     static let rationalePrivate = "Your data stays on your device and in your private iCloud. No one else can see it."
@@ -59,7 +59,7 @@ enum HealthConnectCopy {
     static let sectionTitle = "Apple Health"
 
     /// The Settings section footer: passive, non-nagging, states optional + private (D-07/D-08).
-    static let sectionFooter = "Connecting Apple Health is optional. When you connect, Endo-App only reads your data, and it always stays in your private iCloud."
+    static let sectionFooter = "Connecting Apple Health is optional. When you connect, OpenEndo only reads your data, and it always stays in your private iCloud."
 
     /// The previously-decided footer line guiding the user to the Settings app (D-08). Apple does not let
     /// an app re-request a denied read, so the path is the system Settings — stated plainly, no nag.
@@ -69,7 +69,7 @@ enum HealthConnectCopy {
 
     /// The `NSHealthShareUsageDescription` literal (D-06). Task 1 places the SAME string in Info.plist;
     /// keeping it here lets the audit cover the system-sheet copy. Read-only + private + optional.
-    static let healthShareUsageDescription = "Endo-App can read your cycle, sleep, workout, and meal-day records from Apple Health so you do not have to log them twice. It stays on your device and in your private iCloud, and it is entirely optional."
+    static let healthShareUsageDescription = "OpenEndo can read your cycle, sleep, workout, and meal-day records from Apple Health so you do not have to log them twice. It stays on your device and in your private iCloud, and it is entirely optional."
 
     // MARK: - Audit surface
 

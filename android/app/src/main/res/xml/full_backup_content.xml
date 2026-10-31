@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pre-Android-12 (API 26-30) Auto Backup parity for the same privacy invariant enforced by
+  data_extraction_rules.xml (APER-04, threat T-18-03a). Legacy `fullBackupContent` has no
+  device-transfer concept, so it only excludes the Room health database (+ WAL/SHM sidecars)
+  from cloud Auto Backup. minSdk is 26, so these older devices are in scope.
+
+  The DataStore preferences file is intentionally left backup-eligible (consent flag only,
+  no health rows).
+-->
+<full-backup-content>
+    <exclude domain="database" path="endo.db" />
+    <exclude domain="database" path="endo.db-wal" />
+    <exclude domain="database" path="endo.db-shm" />
+</full-backup-content>

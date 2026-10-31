@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Bloom `canvas` token (#E9E0E6) as an Android color resource — used only as the launch-window
+  background so there is no white flash before Compose paints. The canonical 17-token Bloom palette
+  lives in Compose (BloomColors.kt); this is the single resource the platform launch theme needs.
+-->
+<resources>
+    <color name="canvas">#FFE9E0E6</color>
+</resources>
