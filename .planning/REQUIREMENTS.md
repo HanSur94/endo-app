@@ -18,10 +18,10 @@ Languages: English (source), German, French, Spanish. Platforms: Android (`andro
 
 ### Claims safety & glossary
 
-- [x] **SAFE-01**: Every German, French and Spanish string the app can show is checked against a curated forbidden list for that language (diagnostic, causal, imperative, alarmist, gendered terms), and the build fails on a hit
-- [x] **SAFE-02**: Each language's check has an allow-list for harmless words that contain a forbidden substring (e.g. "Behandlungsteam", "entraînement"), and seeded bad sentences per language must make the check fail (red-capable)
+- [ ] **SAFE-01**: Every German, French and Spanish string the app can show is checked against a curated forbidden list for that language (diagnostic, causal, imperative, alarmist, gendered terms), and the build fails on a hit
+- [ ] **SAFE-02**: Each language's check has an allow-list for harmless words that contain a forbidden substring (e.g. "Behandlungsteam", "entraînement"), and seeded bad sentences per language must make the check fail (red-capable)
 - [ ] **SAFE-03**: One shared glossary defines the approved term per concept in all 4 languages (incl. register: DE "du", FR "vous", ES "tú"), and both platforms' tests fail when a translation uses a banned variant
-- [x] **SAFE-04**: The existing English claims audit, HonestyGate and drift guards keep passing unchanged
+- [ ] **SAFE-04**: The existing English claims audit, HonestyGate and drift guards keep passing unchanged
 
 ### Insight sentences
 
@@ -89,10 +89,10 @@ Languages: English (source), German, French, Spanish. Platforms: Android (`andro
 | LANG-04 | Phase 30 | Pending |
 | LANG-05 | Phase 30 | Pending |
 | LANG-06 | Phase 28 | Pending |
-| SAFE-01 | Phase 26 | Complete |
-| SAFE-02 | Phase 26 | Complete |
+| SAFE-01 | Phase 26 | Android done (26-02), iOS pending (26-04/05) |
+| SAFE-02 | Phase 26 | Android done (26-02), iOS pending (26-04/05) |
 | SAFE-03 | Phase 26 | Pending |
-| SAFE-04 | Phase 26 | Complete |
+| SAFE-04 | Phase 26 | Android done (26-02), iOS pending (26-04/05) |
 | INSL-01 | Phase 32 | Pending |
 | INSL-02 | Phase 27 | Pending |
 | INSL-03 | Phase 27 | Pending |
