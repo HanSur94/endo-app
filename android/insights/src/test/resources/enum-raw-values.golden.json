@@ -1,0 +1,12 @@
+{
+  "_about": "Drift-test B (unconditional): the frozen raw-value contract for the :insights domain enums. Generated ONCE from the Kotlin enums (which mirror the Swift EndoInsights sources verbatim). Lists are in declaration order; EnumRawValueParityTests asserts the live enums equal this file every run. Keys beginning with '_' are notes and are ignored by the assertion.",
+  "_note_FactorKind_phase18": "FactorKind is app-side (Phase 18 persistence discriminator) and is deliberately NOT ported into :insights — the engine uses the Factor sealed interface. Its 7 raw values are recorded here so a future Phase-18 app-side drift test can adopt them: [food, activity, sleep, medication, stress, mood, other].",
+  "SymptomType": ["pelvicPain", "dysmenorrhea", "dyspareunia", "giEndoBelly", "urinary", "fatigue", "brainFog", "lowMood", "headache", "backLegPain", "other"],
+  "BodyRegion": ["lowerAbdomenPelvis", "lowerQuadrantLeft", "lowerQuadrantRight", "lowerBack", "hips", "upperThighs", "rectalBowel", "bladder", "chestDiaphragm", "shoulder"],
+  "FlowIntensity": ["spotting", "light", "medium", "heavy"],
+  "FoodTag": ["dairy", "glutenWheat", "caffeine", "alcohol", "highSugar", "highFODMAP", "redProcessedMeat", "largeMeal", "other"],
+  "ActivityType": ["walking", "cardio", "strength", "yogaStretching", "other"],
+  "ActivityIntensity": ["low", "medium", "high"],
+  "SleepQuality": ["poor", "okay", "good"],
+  "CyclePhase": ["menstrual", "follicular", "ovulatory", "luteal"]
+}

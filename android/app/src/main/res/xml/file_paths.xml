@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider path config (Phase 24-04, AREL-02 / threats T-24-09 / T-24-10).
+
+  Declares the SINGLE path the report FileProvider may vend: the app-private cache subdir
+  `cacheDir/reports/` (where ReportPdfRenderer.render writes `endo-report-<...>.pdf`). Only a
+  <cache-path> is listed — NEVER an <external-path> / <external-cache-path> / <files-path> — so a
+  granted content:// URI can never reach external storage or any other app-private file. The share
+  host deletes the cache PDF(s) after the chooser returns, so nothing lingers here (T-24-10).
+-->
+<paths>
+    <cache-path name="reports" path="reports/" />
+</paths>

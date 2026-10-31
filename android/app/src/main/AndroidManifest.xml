@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  :app manifest. Declares exactly ONE runtime permission: POST_NOTIFICATIONS (Phase 20-05, the daily
+  check-in reminder — the app's ONLY notification surface). Still NO network/INTERNET permission, NO
+  exact-alarm permission (the reminder uses WorkManager INEXACT scheduling only, never
+  SCHEDULE_EXACT_ALARM), and NO health WRITE_* permission (the app never writes health data back and
+  never talks to the network). ManifestPermissionsTest pins the allow-list {POST_NOTIFICATIONS} AND the
+  deny-list (no INTERNET / SCHEDULE_EXACT_ALARM / health WRITE) — comment-safe (DOM-parsed).
+
+  WorkManager (androidx.work) transitively merges WAKE_LOCK / ACCESS_NETWORK_STATE /
+  RECEIVE_BOOT_COMPLETED / FOREGROUND_SERVICE into the MERGED manifest — all benign (RECEIVE_BOOT lets
+  WorkManager reschedule the reminder across reboot itself; ACCESS_NETWORK_STATE is NOT INTERNET, no
+  data path). We declare none of these ourselves. WorkManager's default androidx.startup initializer is
+  DISABLED below so all androidx.work init stays inside com.endoapp.app.reminders (on-demand init) — the
+  no-flare-notification separation invariant keeps every notification/alarm/WorkManager API in one
+  package.
+
+  Backup rules (Plan 06, APER-04): the Room health DB is EXCLUDED from Auto Backup and
+  device transfer via @xml/data_extraction_rules (API 31+) and @xml/full_backup_content
+  (API 26-30); only the DataStore consent/prefs may back up. BackupRulesTest pins the
+  exclusion.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- The ONE non-health runtime permission: the daily check-in reminder's notification (Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Health Connect READ-ONLY permissions (Phase 21, AHC-02/AHC-04). EXACTLY the four health READ
+      permissions (one per mapped record family: menstruation flow+period, sleep, exercise, nutrition)
+      plus READ_HEALTH_DATA_HISTORY for the longitudinal window. ZERO health WRITE_*, NO
+      READ_HEALTH_DATA_IN_BACKGROUND (import is foreground-only), NO INTERNET. ManifestPermissionsTest
+      pins this allow-list (DOM-parsed, comment-safe) and fails on any injected WRITE/background/network.
+    -->
+    <uses-permission android:name="android.permission.health.READ_MENSTRUATION" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_NUTRITION" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/full_backup_content"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Endo-App"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.EndoApp">
+
+        <!--
+          Disable WorkManager's automatic androidx.startup initialization so NO androidx.work
+          initialization code lives outside com.endoapp.app.reminders (the separation invariant).
+          The reminder scheduler initializes WorkManager on demand (ReminderScheduler.resolveWorkManager).
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <!--
+          FileProvider (Phase 24-04, AREL-02 / threats T-24-01 / T-24-09 / T-24-10). Vends the rendered
+          doctor-report PDF from the app-private cache as a scoped, revocable content:// URI so the OS
+          ACTION_SEND chooser can hand it to a USER-chosen target — the ONLY egress. It is NOT exported
+          (exported="false"), grants per-Intent read access (grantUriPermissions="true" + the sender adds
+          FLAG_GRANT_READ_URI_PERMISSION), and — via @xml/file_paths — vends ONLY cacheDir/reports/, never
+          external storage. Adds NO permission: no INTERNET (no network path), no storage (SAF/FileProvider
+          need none). ReportManifestTest pins the provider shape + the still-NO-INTERNET anchor.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EndoApp">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          DUAL permission-rationale declarations (Phase 21, AHC-02 / threat T-21-01b). BOTH surfaces
+          target the SAME rationale screen (.health.ui.PermissionsRationaleActivity, which renders the
+          read-only privacy content a Play reviewer opens). Missing EITHER yields a dead permission
+          flow on that OS generation (empty grant set) or Play rejection. ManifestPermissionsTest
+          asserts both are present (DOM-parsed, comment-safe).
+        -->
+
+        <!-- (a) Android 13 and lower (installable Health Connect app). -->
+        <activity
+            android:name=".health.ui.PermissionsRationaleActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
+        <!-- (b) Android 14+ (platform Health Connect module). -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".health.ui.PermissionsRationaleActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
+    </application>
+
+</manifest>

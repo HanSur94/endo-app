@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon (monochrome) layer: the flower's front petals + core as one tintable shape. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:scaleX="0.10127" android:scaleY="0.10127" android:translateX="2.1519" android:translateY="2.1519">
+        <path android:fillColor="#FF000000" android:pathData="M 512.0 448.0 C 400.0 384.0 390.0 254.0 512.0 180.0 C 634.0 254.0 624.0 384.0 512.0 448.0 Z"/>
+        <path android:fillColor="#FF000000" android:pathData="M 572.9 492.2 C 599.1 365.9 719.7 316.2 827.8 409.4 C 795.1 548.3 668.3 579.0 572.9 492.2 Z"/>
+        <path android:fillColor="#FF000000" android:pathData="M 549.6 563.8 C 677.8 549.7 762.3 649.0 707.1 780.6 C 564.9 792.4 496.6 681.4 549.6 563.8 Z"/>
+        <path android:fillColor="#FF000000" android:pathData="M 474.4 563.8 C 527.4 681.4 459.1 792.4 316.9 780.6 C 261.7 649.0 346.2 549.7 474.4 563.8 Z"/>
+        <path android:fillColor="#FF000000" android:pathData="M 451.1 492.2 C 355.7 579.0 228.9 548.3 196.2 409.4 C 304.3 316.2 424.9 365.9 451.1 492.2 Z"/>
+        <path android:fillColor="#FF000000" android:pathData="M512,432a80,80 0,1 1,0 160a80,80 0,1 1,0 -160z"/>
+    </group>
+</vector>

@@ -1,254 +1,346 @@
 # Pitfalls Research
 
-**Domain:** v1.1 Interactive Charts & Explore — adding scrub/tap selection, multi-series overlay plots, and a factor-vs-factor scatter view to an existing, invariant-locked Swift Charts iOS app (Endo-App v1.0)
-**Researched:** 2026-06-10
-**Confidence:** HIGH for codebase-integration pitfalls (read directly from the v1.0 source: `InsightTrendChart.swift`, `ChartSeriesGrouping.swift`, `InsightsView.swift`, `ClaimsPolicy.swift`, `CopyAuditTests.swift`, `ReportPDFRenderer.swift`, `InsightsDashboardUITests.swift`); MEDIUM for Swift Charts platform behaviors (Apple Developer Forums + community write-ups, cross-checked against API docs); MEDIUM for visualization-honesty pitfalls (established vis literature applied to this app's specific invariants)
+**Domain:** Adding EN/DE/FR/ES localization and an in-app language picker to an existing privacy-first endometriosis tracker (Android Kotlin/Compose + iOS SwiftUI), under a wellness-not-medical-device claims policy
+**Researched:** 2026-10-31
+**Confidence:** HIGH for codebase-specific findings (verified by reading the code); HIGH for Android per-app-language and iOS localization mechanics (stable platform behavior since Android 13 / iOS 13, from training knowledge, not re-verified online this session); MEDIUM for the regulatory notes (MDR intended-purpose logic and German HWG are well established, but have counsel confirm them per store region)
 
-> Reading order for the roadmap author: the three pitfalls flagged **[INVARIANT-BREAKING]** are the ones that can silently violate v1.0's locked honesty invariants (absence ≠ 0, no causal language, no numeric confidence) *through the new chart surfaces* even though all existing tests stay green — because the existing guards don't cover the new code paths until they are explicitly extended. Treat extending the guard surface (ChartSeriesGrouping reuse, ClaimsPolicy registration, selection-to-logged-day mapping) as first-class requirements, not implementation details.
+## Codebase facts that shape every pitfall below
+
+Checked in the `android/` tree on branch `claude/endo-android-version-e608a7`:
+
+- **No Android string resources exist.** `app/src/main/res/values/` holds only `colors.xml` and `themes.xml` (0 `<string>` entries). All copy is hard-coded in Kotlin `*Copy.kt` objects (`ShellCopy`, `DayLogCopy`, `ExportImportCopy`, `StoreListingCopy`, ...) and in the engines. So localizing means extracting every string first, not just translating.
+- **Engines build English sentences by concatenation.** Example: `CorrelationEngine.kt:382`: `"Higher ${targetLabel.lowercase()} severity possibly associated with logging $factorLabel"`. `Factor.displayLabel` returns hard-coded English (`"poor sleep"`, `"high stress"`, `"${phaseLabel(phase)} phase"`). `:insights` is pure JVM and cannot see Android resources. The same pattern exists in the iOS `EndoInsights` SPM package (Foundation-only).
+- **Rendered insight text is persisted.** `EndoRepository.replaceCachedInsights` stores `payload = insightJson.encodeToString(insight)`, which includes the English `headline`/`detail`. `InsightFingerprint.make` is `count|latestDayEpoch|dismissed` and has **no locale component**, so after a language switch the cache stays valid and keeps serving English.
+- **Policy lists are English-only substrings.** `ForbiddenTerms.causal/imperative/alarmist` (in `:insights`, drift-guarded against Swift) plus `ClaimsPolicy.forbiddenGenderedTokens` (`"she"`, `"her"`, ...), `forbiddenPrecisionTokens` (`"%"`, `"p="`, ...) and `allowedFraming` (English phrases). `HonestyGate` scans emitted insight copy at runtime, and `CopyAuditTest` scans the registered `AuditableCopy` catalog.
+- **`MainActivity : ComponentActivity()`, minSdk 26, no AppCompat dependency, no `localeConfig`.** In-app language on API 26–32 needs the AppCompat backport.
+- **Formatting is pinned to US.** `ReportPdfRenderer` uses `DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)` and `String.format(Locale.US, "%.1f h", ...)`. `CorrelationEngine` uses `Locale.ROOT` for `%.1f`.
+- **Reminders** go through `CheckInReminderWorker` (a `CoroutineWorker` using `applicationContext`) and a `NotificationChannel` that `ReminderNotifier` creates once.
+- **Tests:** 296 `onNodeWithTag` and 53 `onNodeWithText`/`onAllNodesWithText` lookups in Android tests. There is also a 157-case Kotlin↔Swift insights parity suite that compares engine output.
+- **Export:** `ExportEnvelope` deliberately leaves category labels out (T-18-13). That was a good decision, and the localization work has to keep it.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Selection tooltip reads a value on an unlogged day (interpolated/phantom value)  **[INVARIANT-BREAKING]**
+### Pitfall 1: The substring claims audit quietly stops protecting translated copy
 
 **What goes wrong:**
-`chartXSelection(value: $selectedDate)` (and any `chartOverlay` + `ChartProxy.value(atX:)` fallback) returns a **continuous Date for any x-position in the plot area** — including positions inside a gap where the user never logged. A naive lollipop implementation looks up "the value at the selected x" by interpolating between neighboring points, or snaps to the nearest point without a tolerance and shows its value under a *different day's* rule mark. Either way the tooltip fabricates data for an unlogged day — the exact "absence ≠ 0" violation v1.0's gap-broken lines were built to prevent, now reintroduced through the interaction layer.
+The English substring lists run against DE/FR/ES text and match almost nothing, so the audit passes while translations carry forbidden meanings. Running the English lists against foreign text also produces false positives that push translators toward worse wording. Examples:
+- **German compounds and inflection:** "verursacht" / "Ursache" / "ursächlich" share no substring with `cause`. The same goes for "Auslöser" (trigger), "Behandlung" / "behandeln" / "behandelt", "Diagnose" / "diagnostiziert", "heilen" / "Heilung", "lindert", "verschlimmert", "verhindert", "führt zu", "aufgrund", "wegen", "weil". Compounds like "Schmerzauslöser" and "Behandlungserfolg" hide the stem in the middle of a word.
+- **French:** "provoque", "entraîne", "à cause de", "parce que", "dû à" / "due à", "en raison de", "guérir" / "guérison", "soigner", "traitement", "diagnostic", "aggrave", "améliore", "prévient".
+- **Spanish:** "causa" / "provoca", "debido a", "porque", "por culpa de", "curar" / "cura", "tratamiento" / "tratar", "diagnóstico", "empeora", "mejora", "previene", "alivia".
+- **Imperatives in other languages:** DE "solltest" / "sollten" / "musst" / "müssen", "vermeide", "nimm", "hör auf", "versuche". FR "vous devez" / "il faut", "évitez", "prenez", "arrêtez", "essayez". ES "debes" / "deberías", "evita", "toma", "deja de", "intenta".
+- **Accent and normalization traps:** "guérir" stored as NFD (e + combining accent) does not match an NFC "guérir" pattern. `lowercase()` without a locale is fine for these four languages, but "ß" vs "SS" and "É" vs "é" folding must be handled on purpose.
+- **False positives from the English lists:** English `use` sits inside German "Pause" (a break). English `her` sits inside "vorher", "daher", "bisher" and "hervor". English `will` is the German "will" ("wants"). English `cure` is the French noun "cure" (a spa or treatment course). English `try` and `cut` hit fragments too. The gendered token `sie` is impossible in German because formal "Sie" means "you". The FR/ES gendered tokens `elle` / `ella` sit inside other words.
+- **Forbidden words in safe phrases:** French "entraînement" (training/workout, used in activity copy) contains "entraîne" (leads to). German "Behandlungsteam" (care team), a natural way to say "your clinician", contains "Behandlung". Spanish "tratar" means both "to treat" and "to try".
 
 **Why it happens:**
-The selection API is position-based, not data-based. Every tutorial implementation (`swiftwithmajid.com` selection pattern, WWDC23 interactivity session) demonstrates "snap to nearest point" with no notion of "this x has no data, show nothing." The chart *looks* honest (line still breaks at gaps) while the tooltip lies.
+The audit was designed for one language. It catches English substrings and relies on curated copy to avoid the innocent host words. Teams localize the strings and forget that the safety net is language-bound. The drift guard (`ClaimsPolicyDriftTests`) then keeps both platforms green on English-only lists.
 
 **How to avoid:**
-- Resolve selection through a **pure, unit-testable mapper** (sibling to `ChartSeriesGrouping`): `selectedDate → exact logged calendar day or nil`. Snap the raw selection Date to `calendar.startOfDay`, then require an **exact logged-day match** (or at most ±0 days). No match → no lollipop, no tooltip, optionally a quiet "no entry on <date>" affordance.
-- For multi-series (Explore): the mapper returns per-series `value?` — a series with no entry that day renders "not logged" (or is omitted from the tooltip), **never 0** and never a nearest-neighbor substitute.
-- Unit-test the mapper with the same gap fixtures `ChartSeriesGroupingTests` uses: selection inside a gap → nil; selection on a logged severity-0 day → 0 (the literal value, distinct from a gap).
+- Make the policy **per-locale data**: `ForbiddenTerms.forLocale(lang)` with causal, imperative, alarmist and gendered lists for each of EN/DE/FR/ES. Keep it in `:insights` as the single Kotlin source and mirror it in Swift. Extend the drift test to compare per language (byte-equal on both platforms).
+- Match on **NFC-normalized, locale-folded text** (`Normalizer.normalize(s, NFC)` then `lowercase(Locale.ROOT)`; also fold "ß"→"ss" for DE). For DE, match **stems inside words** (substring is correct there, since compounds hide stems). For FR/ES, use word-boundary or stem patterns so elision forms like "l'entraîne" are still caught.
+- Give each language an **allow-list of safe host words**: whole tokens exempted after a hit, e.g. FR "entraînement", DE "Pause". Never exempt by weakening the stem.
+- Run **every language's audit against every catalog**, not only English, and register every translated string as `AuditableCopy`.
+- Make `allowedFraming` per-locale. The checks that require disclaimers to contain "not medical advice" need the German equivalent ("keine medizinische Beratung", "kein Medizinprodukt"), which a lawyer or native speaker must approve.
+- Write **mutation tests**: a seeded set of known-bad sentences per language (e.g. DE "Gluten verursacht deine Schmerzen") must fail the gate, and a seeded set of known-good sentences must pass. This shows the per-language lists actually bite.
+- Re-check the gendered rule per language. DE: forbid "Frau" / "Frauen" / "weiblich", allow "Sie". FR/ES: the real risk is **gendered adjective agreement** ("fatiguée", "cansada") that assumes the user is a woman. Prefer constructions that avoid agreement ("Fatigue : niveau ...", "Nivel de cansancio") over inclusive punctuation ("fatigué·e", "cansado/a"), which screen readers handle poorly.
+- Make `forbiddenPrecisionTokens` locale-aware: FR writes "15 %" with a narrow no-break space, and decimals use commas ("r = 0,4").
 
 **Warning signs:**
-- Tooltip code calls `proxy.value(atX:)` and then indexes into the raw points array with `min(by: distance)` and no day-equality check.
-- A demo scrub across a sparse 90-day window shows a continuously moving value with no dead zones.
-- Tooltip shows a value for a date that doesn't appear in the seeded fixture.
+- A DE/FR/ES file passes `CopyAuditTest` on its first run.
+- Zero hits per language, even on the seeded bad sentences.
+- Translators asking "why was 'Pause' rejected?"
+- `allowedFraming` assertions skipped or `@Ignore`d for non-English locales.
 
 **Phase to address:**
-The scrub/tap phase (first interactive phase) — the mapper is the foundation every later surface (Explore overlay, scatter) reuses.
+The **first** phase, a claims-policy-per-locale foundation, before any translated string lands. The audit must exist before translations are added, not after.
 
 ---
 
-### Pitfall 2: Explore overlay reimplements line drawing without `ChartSeriesGrouping` (connects across gaps)  **[INVARIANT-BREAKING]**
+### Pitfall 2: Machine or LLM translation turns hedged descriptive copy into medical, causal or imperative claims
 
 **What goes wrong:**
-The Explore overlay is a *new* chart view plotting multiple heterogeneous series (severity, sleep hours, stress, mood, binary food tags). The natural first implementation is `ForEach(series) { ForEach(points) { LineMark(x:, y:, series: .value("Series", series.name)) } }` — one Swift Charts `series` value **per data series**. That is exactly v1.0's "Pitfall 1": Swift Charts connects every `LineMark` sharing a `series` value regardless of date gaps, so each Explore line interpolates straight through unlogged days. The dashboard chart stays honest; the new screen fabricates data. All existing tests pass, because `ChartSeriesGrouping` is only wired into `InsightTrendChart`.
+English "possibly associated with" becomes DE "hängt mit ... zusammen" or "führt zu", FR "est lié à" / "provoque", ES "está relacionado con" / "causa". The hedge is lost and the sentence becomes a causal claim. Other examples:
+- "Flare early warning" becomes "Krankheitsschub-Warnung" or "alerte de crise", which sounds alarmist or diagnostic.
+- "Worth discussing with your clinician" becomes "Besprich das mit deiner Ärztin" or "Parlez-en à votre médecin". Both are **imperatives**, which breaks the D-04 discussion-prompt rule.
+- "Self-tracking" becomes "Selbstdiagnose".
+- "Pain relief" becomes "Schmerzbehandlung", "traitement de la douleur" or "tratamiento del dolor", all treatment claims.
+- The three confidence words (low/medium/high) become "sicher" / "certain" / "seguro", which claims certainty.
+
+Because the EU MDR judges intended purpose from the claims made, a German string that says the app "erkennt" (detects) flares can count as a medical-device claim in Germany even if the English is clean.
 
 **Why it happens:**
-Multi-series charts need the `series:` dimension for legend/color grouping, and the per-run gap-break trick *also* uses `series:` — the two uses collide. Developers resolve the collision in favor of the legend (one series value per data series) and lose the gap breaks.
+Fluent translation optimizes for natural phrasing, and natural German or French health writing is assertive and imperative. Translators (human or LLM) don't see `ClaimsPolicy`, don't know D-04/D-08/D-11, and translate each string on its own without the full sentence context.
 
 **How to avoid:**
-- Compose the two: `series: .value("Run", "\(seriesID)-\(run.id)")` — distinct per (data-series × contiguous-run), with `.foregroundStyle(by: .value("Series", seriesName))` carrying the legend/color grouping independently of the line-break discriminator.
-- Generalize `ChartSeriesGrouping` (or wrap it) to run **per series** over the heterogeneous Explore data; keep it pure Foundation so the multi-series gap guarantee is provable in unit tests without rendering, exactly like v1.0.
-- Acceptance criterion for the Explore phase: a seeded fixture with a deliberate mid-window gap in each series renders broken lines (assert via the pure grouping output; verify visually via the existing `/tmp/e2e` screenshot checkpoint).
+- Build a **shared cross-platform glossary** (one file, read by both platforms' audits) with three parts: approved renderings for every policy-loaded concept (possible association, flare, confidence low/medium/high, clinician, pain relief, not medical advice, not a medical device, self-tracking, early warning), **forbidden alternatives** for each, and the **register** decision (DE "du" vs "Sie", FR "tu" vs "vous", ES "tú" vs "usted"; pick one and enforce it).
+- Give Claude the glossary, the claims policy and a context note for **every string** (where it appears, the full sentence, its placeholders). Draft-then-audit: no translated string merges until the per-locale audit (Pitfall 1) passes.
+- Rephrase recommendations as non-imperative statements in each language, e.g. DE "Das könnte ein Thema für dein nächstes Arztgespräch sein", FR "Cela pourrait être un sujet à aborder avec votre médecin", ES "Podría ser un tema para comentar con tu profesional de salud".
+- Keep the **native-speaker review as an explicit, human-gated release item**, with a claims checklist the reviewer signs per language. Don't mark it done from Claude's own self-check.
+- Do a **back-translation spot check** (DE→EN by a separate pass) on every insight template and disclaimer. The back-translation must keep "possibly" and "descriptive only".
 
 **Warning signs:**
-- A new chart view in `Features/Explore/` contains `LineMark` but no import/reference of `ChartSeriesGrouping`.
-- `series: .value(...)` keyed only by series name.
-- Screenshot of sparse seeded data shows continuous lines.
+- Translated recommendation strings end in "!" or start with a verb.
+- No glossary entry exists for "possible association".
+- The same English term is rendered two different ways on Android and iOS.
+- The reviewer checklist is checked off with no named reviewer.
 
 **Phase to address:**
-Explore overlay phase — make "per-series gap runs" an explicit plan task, not an assumed carry-over.
+The **glossary and translation phase** (after the policy foundation, before UI extraction is finished). Review sign-off sits in the **release phase**.
 
 ---
 
-### Pitfall 3: New Explore/scatter chrome copy ships outside the ClaimsPolicy audit (silent scan gap + substring landmines)  **[INVARIANT-BREAKING]**
+### Pitfall 3: Engine sentences built by concatenating fragments cannot be translated grammatically
 
 **What goes wrong:**
-Two failure modes, one root cause:
-1. **Scan gap:** v1.0's copy audits work per-surface — each copy enum (`InsightsCopy`, `ReportCopy`, `FlareCopy`, …) exposes `auditableStrings`, and `CopyAuditTests` registers each surface explicitly. A new `ExploreCopy` that nobody registers is **never scanned** — forbidden verbs ("trigger", "causes", "will", "detect", "treat"), gendered tokens, numeric-confidence patterns all sail through. Tests stay green; the invariant is dead on the new screen.
-2. **Substring landmines:** the scans are case-insensitive **substring** scans, and Explore vocabulary is unusually collision-rich against the gendered token `"her"`: **"together"** ("view your series **together**"), **"whether"**, **"other"** (note v1.0 deliberately labels `FactorKind.other` as "Something else"), **"higher"/"highest"** (the documented `"her" ⊂ "higher"` trap — and chart copy *wants* to say "higher"), **"weather"**. Against `forbiddenVerbs`: **"treatment"** ⊃ "treat" (plausible near the Medication series), **"detected"** ⊃ "detect". If the imperative scan is extended to Explore copy: **"because"** ⊃ "use".
+`"Higher ${targetLabel.lowercase()} severity possibly associated with logging $factorLabel"` assumes English word order, English noun case and English capitalization:
+- **German** capitalizes nouns, so `lowercase()` produces "schmerz", which is wrong. German needs the right case after prepositions ("an Tagen mit **schlechtem** Schlaf", dative, which changes the adjective ending) and puts the verb last in subordinate clauses.
+- **French and Spanish** need gender and number agreement between article, adjective and noun ("**la** fatigue", "**le** sommeil", "**un** stress **élevé**", "**el** estrés **alto**") and place adjectives after the noun.
+- `"${phaseLabel(phase)} phase"` becomes "Lutealphase" in German (one compound word), "phase lutéale" in French (reversed order) and "fase lútea" in Spanish.
+- **Plurals:** "across N observed days". French treats 0 and 1 as singular ("0 jour"). German, French and Spanish all need the plural rules from ICU/CLDR, not `if (n == 1)`.
+- `capitalizedLikeSwift()` capitalizes the first letter, which breaks when a sentence starts with a placeholder.
+
+If `:insights` returns finished English strings, the only fix is to translate them later, and that ends with string-matching on English to substitute words.
 
 **Why it happens:**
-The enforcement is opt-in per copy surface, and the collision set is non-obvious — "together" reads completely innocent until the substring scan flags it (or worse, doesn't, because the surface was never registered).
+The engines were made the correctness anchor and kept pure JVM / Foundation-only, so they emit display strings directly. Concatenation feels cheap until a second language arrives.
 
 **How to avoid:**
-- Make "create `ExploreCopy` with `auditableStrings` + register it in `CopyAuditTests` under **all applicable scans** (forbidden verbs, gendered tokens, numeric confidence — and decide explicitly whether imperative/alarmist apply)" a named task in the *first* Explore plan, before any copy is written.
-- Curate Explore vocabulary up front against the known collisions: prefer "in one view"/"combined"/"side by side" over "together"; "if"/"when" over "whether"; "more"/"greater" over "higher"; "another factor" over "other"; never "treatment"/"trigger foods".
-- Scatter-specific copy must stay in `allowedFraming` territory: "possible association", never "relationship between X and Y *shows*…", never correlation coefficients (see Pitfall 5).
+- Change the engine contract so `Insight` carries a **structured message**, not prose: `messageKey` (e.g. `correlation.severity.higher`) plus typed arguments (`target: SymptomType`, `factor: Factor`, `pairedDays: Int`, `liftBucket`, `confidence`). The **app layer renders** it with full-sentence templates per language. Translators then see whole sentences, never fragments.
+- Write **one complete template per (kind × variant)**. Where a factor's grammar changes the sentence, use ICU `select` on a grammatical-gender or case attribute stored with the factor's localized label (`{factor_gender, select, fem {...} masc {...}}`). Alternatively, rephrase so the factor is never inflected (DE "an Tagen mit Eintrag: **Schlechter Schlaf**"). This "label-as-quoted-noun" pattern is the most robust choice for four languages.
+- Use **plural resources** (Android `pluralStringResource` / ICU `MessageFormat`; iOS String Catalog plural variants) for every count.
+- Keep the **parity suite comparing structured output** (key + args), not English text, so Kotlin↔Swift parity survives localization. Add a separate per-locale render test.
+- The HonestyGate claims scan must run on the **rendered** sentence in every locale, not on the key. Render all four languages in tests and audit each.
 
 **Warning signs:**
-- A PR adds user-facing strings in `Features/Explore/` views directly (string literals in view bodies) instead of a copy enum.
-- `CopyAuditTests.swift` has no `allExploreCopy` section.
-- Draft copy contains "together", "whether", "higher", "other", "treatment".
+- `lowercase()`, `capitalize` or string templates with `$label` in `:insights` / `EndoInsights` after the refactor.
+- A translator asks "what comes before this fragment?"
+- The parity suite starts failing as soon as any string changes.
+- German output with lowercase nouns.
 
 **Phase to address:**
-Explore overlay phase, first plan — the copy enum + audit registration is scaffolding, created before features. Same for scatter copy.
+A dedicated **engine message-contract phase** on both platforms. It sits after the policy foundation and before engine translation, and it is the riskiest refactor of the milestone, since it touches the parity anchor.
 
 ---
 
-### Pitfall 4: Mixed-scale overlay normalizes silently (distorted shapes, phantom percentages, fake dual axis)
+### Pitfall 4: Rendered text leaks into persisted data, caches and export files
 
 **What goes wrong:**
-The overlay must combine 0–10 severity, sleep hours (~0–12), and binary tags on one y-axis. Swift Charts has **no secondary y-axis** (confirmed limitation; community workarounds are chart-stacking hacks). The tempting fix is min-max normalization of every series to 0–1 over the visible window. Three distortions follow:
-- **Window-dependent shape:** per-window min-max rescaling means the *same* series visibly changes shape when the user switches 30d → 90d (a flat sleep series stretched to full height looks volatile); amplitude comparisons between series become meaningless but look meaningful.
-- **Phantom percentages:** a normalized axis labeled 0–100% puts **percentages into the UI** — colliding with the locked "no numeric confidence/percentages" posture and inviting users to read "stress is at 80%".
-- **Fake dual axis:** overlaying two `Chart`s with different `chartYScale` domains to simulate dual axes invents a visual correlation that is an artifact of two arbitrary scale choices — a classic dishonest-vis pattern, fatal in an app whose brand is honesty.
+- **Stale-language cache:** `CachedInsight.payload` stores English `headline`/`detail`. Because the fingerprint has no locale, users who switch to German keep seeing English insights (or a mix) until they log new data.
+- **Mixed-language exports:** If any new code writes display labels into Room rows (e.g. a symptom name, a "phase" string, a dismissed-insight label) or into `ExportEnvelope`, an export made in German and imported on an iPhone set to English shows German labels. Worse, the importer may fail to map them back to enums.
+- **Locale-formatted numbers or dates** in JSON or CSV: `String.format("%.1f")` with the default locale writes "2,5" in DE and corrupts parsing.
+- **Translated user content:** Custom food tags and notes typed by the user must never be translated or normalized.
 
 **Why it happens:**
-"One overlay plot" reads as "one shared y-axis," and normalization is the only way to force heterogeneous units onto it. The distortion is invisible to the developer who only tests one window size with dense data.
+Localization changes the meaning of "a string" from a constant to locale-dependent output. Persisted English strings were harmless while English was the only language.
 
 **How to avoid:**
-- Prefer **aligned small multiples**: stacked per-series mini-charts sharing one x-axis (and one shared scrub line), each with a **fixed honest domain per unit type** — severity locked 0…10 (matching `SeverityControl` and the dashboard), sleep locked to a fixed hour domain, binary tags as an occurrence lane (Pitfall 6). This satisfies "combine multiple series in one plot on a shared time axis" without a shared y-scale lie. Swift Charts handles shared-x stacking + one shared selection state well.
-- If a true single-panel overlay is kept as an option, make the transformation **explicit and labeled in-plot** (e.g., per-series axis hidden, "scaled to fit — compare timing, not heights" caption), never show a numeric normalized axis, and never use percentages.
-- Fixed domains per unit type, never per visible window — same rationale as v1.0's fixed 0…10 ("windows are visually comparable").
+- Persist **only stable keys and raw values** (`signalKey`, `kind.raw`, enum raws, numbers, ISO-8601 dates) and render at display time. Change `CachedInsight` to store the structured message from Pitfall 3, or add the **app language tag to the fingerprint** so a switch forces a recompute. Prefer the structured message: it also keeps the PDF consistent.
+- Add a **schema invariant test**: export in DE, import, and compare to an export in EN. They must be byte-identical (except timestamps). Scan the export JSON for any string in the translation catalogs; finding one is a failure.
+- Keep `Locale.ROOT` / ISO formatting for everything serialized. Add a lint or test that bans `String.format` without an explicit `Locale`, and bans `DateTimeFormatter.ofPattern` without one, in `export/`, `data/` and `:insights`.
+- If the Room schema changes, use an explicit migration and a migration test. Never drop the cache table destructively in a way that touches user rows.
 
 **Warning signs:**
-- Any `(value - min) / (max - min)` computed over `points.filter { xDomain.contains($0.date) }`.
-- A y-axis labeled with %, or with no label at all on a multi-unit overlay.
-- Two `Chart` views in a `ZStack`.
+- English insights after switching to German.
+- `payload` JSON containing "possibly associated".
+- An import test only ever run in en-US.
 
 **Phase to address:**
-Explore overlay phase — the small-multiples vs. single-panel decision is the phase's central design decision; research/decide it before building.
+The **engine message-contract phase**, for the cache and payload shape. The **export/import invariant** belongs in the Android localization-infrastructure phase, and the same test is needed on iOS.
 
 ---
 
-### Pitfall 5: Scatter view drifts into statistical claims (trend line, r-values) and overplots discrete 0–10 data
+### Pitfall 5: Android per-app language with `ComponentActivity` on minSdk 26
 
 **What goes wrong:**
-Two distinct failures on the scatter screen:
-- **Statistical-claim drift:** the "classic correlation look" begs for a fitted trend line, and a trend line begs for "r = 0.62" — which violates *two* locked invariants at once (no numeric confidence/percentages/p-values; descriptive-not-causal framing). Even the axis arrangement carries an implicit claim: X = "factor", Y = "symptom" reads as cause → effect.
-- **Overplotting:** both axes are frequently discrete 0–10 integers → only 121 possible positions. With 90 logged days, identical day-pairs stack **exactly** on the same pixel; a default `PointMark` scatter shows maybe 25 visible dots for 90 days, and the visual density is a lie (the strongest pattern — many days at (7,2) — is invisible). The standard fix, random jitter, is *itself* an honesty problem here: it fabricates non-integer values the user never logged.
+- `LocaleManager` (the platform per-app language API) only exists on **API 33+**. On API 26–32, `AppCompatDelegate.setApplicationLocales()` only works when the host is an **`AppCompatActivity`**. That requires the `appcompat` dependency **and** a `Theme.AppCompat` (or MaterialComponents/Material3 bridge) descendant theme. A plain Compose theme crashes with "You need to use a Theme.AppCompat theme".
+- Without `<service android:name="androidx.appcompat.app.AppLocalesMetadataHolderService" ... autoStoreLocales=true>` (or your own persistence), the choice is **forgotten on restart** on API < 33.
+- Without `android:localeConfig` (generated by `androidResources { generateLocaleConfig = true }` plus `resources.properties` `unqualifiedResLocale=en-US`), the app doesn't appear in **Android 13+ system per-app language settings**, and the in-app picker and system setting can disagree.
+- Calling `setApplicationLocales` **recreates the activity**. Compose state in plain `remember` is lost, such as a half-filled check-in (the persistence bug fixed in the 2026-10-31 emulator pass is exactly this kind of state). Dialogs and bottom sheets close, and scroll position resets. Declaring `configChanges="locale|layoutDirection"` to avoid recreation means Compose won't re-read resources by itself.
+- `Locale.getDefault()` and `applicationContext.resources` **do not reliably follow the app locale on API < 33**, so code that formats via `Locale.getDefault()` or the app context shows the system language.
 
 **Why it happens:**
-Every scatter tutorial adds a regression line; discreteness of severity data is unusual (most scatter examples use continuous data) so overplotting surprises late, with real dense data.
+The v2.0 port chose `ComponentActivity` (correct for pure Compose), and the localization docs assume AppCompat. Emulator testing usually happens on API 34+, where `LocaleManager` hides all of this.
 
 **How to avoid:**
-- **No fitted line, no correlation coefficient, no shaded confidence band — by acceptance criterion.** The scatter stays descriptive: dots + the existing qualitative correlation language ("possible association", reuse the gated correlation engine's qualitative tiers if any annotation is wanted).
-- Aggregate identical pairs honestly instead of jittering: one mark per occupied (x, y) cell with **size and/or opacity encoding the day count** (`symbolSize(by: .value("Days", count))`), and the tap/selection tooltip reading "4 days: severity 7, stress 2 of 10" — count is a factual tally, not a statistic, so it's invariant-safe. (Verify the exact tooltip phrasing against ClaimsPolicy like all chrome copy.)
-- Pre-aggregate in a **pure helper** (day-pairs → cells with counts), unit-tested: only days where *both* factors were logged become points (a day with one factor missing is absent, never plotted at 0 — Pitfall 1's invariant again, on the pairing logic).
-- Neutral axis framing: user picks both axes freely; copy never says X "affects" Y.
+- Decide early: **switch `MainActivity` (and the other `<activity>` entries in the manifest) to `AppCompatActivity`** with a minimal `Theme.AppCompat.DayNight.NoActionBar` parent theme, enable `autoStoreLocales`, and add `generateLocaleConfig`. Use **`AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))`** everywhere, which delegates to `LocaleManager` on 33+. An empty list means "follow system" (the required default).
+- Read the effective locale from **`LocalConfiguration.current.locales[0]`** in Compose and `context.resources.configuration.locales[0]` elsewhere, never `Locale.getDefault()`.
+- Audit every screen for state that must survive recreation: `rememberSaveable` / ViewModel `SavedStateHandle` for draft check-ins and form inputs. Deliberately do **not** save the export passphrase (security). Instead, document that a language switch clears it.
+- Put the picker where recreation is harmless (Settings), apply on confirm, and show the new language at once.
+- Test on an **API 26–32 emulator** as well as 34+.
 
 **Warning signs:**
-- Any linear-regression math in the scatter view model; any string containing "r =", "%", "p ".
-- Scatter of a 90-day dense fixture shows < ~40 % as many dots as days, with no size/opacity variation.
-- Jitter/random offset code anywhere near the scatter.
-- Pairing code that substitutes 0 (or last-known value) when one factor is missing on a day.
+- The language reverts after a cold start on API 30.
+- The app is missing from system "App languages" on Android 14.
+- A crash on launch after adding appcompat.
+- A user loses a draft entry when switching language.
 
 **Phase to address:**
-Scatter phase — aggregation helper + no-stats acceptance criteria defined in the plan; ClaimsPolicy registration per Pitfall 3.
+The **Android localization infrastructure phase** (resource extraction plus picker plumbing), before mass translation.
 
 ---
 
-### Pitfall 6: Binary tags (food tags, bleeding) drawn as continuous 0/1 lines
+### Pitfall 6: Background work, notifications and system-owned UI show the wrong language
 
 **What goes wrong:**
-Food tags and similar presence/absence data, fed through the same LineMark pipeline as severity, render as a line bouncing between 0 and 1 — implying a continuous quantity that "drops to zero" on non-tag days. Worse, on unlogged days the absence-vs-false distinction collapses: "didn't log food" and "logged food, no dairy tag" both read as 0. That's a double honesty violation: fake continuity *and* absence-as-zero.
+- `CheckInReminderWorker` runs with `applicationContext`. On API < 33 under AppCompat, that context keeps the **system** locale, so the reminder title and body arrive in English while the app is German. The same happens if the text was resolved when the reminder was **scheduled** and stored in `inputData`.
+- The `NotificationChannel` name and description are set once at creation and shown in system settings. They stay in the old language unless the channel is re-created (calling `createNotificationChannel` with the same ID updates name and description) after a language change.
+- Reminder times: a hard-coded "h:mm a" shows 12h in Germany, or 24h for US users. You need `DateFormat.is24HourFormat(context)` on Android and `.formatted(date: .omitted, time: .shortened)` on iOS.
+- Some UI belongs to the system and follows the **system** language no matter what the app picks: the Health Connect permission UI, HealthKit's authorization sheet, the share sheet, document pickers, date and time pickers on some versions, and iOS `NSHealthShareUsageDescription`, which comes from `InfoPlist.strings` / an Info.plist String Catalog in the **device** language.
 
 **Why it happens:**
-A generic `SeriesData { date, value: Double }` model is the easy unification for the Explore picker; binary data gets coerced to 0/1 Doubles and inherits the line renderer.
+Workers and notifications live outside the activity's configuration. Developers test with "switch language → look at the screen", never "switch language → wait for tomorrow's reminder".
 
 **How to avoid:**
-- Model series **kind** in the Explore data layer (quantitative 0–10 / quantitative hours / binary-occurrence), and give binary series a dedicated renderer: an occurrence lane of `PointMark`/`RectangleMark` ticks on days where the tag was *present*, no mark otherwise — with the text summary distinguishing "no entry" days from "logged, tag absent" days where the data supports it.
-- The series picker groups by kind so users understand what each lane is.
-- Selection tooltip for a binary series says "dairy: tagged" / "dairy: not tagged" / "not logged" — three states, never 1/0.
+- In the worker, resolve strings from a context that follows the app locale. On API < 33, build it with `createConfigurationContext(config.setLocales(AppCompatDelegate.getApplicationLocales()))`. Resolve at **fire time**, never at schedule time, and store only keys or IDs in `inputData`.
+- On every language change (and on app start), re-create the channel with the localized name and description.
+- Localize `NSHealthShareUsageDescription` and other Info.plist strings and the Health Connect rationale screen in all four languages. **Document** that system-owned sheets follow the device language, and phrase the app's own rationale so a mismatch is not confusing.
+- Robolectric test: set the app locale to DE, run the worker with `TestListenableWorkerBuilder`, and assert the posted notification's German title via `ShadowNotificationManager`.
 
 **Warning signs:**
-- `Double(tagPresent ? 1 : 0)` anywhere in Explore data mapping.
-- A y-axis showing 0…1 for a tag series.
-- Tooltip showing "dairy: 0".
+- English notification text in a German build.
+- System notification settings listing an English channel name.
+- Locale code in the worker that uses `Locale.getDefault()`.
 
 **Phase to address:**
-Explore overlay phase — the series-kind model is part of the Explore data layer design, decided with Pitfall 4's layout decision.
+The **Android infrastructure phase** (worker and channel) and the **iOS infrastructure phase** (Info.plist strings). The reminder time format is part of the **locale formatting phase**.
 
 ---
 
-### Pitfall 7: Scrub gesture fights the dashboard `List` scroll (and iOS 18+ regressions make it worse)
+### Pitfall 7: iOS has no supported in-app language override, and the obvious hacks break
 
 **What goes wrong:**
-The v1.0 dashboard renders trend charts inside a grouped `List` (`InsightsView.swift:47`). A horizontal scrub drag and the List's vertical scroll compete: depending on OS version, either the scrub never receives the drag (List wins), or the chart's gesture blocks vertical scrolling when the user touches a chart first ("my dashboard won't scroll past the charts"). This is a moving target: developer-forum threads document iOS 18 breaking tap+scroll coexistence that worked on iOS 17, and iOS 26 betas breaking vertical scroll initiated on gesture-bearing charts. Anything tuned on one OS version can regress on the next.
+- Apple's supported path is **per-app language in Settings**. It only appears when the app bundle declares more than one localization (`knownRegions` / `CFBundleLocalizations`, with `developmentRegion: en` set in XcodeGen's `project.yml`). In-app overrides use one of these hacks, each with a cost:
+  - (a) Writing `AppleLanguages` to `UserDefaults` only takes effect after **relaunch**, and confuses users.
+  - (b) Swizzling `Bundle.main` to an `.lproj` is fragile, isn't applied to `Bundle.module` (SPM), and is unsupported.
+  - (c) `.environment(\.locale, ...)` in SwiftUI **changes formatting only**. `Text("key")` / `String(localized:)` still look up strings from the process's preferred language, so you get German dates inside English sentences.
+- **SPM resources:** `EndoInsights` is a Foundation-only package. If it ships localized templates, `Package.swift` needs `defaultLocalization: "en"` and `resources: [.process(...)]`, and lookups must use `bundle: .module`. Otherwise strings silently fall back to the key or to English. A process-wide override never reaches `Bundle.module`.
+- **String Catalogs and XcodeGen:** `.xcstrings` must be in the target's resources, and stale or missing states only show inside Xcode. A CLI build with missing translations still succeeds and falls back to English.
+- **XCUITests** that look up `app.staticTexts["Log today"]` break as soon as the test device is non-English, and pass misleadingly when the device stays English.
 
 **Why it happens:**
-`chartXSelection` installs its own gesture; SwiftUI gesture arbitration between a chart's drag and an enclosing scroll container is undocumented and has changed across iOS 17 → 18 → 26 betas. Devs test on one simulator version and ship.
+The milestone asks for an "in-app picker" on both platforms. On Android that is a first-class API. On iOS it isn't, and the gap is easy to fill with a hack.
 
 **How to avoid:**
-- **Dashboard (in-List) charts: tap/touch-and-hold to select, not free drag-scrub.** `chartXSelection`'s built-in behavior (tap sets selection; vertical movement cedes to scroll) is the safest in a List; avoid adding custom `DragGesture`/`simultaneousGesture` overlays there entirely.
-- **Explore screen: lay out so the chart isn't inside a scrolling container** (fixed chart region; pickers/legend scroll separately, or chart pinned above a scrolling config area). Free scrubbing is reserved for this screen.
-- Manually verify scroll-vs-scrub on every OS version in the support matrix (and at each new SDK), as an explicit human-verify checkpoint like v1.0's chart-quality checkpoint.
-- Don't fight arbitration with `highPriorityGesture` on the dashboard — it "fixes" scrub by breaking scrolling, the worse trade.
+- Decide in the iOS infrastructure phase. **Recommended:** the iOS in-app "Language" row shows the current language and opens `UIApplication.openSettingsURLString` (Apple's per-app language page). This is the platform-correct way to meet "chosen inside the app" and avoids every hack.
+- If a true in-app switch is required, implement **one** explicit `LocalizationProvider` (chosen language → `Bundle(path: lproj)` for both `.main` and `.module`, plus a `Locale` for formatters) and route *every* lookup through it. Inject the same locale through `.environment(\.locale)` so formatting matches. Re-render the root view on change. Document this as a deliberate deviation.
+- **Better still:** don't localize inside `EndoInsights` at all. Have it emit structured messages (Pitfall 3) and localize in the app target, so the package stays Foundation-only with zero resources.
+- Drive UI tests with `-AppleLanguages (de) -AppleLocale de_DE` launch arguments, and find elements by `accessibilityIdentifier`, not by label.
 
 **Warning signs:**
-- A `DragGesture` or `simultaneousGesture` modifier on the in-List dashboard chart.
-- QA note "Insights screen sticks when I swipe up over a chart".
-- Scrub works in the isolated preview but not in the running app (List swallowing the drag).
+- German dates next to English words.
+- The app missing from iOS Settings' language list.
+- Any `Bundle` swizzle or `object_setClass` in the codebase.
+- XCUITests passing only on English simulators.
 
 **Phase to address:**
-Scrub/tap phase (dashboard interaction model) + Explore phase (screen layout). Flag for **re-verification at every OS update** in release checklists.
+The **iOS infrastructure phase** (it starts from `main`, so decide this before extracting strings).
 
 ---
 
-### Pitfall 8: Adding selection to `InsightTrendChart` breaks its other consumer — the PDF report
+### Pitfall 8: Text expansion breaks chips, cards, tab bars and the PDF
 
 **What goes wrong:**
-`InsightTrendChart` has **two consumers**: the live dashboard and `ReportPDFRenderer`, which constructs a *fresh* instance (`inkColor: .black`) and renders it to vector via `@MainActor ImageRenderer` for the doctor PDF. Bolting selection state, lollipop overlays, `chartXSelection`, or gesture modifiers directly onto `InsightTrendChart` means the PDF path silently inherits them: best case dead weight, worst case a stray selection rule mark / overlay chrome baked into the exported PDF, or `ImageRenderer` output changes that invalidate the verified single-ink print rendering. The PDF was human-verified in v1.0; nothing automatically re-checks it.
+German runs about 30% longer, French and Spanish about 15–25% longer, and individual words can be much longer than their English counterparts ("Schmerzintensität", "Verdauungsbeschwerden", "Zyklusphase", "Datenschutzerklärung"). Fixed-width chips, segmented controls, the bottom navigation bar, and body-map labels clip or wrap badly. Chart axis labels collide.
+
+The **vector PDF** is the worst case. `ReportPdfRenderer` lays out text at fixed coordinates, so longer strings overflow columns, overlap the "self-tracked, not diagnostic" banner, or push content off the page. Clipping that banner is a compliance issue, not just cosmetic. With large accessibility font sizes, the expansion compounds.
 
 **Why it happens:**
-The obvious place to add interactivity is the existing chart view; the PDF consumer is three files away and only fails visibly when someone exports a report.
+Layouts were tuned against English. Compose `Text` truncates silently with `maxLines = 1` / `Ellipsis`. PDF code doesn't paginate on measured height.
 
 **How to avoid:**
-- Keep `InsightTrendChart` the pure, render-only chart. Add interactivity **additively** via a wrapper (`InteractiveTrendChart` composing the base chart + selection overlay) or a default-off flag — mirroring exactly how `inkColor` was added in Phase 10 ("byte-identical on screen, NOTHING else about the chart changes").
-- Also check the animation seam: selection-state changes must not retrigger `.animation(..., value: points)` chart-wide animation on every scrub frame; keep selection state out of the inputs that drive that animation.
-- Add "export a report PDF and eyeball the chart page" to the phase's verification, since the renderer shares the component.
+- Enable **pseudo-localization** early: Android `pseudoLocalesEnabled = true` (en-XA expands about 30% and adds accents; ar-XB checks RTL hygiene, even though RTL isn't in scope). On iOS, use the scheme option "Double-Length Pseudolanguage". Screenshot every screen at the largest font scale in DE.
+- Chips should use `FlowRow` and wrap, never truncate safety-relevant text. Bottom navigation labels need short glossary-approved terms per language.
+- PDF: measure with `StaticLayout` / `CTFramesetter` and **paginate on measured height**. Give the disclaimer its own reserved, height-measured block. Add a test that renders the PDF in all four languages with a worst-case fixture (longest labels, max entries) and asserts no text box exceeds its frame, the disclaimer is present on every page, and the extracted text contains the per-locale disclaimer.
+- Add a **translation length budget**: flag any translation more than 1.6× the English length for UI-constrained keys (chip, tab, button).
 
 **Warning signs:**
-- `@State`/`@Binding` selection properties appearing inside `InsightTrendChart.swift`.
-- `ReportPDFRenderer` needing *any* change in the scrub phase diff.
-- Lollipop visible in a generated PDF.
+- "…" in German screenshots.
+- The PDF test only rendering en-US.
+- Testers on a tablet see clipped bottom-nav labels.
 
 **Phase to address:**
-Scrub/tap phase — make "PDF renderer untouched + report re-verified" an explicit acceptance criterion.
+The **UI translation/layout phase** (pseudo-locale on from the infrastructure phase), and the **PDF localization phase**.
 
 ---
 
-### Pitfall 9: Gesture-driven XCUITests for scrub are nondeterministic — and there's no seam yet
+### Pitfall 9: Locale formatting fixed to US, or a language choice that wrongly changes the region
 
 **What goes wrong:**
-XCUITest scrub simulation (`press(forDuration:thenDragTo:)`, coordinate drags) is notoriously flaky: coordinate math depends on device size, plot-area insets, and animation timing; off-by-a-few-points drags select a neighboring day; CI simulators drop drag frames. Tests written this way pass locally and flake forever in CI — undermining the v1.0 test culture (deterministic a11y-ids only, seeded fixtures, `waitForExistence`). Worse, the *honesty-critical* assertions (gap selection shows nothing; tooltip never shows phantom values) end up living only in flaky gesture tests, so they get skipped or deleted.
+- `DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US)` and `String.format(Locale.US, "%.1f h")` keep German users on "Oct 31, 2026" and "2.5 h". A doctor in Germany expects "31.10.2026" and "2,5 Std.". French uses "2,5 h", and Spanish "2,5 h" with "31/10/2026".
+- **Opposite mistake:** applying the bare language tag "en" when a German resident picks English switches them to MDY dates, a Sunday week start and 12h time. In that case only the language should change, not the region conventions.
+- Explicit `ofPattern` strings bake in field order. Calendar and cycle grids with Sunday hard-coded ignore `WeekFields.of(locale).firstDayOfWeek` (Monday in DE/FR/ES).
+- Unit labels ("h", "min", "kcal") and decimal separators in chart axes, scrub tooltips and accessibility descriptions (`ChartSemanticsOverlay`, `AXChartDescriptor`) stay English.
 
 **Why it happens:**
-The interaction is inherently positional, and the team's existing E2E vocabulary (ids + taps) doesn't cover continuous gestures, so devs reach for raw coordinates.
+US-pinned formatting was a deliberate choice for determinism in tests and the PDF, and it isn't revisited when languages are added.
 
 **How to avoid:**
-- **Put the honesty logic in pure units, not E2E:** the selection-to-logged-day mapper (Pitfall 1), per-series tooltip resolution, and scatter aggregation are all pure helpers — unit-test the invariants there exhaustively.
-- **Add a selection seam for E2E**, following the established `-uitest-*` pattern: e.g., a DEBUG-gated `-uitest-select-day <ISO date>` launch argument (or a hidden test-only control) that sets the selection state programmatically; the E2E then asserts the *rendered result* via stable a11y ids (`explore.tooltip`, `insights.chart.selection`) and `accessibilityValue` — "selection on 2026-06-01 shows severity 6 of 10", "selection on a gap day shows no tooltip" — with zero gestures.
-- Keep at most **one** smoke-level real-gesture test (single tap at plot center on a dense fixture), and even that asserts via a11y id, never pixel position.
-- Keep injecting `asOf` (the chart already takes it) so window domains are deterministic under seeds.
+- Split **serialization locale** (`Locale.ROOT`, ISO-8601, kept) from **display locale** (the effective app locale). Ban `Locale.US` in display code with a source-scan test.
+- Use `DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(displayLocale)` and `NumberFormat.getInstance(displayLocale)` on Android, and `Date.FormatStyle` / `.formatted(.number.locale(...))` on iOS.
+- Build the display locale as **chosen language + system region** (e.g. `en-DE` via `Locale.Builder().setLanguage(chosen).setRegion(systemRegion)`, or BCP-47 `en-DE` in `setApplicationLocales`), so date/week/hour conventions follow where the user lives. Respect the system 24h setting separately.
+- Golden tests per locale for the PDF date line, a trend tooltip, a reminder time and a week grid.
 
 **Warning signs:**
-- `XCUICoordinate`, `withVelocity`, or `normalizedOffset` math in new UI tests.
-- A retry loop or `sleep` around a drag in a test.
-- Honesty assertions (gap → no tooltip) existing *only* in UI tests.
+- A grep showing `Locale.US` outside `export/` and tests.
+- A German PDF with "Oct".
+- A week grid starting on Sunday for a DE user.
 
 **Phase to address:**
-Scrub/tap phase establishes the seam + a11y-id contract; Explore and scatter phases reuse it. Seam must be DEBUG/`-uitest`-gated like the existing reset/seed args.
+The **locale formatting phase**, covering app and PDF on both platforms.
 
 ---
 
-### Pitfall 10: Explore overlay becomes unreadable / inaccessible at full power (too many series, color-only, no VoiceOver path)
+### Pitfall 10: Tests that find UI by English text, and a Robolectric default locale that hides bugs
 
 **What goes wrong:**
-"Pick multiple logged series" with no cap yields 6+ overlaid lines: indistinguishable hues (especially for the ~5% of users with color-vision deficiency), an unscannable legend of lay-hostile labels, and — because v1.0's per-mark accessibility model (`accessibilityLabel`/`accessibilityValue` per point) multiplies across series — a VoiceOver swipe-order soup of hundreds of elements. The scrub interaction itself has no VoiceOver equivalent: a VoiceOver user can't drag-scrub, so "read the exact day + value" silently becomes sighted-only, violating the locked "charts never the sole carrier of meaning" invariant.
+53 `onNodeWithText` lookups (and the iOS XCUITest label lookups) go one of two ways. Either they break as strings move to resources, or, worse, they keep passing because the tests never run in another locale. Robolectric defaults to `en-US`, so a German string with a mismatched format argument (`%1$s` vs `%1$d`, a missing placeholder) or a missing plural form only crashes in production on German devices.
+
+Copy tests like `DisclaimerTest`, `PrivacyPolicyTest` and `StoreListingCopyTest` assert English phrases and would need four copies.
 
 **Why it happens:**
-The feature spec says "any logged series"; nobody writes the cap. Accessibility of *interactions* (vs. static charts, which v1.0 solved) is a separate problem that the existing per-mark labels don't cover.
+Text-based lookups are convenient. Locale coverage in tests is opt-in.
 
 **How to avoid:**
-- **Cap concurrent series (3–4)** in the picker, with copy explaining why ("up to 4 at once so the chart stays readable" — ClaimsPolicy-audited).
-- Differentiate series by **color + symbol shape + direct/legend label** (`.symbol(by:)` alongside `foregroundStyleScale`) — color never the sole signal, per the locked invariant; verify in a grayscale screenshot.
-- VoiceOver path: keep the per-screen **text summary** pattern (extend `InsightsCopy.chartSummary`-style summaries to Explore), rely on Swift Charts' Audio Graph for series reading, and expose the selected day's values as an accessible element (`accessibilityValue` on the tooltip view) plus an accessible alternative to scrubbing (e.g., adjustable element / day stepper) so the "exact day + value" capability isn't gesture-only.
-- Reduce Motion: selection rule-mark/tooltip transitions follow the existing `reduceMotion` pattern.
+- Move behavioral UI tests to **`testTag`** / `accessibilityIdentifier` (most already use tags). Keep text assertions only where the text itself is under test, and resolve the expected value from resources (`composeRule.activity.getString(R.string.x)`), not from a literal.
+- Add a **parameterized locale sweep**: Robolectric `@Config(qualifiers = "de")` (and fr, es, en-rXA) runs the screen smoke tests and an "every string resolves and formats with sample args" test. On iOS, use a test plan with one configuration per language.
+- Turn on Android lint `MissingTranslation`, `StringFormatMatches`, `StringFormatInvalid`, `PluralsCandidate` and `ExtraTranslation` as **errors**. On iOS, add a CI check that fails on String Catalog entries in `new`, `needs_review` or `stale` state for shipping languages.
+- Copy tests become parameterized over locales and assert the **per-locale** disclaimer and framing from the glossary.
 
 **Warning signs:**
-- Series picker UI with no selection limit.
-- Legend distinguishable only by hue (check a grayscale screenshot).
-- No way to reach the tooltip's content via VoiceOver in an accessibility audit pass.
+- The test count stays the same after adding three languages.
+- A crash report from a de-DE device on `IllegalFormatConversionException`.
+- `onNodeWithText("...")` with English literals in new tests.
 
 **Phase to address:**
-Explore overlay phase (cap + shape encoding from the first plan); accessibility-of-selection belongs to the scrub/tap phase and carries forward.
+The **Android/iOS infrastructure phases** (lint, locale sweep scaffold), extended in every later phase.
+
+---
+
+### Pitfall 11: Consent, privacy policy and store-listing claims are inaccurate in some languages
+
+**What goes wrong:**
+- **Consent:** GDPR Art. 9(2)(a) explicit consent must be *informed*, and Art. 12 requires clear and plain language the data subject understands. A consent screen machine-translated into DE/FR/ES that differs in substance from the English one (data categories, export, withdrawal) makes the consent arguably invalid in that language. `ConsentStore` records only a flag and a timestamp, not which **text version and language** were shown.
+- **Privacy policy:** In-app privacy copy and the hosted policy (still a release-checklist item) must exist in each shipped language **with identical substance**. A translated policy that over-promises (e.g. "verschlüsselt" when the in-app store is not encrypted, only the export is) is a misrepresentation.
+- **Store listings:** EU MDR intended purpose is judged from **all** claims, including store text in every language. A German Play or App Store description saying "erkennt Schübe frühzeitig" (detects flares early) or "hilft bei der Behandlung" makes it look like a medical device in Germany. German **Heilmittelwerbegesetz (HWG)** and **UWG** also restrict health advertising claims. `StoreListingCopyTest` audits only English. Apple's and Google's health-app review also checks the listing text in each locale. Keyword fields (App Store "Keywords", per locale) are often forgotten and can contain "Diagnose" / "Therapie".
+
+**Why it happens:**
+Legal and store copy is treated as marketing, translated last and outside the audited catalog.
+
+**How to avoid:**
+- Register consent text, privacy copy, the Health Connect/HealthKit rationale and **all store-listing fields** (title, subtitle, short and full description, keywords, promotional text, release notes) per locale in the `AuditableCopy` catalog, so the per-locale ClaimsPolicy scan runs on them.
+- Add a `consentTextVersion` (+ language) to the consent record. If the substance of the consent text changes, re-prompt. A pure translation of the same version doesn't require re-consent if the content is verifiably equivalent.
+- Get a **native-speaker, legally literate review** of consent, the privacy policy and DE store copy (the home market, with HWG exposure) as a release-blocking human gate. Record the reviewer and date in the release checklist.
+- Don't ship a language in the store until its in-app consent and privacy texts are reviewed. Partial localization is worse than none for these screens.
+
+**Warning signs:**
+- The store-listing fastlane/metadata folder has DE files that never went through `StoreListingCopyTest`.
+- The consent record has no version.
+- The DE privacy policy was "translated by Claude, reviewed: TBD" at submission.
+
+**Phase to address:**
+The **legal/store copy phase**, then the **release phase** (human review gate). The consent-version field belongs in the Android infrastructure phase, plus a mirror on iOS.
 
 ---
 
@@ -256,113 +348,108 @@ Explore overlay phase (cap + shape encoding from the first plan); accessibility-
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Add selection state directly inside `InsightTrendChart` | One file, fast | PDF renderer inherits interaction chrome; verified report rendering invalidated (Pitfall 8) | Never — wrap instead |
-| Generic `{date, Double}` series model for all Explore data | One model, simple picker | Binary tags become fake continuous lines; absence/false collapse (Pitfall 6) | Never for binary kinds |
-| Min-max normalize per visible window to share one y-axis | Single-panel overlay "works" | Shapes mutate across windows; phantom % axis; dishonest amplitude comparison (Pitfall 4) | Never silently; only with explicit in-plot labeling and no numeric normalized axis |
-| Nearest-point snapping without day-equality check | Tooltip always shows something | Phantom values on gap days — invariant violation (Pitfall 1) | Never |
-| Gesture-coordinate XCUITests for scrub | Tests the "real thing" | Permanent CI flake; honesty assertions rot (Pitfall 9) | One smoke test max; all invariants in units + seam-driven E2E |
-| Skip `xcodegen generate` docs/check for the new `Features/Explore/` files | — | New files not in the project; builds break confusingly for the next session | Never — every plan adding files ends with `xcodegen generate` |
-| Reuse dashboard's `InsightsCopy` for Explore strings | No new enum | Explore copy entangled with dashboard scans; per-surface invariant assertions (e.g., "possible association" presence) muddied | Never — per-surface enums are the established pattern |
+| Keep `*Copy.kt` objects and add `when (lang)` branches instead of `strings.xml` | No resource extraction | No lint `MissingTranslation`, no plurals, no system locale resolution, no pseudo-locale; drift between languages invisible | Never for UI; acceptable only for audit test fixtures |
+| Translate the engine's finished English sentence with a lookup map | Engines untouched, parity suite stays green | Breaks as soon as any label or number changes; grammar wrong; impossible in FR/ES | Never |
+| Run the English ForbiddenTerms on all languages | Zero work | False sense of safety (Pitfall 1); the main claims risk of this milestone | Never |
+| Bare language tags (`de`) instead of language + system region | Simple | Wrong week start, date order and hour cycle for expats | Only if region conventions are explicitly accepted to follow language (document it) |
+| `configChanges="locale"` to dodge activity recreation | No lost state | Compose won't refresh resources; half-switched UI | Never; fix state saving instead |
+| iOS `AppleLanguages` + "please restart" | Feels like an in-app picker | Confusing, unsupported, doesn't reach widgets/extensions | Only as a stopgap; prefer the Settings deep-link |
+| Ship DE/FR/ES store listings before the native review | Earlier global reach | MDR intended-purpose / HWG exposure in Germany | Never for DE; never for any language with unreviewed consent text |
 
 ## Integration Gotchas
 
-Connections to the existing v1.0 system (the "external services" of this milestone).
-
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| `InsightTrendChart` (shared with PDF) | Modify in place for selection | Additive wrapper/flag, PDF path untouched, report re-verified (Pitfall 8) |
-| `ChartSeriesGrouping` | Not reused in Explore; or reused with `series:` keyed only by series name | Per-(series × run) `series:` values + `.foregroundStyle(by:)` for legend (Pitfall 2) |
-| `ClaimsPolicy` / `CopyAuditTests` | New copy never registered; collision words ("together", "whether", "higher", "other", "treatment") | `ExploreCopy.auditableStrings` + explicit registration under each applicable scan, copy curated against the collision list (Pitfall 3) |
-| `-uitest-*` launch-arg harness | Raw gesture E2E; or selection seam compiled into release | DEBUG-gated `-uitest-select-day` style seam + a11y-id assertions, mirroring `-uitest-seed-insights` (Pitfall 9) |
-| XcodeGen (`project.yml`) | New Explore feature folder/files added without regenerating | `xcodegen generate` after any file add; keep it in plan checklists |
-| Swift 6 strict concurrency | Selection state / chart proxies passed across actor boundaries; new helpers made `@MainActor` unnecessarily | Keep new mappers/aggregators pure + `Sendable` value types (the `ChartSeriesGrouping` pattern); UI state stays `@State` in the view |
-| Correlation engine / honesty gate | Scatter screen computes its own stats or bypasses the gate's qualitative framing | Scatter is descriptive-only; any association annotation reuses the gated engine's qualitative output, never new numbers (Pitfall 5) |
-| Existing dashboard a11y contract (`insights.card.*` ids) | Selection overlay restructures the accessibility tree, breaking `InsightsDashboardUITests` lookups | Add new ids additively (`insights.chart.selection`, `explore.*`); run the existing dashboard E2E suite as a regression gate in the scrub phase |
+| `:insights` ↔ `:app` (and `EndoInsights` ↔ app) | Engine emits prose; app displays it | Engine emits key + typed args; app renders per locale; HonestyGate scans the rendered result in every locale |
+| Kotlin↔Swift parity suite (157 cases) | Compares English sentences, so it breaks on localization or forces English-only engines | Compare structured messages; add per-locale render goldens separately |
+| Room `CachedInsight` cache | Locale-free fingerprint serves stale-language text | Store the structured message, or include the language tag in the fingerprint |
+| Export/import (shared Android/iOS format) | Labels or locale-formatted numbers sneak in | Keys/raws/ISO only; cross-locale round-trip test; scan the export for catalog strings |
+| WorkManager reminders | `applicationContext` uses system locale on API < 33; text resolved at schedule time | Locale-configured context at fire time; re-create the channel on language change |
+| Health Connect / HealthKit permission UI | Expect it in the app language | It follows the device language; localize your own rationale and Info.plist strings |
+| `ReportPdfRenderer` (vector PDF) | Fixed coordinates, `Locale.US` | Measured layout + pagination, display-locale formatting, per-locale disclaimer test |
+| Play Console / App Store Connect metadata | Translated outside the audit | Store fields registered as per-locale `AuditableCopy`; keyword fields included |
+| AppCompat on a pure-Compose app | Non-AppCompat theme crashes; no `autoStoreLocales` | `AppCompatActivity` + `Theme.AppCompat.*` parent + `AppLocalesMetadataHolderService` + `generateLocaleConfig` |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Selection state invalidates the whole `List`/screen on every scrub frame | Scrub feels sticky; Instruments shows full dashboard re-render per pixel of drag | Keep selection `@State` local to the chart wrapper; derive tooltip content cheaply; never store selection in a shared `Observable` the List observes | Immediately noticeable with 2–3 cards on screen |
-| Recomputing `ChartSeriesGrouping.runs` / Explore aggregation in `body` per frame | CPU spike while scrubbing; battery drain | Compute runs/aggregates once per data change (cached property / `onChange`), not in `body`; they're pure, so memoize trivially | ~4 series × 90 days with selection active |
-| Per-point `ForEach` + per-mark modifiers at Explore scale | Chart build time grows; selection lag (community-reported `chartXSelection` slowness scales with mark count) | Keep marks lean on Explore (per-mark a11y labels are fine at ≤ 4 × 120 points; avoid additional per-point overlays); consider `LinePlot`/`PointPlot` (iOS 18+) only if measured | Hundreds-to-thousands of marks; 4 series × all-time windows |
-| Animating the chart on selection change | Lollipop "swims"; dropped frames | Scope `.animation(..., value: points)` to data changes only; selection rule mark moves without implicit animation (and respects Reduce Motion) | Any scrub on iOS hardware older than ~2 generations |
-| All-time window with dense data + selection | Long-time users (1–2 yrs ≈ 400–700 points/series) see chart setup + scrub lag | Day-level data is bounded (365 pts/yr/series) — fine for v1.1; if all-time × 4 series lags, decimate *visually only* (never the tooltip's data lookup) | ≥ ~2k total marks on screen |
+| Full insights recompute on every recomposition after making the fingerprint locale-aware | Jank on the Insights tab | Recompute only on language-change events; keep rendering (cheap) separate from computing (expensive) | Users with 1–2 years of daily logs |
+| Creating `DateTimeFormatter` / `NumberFormat` / `NumberFormatter` per cell or per chart point | Scroll jank in charts and PDF build slowness | Cache formatters per locale (remembered in Compose; static per locale on iOS) | Charts with 365+ points; long PDF ranges |
+| Activity recreation reloading Room data and re-running engines | Multi-second blank screen after a switch | ViewModel survives configuration change; the cache is keyed correctly | Every switch |
 
 ## Security Mistakes
 
-Domain-specific (health-data + compliance posture) rather than classic appsec.
-
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| `-uitest-select-day` / new seed seams compiled into Release | Hidden state-manipulation surface in a shipping health app | Gate all new seams exactly like existing `-uitest-reset` (DEBUG-only), and extend any existing source-guard tests to the new args |
-| Scatter/Explore surfaces leak numeric statistics (r, %, p) into UI or report | Crosses the wellness-vs-medical-device positioning line the whole app is built on | No-stats acceptance criteria (Pitfall 5) + numeric-confidence scan registered on `ExploreCopy` |
-| New screens' screenshots in `/tmp/e2e` from real-device runs containing personal data | Health data at rest outside the app sandbox | Keep the screenshot helper simulator/seed-fixture-only (current pattern); never run it against personal installs |
-| Explore tooltips rendered into any share/export path without the report's framing | Health data shared without "self-tracked, not diagnostic" labeling | v1.1 adds no new export; if screenshots-to-share ever lands, route through the report framing rules |
+| Adding a translation SDK, ML Kit translate or a "download languages" feature | Breaks the no-`INTERNET` invariant and sends health copy off-device | All translations bundled; the existing no-INTERNET manifest test stays; dependency allow-list review |
+| Persisting the export passphrase in `rememberSaveable` to survive a language switch | Passphrase in the saved-state bundle (can end up on disk) | Never save it; clear it and tell the user |
+| Putting the chosen language or locale in a crash or diagnostics payload alongside health context | Behavioral signal about a stigmatized condition | The zero-analytics catalog stays; the language preference is local only |
+| Translating "encrypted" or "anonymous" loosely in privacy copy | Misrepresentation under GDPR Art. 12/13 | Glossary entries for privacy terms; legal review |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Unlimited series in the overlay | Spaghetti chart; user concludes "insights are noise" | Cap at 3–4 with friendly copy (Pitfall 10) |
-| Color-only series identity | CVD users can't tell sleep from stress | Color + symbol shape + labeled legend; grayscale screenshot check |
-| Tooltip shows values during gaps | User believes they logged data they didn't; trust in "honest gaps" erodes | Exact logged-day mapping; explicit "no entry" state (Pitfall 1) |
-| Scatter axes labeled so X reads as cause | Lay users read "stress causes pain" off the plot | Neutral picker ("compare two factors"), association-only copy, no trend line (Pitfall 5) |
-| Lay users can't decode a normalized shared axis | "Why is sleep at 7?" confusion; misread magnitudes | Small multiples with native units per lane (Pitfall 4) |
-| Scrub-only value reading | VoiceOver / motor-impaired users locked out of the headline v1.1 feature | Adjustable-element or stepper alternative + audio graph + text summary (Pitfall 10) |
-| Dashboard scroll trapped by chart gestures | "The app is broken" — worst possible perception for a polish milestone | Tap-to-select on dashboard; free scrub only on the dedicated Explore layout (Pitfall 7) |
-| Empty/sparse Explore selections (e.g., two factors never logged on the same day → empty scatter) | Blank screen reads as a bug | Honest empty states reusing the v1.0 "not enough data" pattern, with the day-pair requirement explained |
+| Picker only lists languages by their English names ("German") | Users who don't read English can't find their language | List each language by its own name ("Deutsch", "Français", "Español", "English"), plus "System default" first |
+| Inconsistent register (du/Sie, tu/vous) across screens or platforms | Feels machine-translated and untrustworthy for a sensitive health topic | Register fixed in the glossary and checked in review |
+| Gendered address in FR/ES ("Êtes-vous fatiguée ?") | Excludes non-female users (D-06/08) | Agreement-free constructions |
+| Mixed-language screens after a switch (cached insights, notifications, channel names) | Looks broken, erodes trust | Pitfalls 4 and 6 fixes, plus a "switch language and walk every tab" manual check |
+| PDF only in the UI language | A German user seeing a doctor abroad, or the reverse, can't share a readable report | Optional "report language" selector in the report builder (default: app language) |
+| Clinical terms that are too technical or too casual ("Dysmenorrhoe" vs "Regelschmerzen") | Patients don't recognize their symptoms | Glossary uses patient-language terms, checked against German/French/Spanish endometriosis patient-organization wording |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Scrub tooltip:** works on dense data — verify it shows *nothing* (or "no entry") when selecting inside a gap, and shows `0` (not nothing) on a logged severity-0 day.
-- [ ] **Explore overlay:** lines look right on the dense demo seed — verify gap breaks **per series** with a sparse fixture, and that a binary tag series renders as occurrence marks, not a 0/1 line.
-- [ ] **ExploreCopy:** strings read fine — verify the enum is registered in `CopyAuditTests` (the scan that doesn't run is the one that fails you) and grep drafts for "together/whether/higher/other/treatment".
-- [ ] **Scatter:** dots render — verify stacked identical day-pairs are count-encoded (seed 10 days at the same (x, y) and confirm one sized mark, tooltip says "10 days"), and that days missing one factor are absent.
-- [ ] **Dashboard regression:** scrub added — verify the existing `InsightsDashboardUITests` suite still passes unchanged, the List still scrolls when the swipe starts on a chart, and a freshly exported PDF report chart is pixel-equivalent to v1.0.
-- [ ] **Accessibility:** per-mark labels exist — verify a VoiceOver user can actually obtain "exact day + value" without the drag gesture, and series remain distinguishable in grayscale.
-- [ ] **Project file:** builds locally — verify `xcodegen generate` was run after adding `Features/Explore/` files and the generated project is committed per repo convention.
-- [ ] **Determinism:** new E2Es pass once — verify they use seeds + `asOf` injection + a11y ids only (no coordinates, no sleeps) and pass 10× consecutively.
+- [ ] **Per-locale ClaimsPolicy:** seeded bad DE/FR/ES sentences **fail** the gate, and seeded host words ("Pause", "entraînement") pass. Check the mutation test output, not just a green suite.
+- [ ] **Engine sentences:** German output has capitalized nouns and correct case after "mit". French and Spanish agree in gender. Plurals are right for 0, 1 and 2 days.
+- [ ] **Language switch:** Insights, the PDF, the next reminder notification and the notification-channel name all change language without new data being logged.
+- [ ] **Persistence:** the cross-locale export round-trip is byte-identical, and there are no catalog strings in the export JSON or `CachedInsight.payload`.
+- [ ] **Android API 26–32:** the choice survives a cold start, and the app appears in system App languages on 13+.
+- [ ] **iOS:** the app appears in Settings' per-app language list, `Bundle.module` strings (if any) localize, and XCUITests pass with `-AppleLanguages (de)`.
+- [ ] **Formatting:** a German user who picks English still gets DD.MM dates, Monday week start and 24h time.
+- [ ] **PDF:** the disclaimer appears on every page in all four languages with the worst-case fixture, and no text overflows.
+- [ ] **Lint/CI:** `MissingTranslation` / `StringFormatMatches` are errors, and the String Catalog has no stale or new entries for shipping languages.
+- [ ] **Store and legal:** every store field per locale went through the audit, `consentTextVersion` is recorded, and the native-speaker and legal review is signed with a name and date.
+- [ ] **Invariants:** the no-INTERNET manifest test and zero-analytics catalog are unchanged, with no new network-capable dependency.
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Phantom tooltip values shipped (P1) | MEDIUM | Insert the pure day-mapper behind the existing tooltip; add gap unit tests; no data migration needed |
-| Explore lines connect across gaps (P2) | LOW–MEDIUM | Re-key `series:` to (series × run) using `ChartSeriesGrouping`; visual-only fix, no model change |
-| Unregistered copy surface discovered (P3) | LOW (if caught pre-release) | Register `auditableStrings`, fix flagged strings; HIGH if violating copy already shipped (reputational, App Store update) |
-| Normalized-overlay confusion shipped (P4) | HIGH | Layout redesign to small multiples — a UI rework, which is why the decision belongs in phase research, not recovery |
-| Scatter with trend line / stats shipped (P5) | MEDIUM | Remove stats, add count-encoding; messaging cost: users may ask where "the line" went |
-| Dashboard scroll broken by gestures (P7) | LOW–MEDIUM | Revert to tap-only on dashboard; ship hotfix; add the OS-matrix manual check |
-| PDF report chart corrupted (P8) | LOW (if caught by re-verify) / MEDIUM (if shipped) | Split interactive wrapper from base chart; regenerate + re-verify report |
-| Flaky scrub E2Es in CI (P9) | LOW | Replace with seam-driven tests; keep one smoke gesture test or none |
+| Translated claim slipped into a released build or listing | MEDIUM | Hotfix the string plus an audit-list entry and a regression sentence; update the store listing at once (no binary needed for listings); log it in the release checklist |
+| Stale-language cached insights in the field | LOW | Bump the fingerprint scheme (include locale) so the next launch invalidates the cache; no user data touched |
+| Labels leaked into export files | HIGH | The importer must accept both key and legacy-label forms (a reverse map per locale) and the export version must be bumped; this is why it must be prevented up front |
+| Concatenated engine strings shipped in DE | HIGH | The engine contract refactor after the fact, plus parity-suite rework; do it first instead |
+| Language lost on restart (API < 33) | LOW | Add `AppLocalesMetadataHolderService` with `autoStoreLocales`, or persist in DataStore and re-apply in `Application.onCreate` |
+| Consent text changed in substance in one language | MEDIUM | Bump `consentTextVersion`; re-prompt affected users at next launch |
 
 ## Pitfall-to-Phase Mapping
 
-Suggested phase shapes for the roadmapper: **A = scrub/tap on existing trend charts**, **B = Explore overlay screen**, **C = scatter view**. A before B/C (the selection mapper, a11y-of-selection pattern, and E2E seam built in A are reused by both).
+Phase names are suggestions for the roadmapper. Ordering matters: policy → contract → infrastructure → translation → formatting/PDF → legal/store → release.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| P1 phantom selection values | A (mapper is foundational) | Unit tests: gap → nil, severity-0 day → 0; seam-driven E2E: gap day shows no tooltip |
-| P2 Explore gap-connecting | B | Unit tests on per-series runs; sparse-seed screenshot shows broken lines per series |
-| P3 copy scan gap + collisions | B (and C for scatter copy) | `CopyAuditTests` registers `ExploreCopy` (+ scatter copy) and passes; grep for collision words in review |
-| P4 silent normalization / fake dual axis | B (design decision up front — flag for phase research) | Design decision recorded; no `%` axis; window-switch screenshot shows stable series shapes |
-| P5 scatter stats drift + overplotting | C | No regression/“r =”/% in code or copy; stacked-pair fixture renders count-encoded mark with honest tooltip |
-| P6 binary tags as lines | B | Series-kind model unit tests; tag series renders occurrence lane in screenshot |
-| P7 scroll/scrub conflict | A (dashboard model), B (Explore layout) | Manual OS-matrix check: List scrolls from chart touch; scrub works on Explore; existing dashboard E2E green |
-| P8 PDF/report breakage | A | `ReportPDFRenderer` untouched in diff; exported PDF visually re-verified |
-| P9 flaky gesture E2E | A (seam + id contract) | New E2Es contain no coordinate gestures; 10× consecutive green runs |
-| P10 unreadable/inaccessible overlay | A (selection a11y), B (cap + shapes) | Series cap enforced in picker; grayscale screenshot check; VoiceOver walkthrough reaches day + value without drag |
+| 1. Substring audit fails in DE/FR/ES | Phase A: Per-locale ClaimsPolicy + shared glossary (first) | Mutation tests per language; drift test compares per-locale lists Kotlin↔Swift |
+| 2. Translation introduces medical/causal/imperative claims | Phase A (glossary) + Phase D (translation) + Release (human review) | Per-locale audit green on every catalog; back-translation spot checks; signed reviewer checklist |
+| 3. Concatenated engine sentences | Phase B: Engine structured-message contract (Android + iOS) | No string templates or `lowercase()` in engines; parity on structured output; per-locale render goldens |
+| 4. Rendered text in cache/export | Phase B (cache shape) + Phase C (export invariant) | Cross-locale export round-trip test; switch-language cache test |
+| 5. Android per-app-language plumbing | Phase C: Android l10n infrastructure (resources, AppCompat, localeConfig, picker) | API 30 + API 34 emulator checks; Robolectric state-survival test |
+| 6. Workers, notifications, system UI | Phase C (Android) + Phase C' (iOS Info.plist) | Robolectric worker notification test in DE; channel name updated |
+| 7. iOS in-app override and SPM bundles | Phase C': iOS l10n infrastructure | Settings per-app language visible; XCUITest plan per language |
+| 8. Text expansion (UI + PDF) | Phase D: UI translation + layout; Phase E: PDF | Pseudo-locale screenshot pass; PDF overflow test in 4 languages |
+| 9. Date/number/week/hour formatting | Phase E: Locale formatting (app + PDF, both platforms) | `Locale.US` source-scan test; golden formats per locale; language+region case |
+| 10. Text-based tests, en-US-only test runs | Phase C/C' (scaffold), every later phase | Locale-sweep suites; lint errors enabled; String Catalog CI check |
+| 11. Consent, privacy and store-claim accuracy | Phase F: Legal/store copy; Release gate | Store fields in `AuditableCopy` per locale; `consentTextVersion` stored; named legal review |
 
 ## Sources
 
-- Codebase (HIGH confidence, read 2026-06-10): `/Users/hannessuhr/Projects/endo-app/Sources/EndoApp/Features/Insights/InsightTrendChart.swift` (gap-break + per-mark a11y + `inkColor` PDF seam + animation pattern), `ChartSeriesGrouping.swift` (pure run-grouping invariant), `InsightsView.swift` (charts inside a grouped `List`), `Content/ClaimsPolicy.swift` (substring-scan semantics, documented `"her" ⊂ "higher"` / `"use" ⊂ "because"` traps), `Tests/EndoAppTests/CopyAuditTests.swift` (per-surface `auditableStrings` registration model), `Features/Report/ReportPDFRenderer.swift` (fresh-chart `ImageRenderer` reuse), `Tests/EndoAppUITests/InsightsDashboardUITests.swift` (`-uitest-reset`/`-uitest-seed-insights` seams, a11y-id-only assertion contract), `Domain/FactorKind.swift` (series kinds, "Something else" labeling).
-- Swift Charts selection performance with large mark counts (MEDIUM): [Apple Developer Forums — Swift Charts performance with many data points](https://developer.apple.com/forums/thread/740314), [poor performance thread](https://developer.apple.com/forums/thread/735687), [slow navigation thread](https://developer.apple.com/forums/thread/710597), [community report on 2000+ point scrubbing workarounds](https://www.threads.com/@mykola.harmash/post/DHv9vOVypqg/video-swift-charts-are-great-but-performance-is-definitely-an-issue-took-some-hoop-jum).
-- Chart gesture vs. scroll-container conflicts and OS-version regressions (MEDIUM): [Apple Developer Forums — iOS 26 beta scroll/gesture regression on charts](https://developer.apple.com/forums/thread/794212), [Daniel Saidi — complex gestures in a SwiftUI ScrollView](https://danielsaidi.com/blog/2022/11/16/using-complex-gestures-in-a-scroll-view), [WWDC23 — Explore pie charts and interactivity in Swift Charts](https://developer.apple.com/videos/play/wwdc2023/10037/).
-- Selection / ChartProxy coordinate-space patterns (MEDIUM): [Swift with Majid — Mastering charts: Selection](https://swiftwithmajid.com/2023/07/18/mastering-charts-in-swiftui-selection/), [Mastering charts: Interactions](https://swiftwithmajid.com/2023/02/06/mastering-charts-in-swiftui-interactions/), [Apple docs — ChartProxy](https://developer.apple.com/documentation/charts/chartproxy), [plotFrame](https://developer.apple.com/documentation/charts/chartproxy/plotframe).
-- No native secondary y-axis in Swift Charts; workaround landscape (MEDIUM): [Apple Developer Forums — secondary Y axis](https://developer.apple.com/forums/thread/742659), [Paul Peelen — multi data-type chart](https://paulpeelen.com/MultiTypeChart), [Apple docs — Customizing axes](https://developer.apple.com/documentation/charts/customizing-axes-in-swift-charts), [Hacking with Swift forum — Y axis scale](https://www.hackingwithswift.com/forums/swiftui/swiftui-charts-y-axis-scale/26935).
-- Visualization-honesty pitfalls (overplotting of discrete data, jitter fabrication, dual-axis distortion, normalization artifacts): established visualization practice applied to this app's locked invariants (MEDIUM — cross-checked reasoning, no single citable source).
+- Codebase inspection (this worktree): `android/insights/.../ForbiddenTerms.kt`, `android/app/.../content/ClaimsPolicy.kt`, `CorrelationEngine.kt` (lines 375–428), `Factor.kt`, `EndoRepository.replaceCachedInsights`, `InsightFingerprint.kt`, `ReportPdfRenderer.kt` (lines 77–79, 427–436), `MainActivity.kt`, `CheckInReminderWorker.kt`, `ReminderNotifier.kt`, `ExportEnvelope.kt`, `app/build.gradle.kts` (minSdk 26), `res/values/`, `project.yml`, and a test lookup count
+- Android Developers: per-app language preferences (`AppCompatDelegate.setApplicationLocales`, `LocaleManager` API 33+, `AppLocalesMetadataHolderService` / `autoStoreLocales`, `generateLocaleConfig`), pseudo-locales, lint localization checks, `pluralStringResource`. Training knowledge, HIGH confidence, not re-fetched this session
+- Apple Developer: String Catalogs, per-app language in Settings (iOS 13+), SwiftPM `defaultLocalization` / `Bundle.module`, Xcode pseudolanguages, `-AppleLanguages` launch arguments. Training knowledge, HIGH confidence
+- Unicode CLDR plural rules (French 0/1 singular); ICU MessageFormat `select` / `plural`
+- EU MDR 2017/745 Art. 2(12) (intended purpose from labelling, instructions and promotional material); German Heilmittelwerbegesetz / UWG on health advertising; GDPR Art. 9(2)(a), 12 and 13. MEDIUM confidence, so confirm with counsel per market
+- Project context: `.planning/PROJECT.md` (v2.1 goals, no-INTERNET invariant, Claude drafts + human native review)
 
 ---
-*Pitfalls research for: Endo-App v1.1 Interactive Charts & Explore*
-*Researched: 2026-06-10*
+*Pitfalls research for: multilingual (EN/DE/FR/ES) + in-app language selection in a privacy-first, claims-audited health tracker*
+*Researched: 2026-10-31*
