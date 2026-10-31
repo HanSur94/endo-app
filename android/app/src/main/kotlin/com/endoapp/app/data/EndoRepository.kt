@@ -1,5 +1,6 @@
 package com.endoapp.app.data
 
+import androidx.room.withTransaction
 import com.endoapp.app.data.daos.DayEntryDao
 import com.endoapp.app.data.daos.DeleteDayDao
 import com.endoapp.app.data.daos.ImportDao
@@ -24,9 +25,9 @@ import com.endoapp.app.insightsbridge.SnapshotProjector
 import com.endoapp.insights.DaySnapshot
 import com.endoapp.insights.FlowIntensity
 import com.endoapp.insights.Insight
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
-import java.time.Instant
 
 /**
  * The consent-gated facade over the health data store — the ONLY path through which health data is
@@ -54,7 +55,17 @@ class EndoRepository(
     private val insightsDao: InsightsDao,
     private val deleteDayDao: DeleteDayDao,
     private val importDao: ImportDao,
+    private val transaction: suspend (suspend () -> Unit) -> Unit = { block -> block() },
 ) {
+
+    /**
+     * Run [block] as ONE database transaction, so a multi-row day write (Check-In merge / Day Log
+     * replace) lands all-or-nothing — never a bare anchor, never a purged-but-unwritten day.
+     */
+    suspend fun inTransaction(block: suspend () -> Unit) {
+        checkConsented()
+        transaction(block)
+    }
 
     /**
      * The consent gate. Called first by every health method; throws pre-consent so no health data
@@ -417,6 +428,7 @@ class EndoRepository(
             insightsDao = db.insightsDao(),
             deleteDayDao = db.deleteDayDao(),
             importDao = db.importDao(),
+            transaction = { block -> db.withTransaction { block() } },
         )
     }
 }

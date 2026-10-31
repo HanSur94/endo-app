@@ -48,6 +48,7 @@ import com.endoapp.app.content.TrackingCopy
 import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.designsystem.bloomBody
 import com.endoapp.app.designsystem.bloomButtonLabel
+import com.endoapp.insights.SymptomType
 import kotlinx.coroutines.launch
 
 /** How long the empty-confirm adherence note stays visible before the screen dismisses. */
@@ -139,6 +140,11 @@ fun DailyCheckInScreen(
                 scope.launch { loadYesterday()?.let { draft = applySameAsYesterday(draft, it) } }
             })
             SymptomsSection(draft, { draft = it })
+            if (draft.symptoms.keys.any { it == SymptomType.PELVIC_PAIN || it == SymptomType.BACK_LEG_PAIN } ||
+                draft.pain.isNotEmpty()
+            ) {
+                PainAreasSection(draft, { draft = it })
+            }
             FoodSection(draft, { draft = it })
             ActivitySection(draft, { draft = it })
             SleepSection(draft, { draft = it })

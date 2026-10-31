@@ -123,6 +123,27 @@ class BodyMapSemanticsTest {
     }
 
     @Test
+    fun touchingAClusteredHotspotCentre_marksThatRegion_notAnOverlappingNeighbour() {
+        // The pelvic cluster's ≥48dp boxes overlap; a real touch at each centre must reach its own region.
+        val clustered = listOf(
+            BodyRegion.LOWER_ABDOMEN_PELVIS, BodyRegion.LOWER_QUADRANT_LEFT,
+            BodyRegion.LOWER_QUADRANT_RIGHT, BodyRegion.BLADDER,
+        )
+        val readDraft = setBodyMap()
+
+        clustered.forEach { region ->
+            composeRule.onNodeWithTag("bodymap.region.${region.raw}").performClick()
+            composeRule.waitForIdle()
+            clickAction("daylog.severityPreset.moderate")
+            composeRule.waitForIdle()
+            clickAction("bodymap.region.${region.raw}.done")
+            composeRule.waitForIdle()
+        }
+
+        assertEquals(clustered.associateWith { 6 }, readDraft().pain)
+    }
+
+    @Test
     fun completingThroughTheList_setsTheSameDraftPoint_asAHotspot() {
         val readDraft = setBodyMap()
         val region = BodyRegion.RECTAL_BOWEL // a back-only region — reachable ONLY via the list on front

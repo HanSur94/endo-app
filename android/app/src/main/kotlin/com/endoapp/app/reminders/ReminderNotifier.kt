@@ -61,7 +61,9 @@ class ReminderNotifier(private val context: Context) {
     private fun deepLinkIntent(): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             putExtra(EXTRA_REMINDER_CHECK_IN, true)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            // SINGLE_TOP delivers to the live activity via onNewIntent instead of recreating it: a
+            // recreate let the outgoing instance consume (and reset) the shared router flag first.
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
         return PendingIntent.getActivity(
             context,

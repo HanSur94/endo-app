@@ -1,12 +1,15 @@
 package com.endoapp.app.ui.shell
 
+import com.endoapp.app.domain.CycleSummary
 import androidx.activity.BackEventCompat
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -66,6 +69,7 @@ fun ConsentedShell(
     persistDay: suspend (DayLogRows) -> Unit = {},
     persistDayLog: suspend (DayLogRows) -> Unit = {},
     loadYesterday: suspend () -> DayDraft? = { null },
+    loadCycleSummary: suspend () -> CycleSummary? = { null },
     loadDay: suspend (Long) -> DayDraft? = { null },
     deleteDay: suspend (Long) -> Unit = {},
     medications: Flow<List<Medication>> = emptyFlow(),
@@ -83,6 +87,12 @@ fun ConsentedShell(
     today: Long = LocalDate.now().toEpochDay(),
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) }
+
+    // A reminder deep link only lands if the Log host is composed (it alone consumes the flag), so
+    // bring the Log tab forward first — otherwise a tap from Insights/Explore would be swallowed.
+    LaunchedEffect(router.pendingCheckIn) {
+        if (router.pendingCheckIn) selectedTab = ConsentedTab.Log
+    }
 
     // Predictive-back-to-Log: intercept back ONLY off the start tab, so a back gesture from
     // Insights/Explore animates the return to Log, while back from Log falls through to the system
@@ -106,7 +116,10 @@ fun ConsentedShell(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                // Mark the shell's insets consumed so nested Scaffolds/TopAppBars don't pad for the
+                // status bar a second time (the double gap above Check-In / Day Log / Settings).
+                .consumeWindowInsets(innerPadding),
         ) {
             when (selectedTab) {
                 ConsentedTab.Log -> LogTabHost(
@@ -117,6 +130,7 @@ fun ConsentedShell(
                     persistDay = persistDay,
                     persistDayLog = persistDayLog,
                     loadYesterday = loadYesterday,
+                    loadCycleSummary = loadCycleSummary,
                     loadDay = loadDay,
                     deleteDay = deleteDay,
                     medications = medications,

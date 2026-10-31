@@ -35,6 +35,9 @@ object ReminderCopy : AuditableCopy {
     /** Add-a-time action label. */
     const val ADD_A_TIME = "Add a time"
 
+    /** The time-picker confirm — the picker always SETS (replaces) a time, so "Add" would mislead. */
+    const val SAVE_TIME = "Save"
+
     /** Quiet-hours toggle label. */
     const val QUIET_HOURS = "Quiet hours"
 
@@ -85,6 +88,7 @@ object ReminderCopy : AuditableCopy {
         DAILY_REMINDERS,
         REMINDER_TIME,
         ADD_A_TIME,
+        SAVE_TIME,
         QUIET_HOURS,
         QUIET_HOURS_FROM,
         QUIET_HOURS_UNTIL,

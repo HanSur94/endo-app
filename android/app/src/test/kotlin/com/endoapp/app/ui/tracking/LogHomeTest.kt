@@ -3,12 +3,14 @@ package com.endoapp.app.ui.tracking
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.designsystem.BloomTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
+import java.time.LocalDate
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -31,6 +33,7 @@ class LogHomeTest {
     private fun setHost(
         days: List<DayEntry> = emptyList(),
         router: CheckInRouter = CheckInRouter(),
+        today: Long = LocalDate.now().toEpochDay(),
     ) {
         composeRule.setContent {
             BloomTheme {
@@ -38,6 +41,7 @@ class LogHomeTest {
                     recentDays = MutableStateFlow(days),
                     router = router,
                     onWithdraw = {},
+                    today = today,
                 )
             }
         }
@@ -90,5 +94,20 @@ class LogHomeTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithTag("log.route.settings").assertExists()
+    }
+
+    @Test
+    fun logTodayCta_isAlwaysVisible_andOpensTodaysEditor() {
+        val today = 20_000L
+        setHost(today = today)
+
+        // Visible even with an empty history — the body map / detailed editor stay reachable.
+        composeRule.onNodeWithTag("log.logTodayCta").assertExists()
+        composeRule.onNodeWithTag("log.logTodayCta").performClick()
+        composeRule.waitForIdle()
+
+        // The Day Log editor for TODAY replaces the home (CTA gone; today's date is rendered).
+        composeRule.onNodeWithTag("log.logTodayCta").assertDoesNotExist()
+        composeRule.onNodeWithText(LocalDate.ofEpochDay(today).toString()).assertExists()
     }
 }

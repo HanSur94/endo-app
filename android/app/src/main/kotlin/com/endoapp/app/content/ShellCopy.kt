@@ -31,6 +31,10 @@ object ShellCopy : AuditableCopy {
     /** Low-emphasis decline affordance (explicit, fail-closed no-op). */
     const val CONSENT_DECLINE = "Not now"
 
+    /** The calm acknowledgement shown after "Not now" — so the decline visibly did something. */
+    const val CONSENT_DECLINED_NOTE =
+        "No problem. Nothing has been stored. You can come back and consent whenever you're ready."
+
     /**
      * Temporary withdraw affordance label rendered by the shell so the withdraw-re-gate invariant is
      * exercisable this phase (the real Settings entry is Phase 20). Registered here — the same change
@@ -44,6 +48,7 @@ object ShellCopy : AuditableCopy {
         TAB_EXPLORE,
         CONSENT_GRANT,
         CONSENT_DECLINE,
+        CONSENT_DECLINED_NOTE,
         WITHDRAW,
     )
 }

@@ -28,6 +28,7 @@ import com.endoapp.insights.ActivityType
 import com.endoapp.insights.BodyRegion
 import com.endoapp.insights.FlowIntensity
 import com.endoapp.insights.FoodTag
+import com.endoapp.insights.InsightConfidence
 import com.endoapp.insights.SleepQuality
 import com.endoapp.insights.SymptomType
 
@@ -100,6 +101,27 @@ object TrackingCopy : AuditableCopy {
 
     /** The prominent primary CTA — opens Daily Check-In. */
     const val CHECK_IN_CTA = "Daily check-in"
+
+    /** The always-visible secondary CTA — opens the full Day Log editor for today (pain map + factors). */
+    const val LOG_TODAY_CTA = "Log today"
+
+    // --- Home cycle card (iOS CycleSummaryCopy parity; off/day/window strings reuse ReportCopy) ---
+
+    /** The cycle card eyebrow. */
+    const val CYCLE_EYEBROW = "Your cycle"
+
+    /** The honest sparse state — never a fabricated or 28-day default cycle. */
+    const val CYCLE_NOT_ENOUGH_DATA = "Not enough data yet to estimate your cycle."
+
+    /** The basis note under a derived estimate. */
+    const val CYCLE_BASIS = "Based on your logs."
+
+    /** A plain confidence word for the estimate (never a number or percentage). */
+    fun cycleConfidenceWord(confidence: InsightConfidence): String = when (confidence) {
+        InsightConfidence.HIGH -> "strong confidence"
+        InsightConfidence.MEDIUM -> "medium confidence"
+        InsightConfidence.LOW, InsightConfidence.NONE -> "low confidence"
+    }
 
     /** The "log a past day" affordance label. */
     const val LOG_PAST_DAY = "Log a past day"
@@ -208,7 +230,12 @@ object TrackingCopy : AuditableCopy {
         add(UNSET_READOUT)
         add(GREETING)
         add(CHECK_IN_CTA)
+        add(LOG_TODAY_CTA)
         add(LOG_PAST_DAY)
+        add(CYCLE_EYEBROW)
+        add(CYCLE_NOT_ENOUGH_DATA)
+        add(CYCLE_BASIS)
+        InsightConfidence.entries.forEach { add(cycleConfidenceWord(it)) }
         add(EMPTY_TITLE)
         add(EMPTY_BODY)
         // Representative sampled builder outputs (0 / mid / max) so their format strings are scanned.

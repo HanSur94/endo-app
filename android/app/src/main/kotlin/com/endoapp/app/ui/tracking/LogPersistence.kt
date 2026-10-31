@@ -24,6 +24,10 @@ object LogPersistence {
      * existing day-scoped row this write does not mention untouched. Never deletes.
      */
     suspend fun upsertDay(repo: EndoRepository, rows: DayLogRows) {
+        repo.inTransaction { writeRows(repo, rows) }
+    }
+
+    private suspend fun writeRows(repo: EndoRepository, rows: DayLogRows) {
         repo.upsertDayEntry(rows.dayEntry)
         rows.symptoms.forEach { repo.upsertSymptom(it) }
         rows.pain.forEach { repo.upsertPain(it) }
@@ -37,8 +41,10 @@ object LogPersistence {
      * next reload (the honest edit semantic). [rows] carries [epochDay] on its anchor.
      */
     suspend fun replaceDay(repo: EndoRepository, rows: DayLogRows) {
-        repo.deleteDay(rows.dayEntry.epochDay)
-        upsertDay(repo, rows)
+        repo.inTransaction {
+            repo.deleteDay(rows.dayEntry.epochDay)
+            writeRows(repo, rows)
+        }
     }
 
     /**

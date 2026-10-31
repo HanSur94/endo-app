@@ -125,8 +125,11 @@ fun InsightCard(
         Text(text = insight.detail, style = bloomBody, color = colors.ink)
 
         // 4. Supporting: the honest trend chart, else a words-only evidence line.
-        val evidence = "${InsightsCopy.seenAcross(insight.sampleSize)} ${InsightsCopy.windowLabel(insight.window)}."
-        if (insight.kind == InsightKind.TREND && insight.points.isNotEmpty()) {
+        val window = InsightsCopy.windowLabel(insight.window).replaceFirstChar { it.uppercase() }
+        val evidence = "${InsightsCopy.seenAcross(insight.sampleSize)} $window."
+        // A single point (the stress/mood window mean) draws a lone dot with no trend to read, so a
+        // chart needs at least two dated points; otherwise the words-only evidence line carries it.
+        if (insight.kind == InsightKind.TREND && insight.points.size >= 2) {
             TrendChart(
                 input = TrendChartInput(
                     points = insight.points,

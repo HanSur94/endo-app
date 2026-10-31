@@ -54,6 +54,7 @@ fun OnboardingScreen(
 ) {
     val colors = LocalBloomColors.current
     var showPrivacy by rememberSaveable { mutableStateOf(false) }
+    var declined by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -142,12 +143,21 @@ fun OnboardingScreen(
                 modifier = Modifier.testTag("consent.grantButton"),
             )
             TextButton(
-                onClick = onDecline,
+                onClick = { declined = true; onDecline() },
                 modifier = Modifier
                     .sizeIn(minHeight = 48.dp)
                     .testTag("consent.declineButton"),
             ) {
                 Text(ShellCopy.CONSENT_DECLINE, style = bloomBody, color = colors.inkMuted)
+            }
+            if (declined) {
+                Text(
+                    text = ShellCopy.CONSENT_DECLINED_NOTE,
+                    style = bloomBody,
+                    color = colors.inkSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag("consent.declinedNote"),
+                )
             }
         }
     }

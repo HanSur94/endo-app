@@ -1,9 +1,16 @@
 package com.endoapp.app.ui.tracking
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
+import com.endoapp.app.content.DayLogCopy
 import com.endoapp.app.designsystem.BloomTheme
+import com.endoapp.insights.BodyRegion
+import com.endoapp.insights.SymptomType
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -129,5 +136,70 @@ class CheckInFlowTest {
         )
         return candidates.firstOrNull { it.exists() }
             ?: error("Could not locate $relative (cwd=${System.getProperty("user.dir")})")
+    }
+
+    @Test
+    fun painAreaSection_staysHidden_untilAPainLocationSymptomIsSelected() {
+        composeRule.setContent {
+            BloomTheme {
+                DailyCheckInScreen(
+                    today = 20_000L,
+                    loadYesterday = { null },
+                    persistDay = {},
+                    onDayLogged = {},
+                    onDismiss = {},
+                    idFor = { "20000:$it" },
+                )
+            }
+        }
+
+        // No pain-location symptom selected → no pain-area map. (Section headers render UPPERCASE.)
+        composeRule.onNodeWithText(DayLogCopy.SECTION_PAIN.uppercase()).assertDoesNotExist()
+
+        composeRule.onNodeWithTag("checkin.symptom.${SymptomType.PELVIC_PAIN.raw}").performClick()
+        composeRule.waitForIdle()
+
+        // Pelvic/abdominal pain is a pain-location symptom → the accessible body map appears.
+        composeRule.onNodeWithText(DayLogCopy.SECTION_PAIN.uppercase()).assertExists()
+        composeRule.onNodeWithTag("checkin.bodyMap").assertExists()
+    }
+
+    @Test
+    fun markingAPainRegionThroughTheBodyMap_persistsThePainPointOnConfirm() {
+        var captured: DayLogRows? = null
+        composeRule.setContent {
+            BloomTheme {
+                DailyCheckInScreen(
+                    today = 20_000L,
+                    loadYesterday = { null },
+                    persistDay = { captured = it },
+                    onDayLogged = {},
+                    onDismiss = {},
+                    idFor = { "20000:$it" },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("checkin.symptom.${SymptomType.PELVIC_PAIN.raw}").performClick()
+        composeRule.waitForIdle()
+
+        // Mark the lower-abdomen region through the map (hotspot click + Moderate preset).
+        val region = BodyRegion.LOWER_ABDOMEN_PELVIS
+        composeRule.onNodeWithTag("bodymap.region.${region.raw}")
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeRule.waitForIdle()
+        // The preset tag exists twice (the check-in's own symptom SeverityControl + the region
+        // sheet's) — the sheet renders after the base content, so index 1 is the sheet's preset.
+        composeRule.onAllNodesWithTag("daylog.severityPreset.moderate")[1]
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("checkin.done").performClick()
+        composeRule.waitForIdle()
+
+        val rows = requireNotNull(captured) { "persistDay must have been called on confirm" }
+        assertEquals("exactly one pain point must persist", 1, rows.pain.size)
+        assertEquals("the pain point must carry the marked region", region.raw, rows.pain.first().regionRaw)
+        assertEquals("the pain point must carry severity 6", 6, rows.pain.first().severity)
     }
 }

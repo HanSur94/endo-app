@@ -167,6 +167,38 @@ class ExploreSeries(
  *  downstream. */
 object ExploreSeriesCatalog {
 
+    // Curated human labels (iOS quick-260618-eei parity): the catalog used to derive displayName from
+    // the raw enum keys ("pelvicPain severity", "lowerQuadrantLeft pain severity", "dairy"), which
+    // reached the Explore chips, lanes, and scatter axes. Symptom labels reuse
+    // CyclePhaseMapper.displayName; region/food wording mirrors the app's body-map and food-tag copy.
+
+    /** Curated human pain-region label. */
+    fun regionLabel(region: BodyRegion): String = when (region) {
+        BodyRegion.LOWER_ABDOMEN_PELVIS -> "Lower abdomen / pelvis"
+        BodyRegion.LOWER_QUADRANT_LEFT -> "Lower left side"
+        BodyRegion.LOWER_QUADRANT_RIGHT -> "Lower right side"
+        BodyRegion.LOWER_BACK -> "Lower back"
+        BodyRegion.HIPS -> "Hips"
+        BodyRegion.UPPER_THIGHS -> "Upper thighs"
+        BodyRegion.RECTAL_BOWEL -> "Rectal / bowel"
+        BodyRegion.BLADDER -> "Bladder"
+        BodyRegion.CHEST_DIAPHRAGM -> "Chest / diaphragm"
+        BodyRegion.SHOULDER -> "Shoulder"
+    }
+
+    /** Curated human food-tag label. */
+    fun foodLabel(tag: FoodTag): String = when (tag) {
+        FoodTag.DAIRY -> "Dairy"
+        FoodTag.GLUTEN_WHEAT -> "Gluten / wheat"
+        FoodTag.CAFFEINE -> "Caffeine"
+        FoodTag.ALCOHOL -> "Alcohol"
+        FoodTag.HIGH_SUGAR -> "High sugar"
+        FoodTag.HIGH_FODMAP -> "High FODMAP"
+        FoodTag.RED_PROCESSED_MEAT -> "Red / processed meat"
+        FoodTag.LARGE_MEAL -> "Large meal"
+        FoodTag.OTHER -> "Something else"
+    }
+
     /** Every loggable series, in a stable order: per-symptom severity (11) → per-pain-region severity
      *  (10) → per-food-tag presence (9) → the singleton fields. Ids are unique, dotted, and
      *  value-independent. */
@@ -176,7 +208,7 @@ object ExploreSeriesCatalog {
             add(
                 ExploreSeries(
                     id = "symptom.${type.raw}.severity",
-                    displayName = "${type.raw} severity",
+                    displayName = CyclePhaseMapper.displayName(type),
                     unit = "of 10",
                     scaleKind = ScaleKind.ORDINAL_0_TO_10,
                     field = ExploreSeriesField.SymptomSeverity(type),
@@ -189,7 +221,7 @@ object ExploreSeriesCatalog {
             add(
                 ExploreSeries(
                     id = "pain.${region.raw}.severity",
-                    displayName = "${region.raw} pain severity",
+                    displayName = regionLabel(region),
                     unit = "of 10",
                     scaleKind = ScaleKind.ORDINAL_0_TO_10,
                     field = ExploreSeriesField.PainSeverity(region),
@@ -202,7 +234,7 @@ object ExploreSeriesCatalog {
             add(
                 ExploreSeries(
                     id = "food.${tag.raw}",
-                    displayName = tag.raw,
+                    displayName = foodLabel(tag),
                     unit = "",
                     scaleKind = ScaleKind.PRESENCE_EVENT,
                     field = ExploreSeriesField.Food(tag),

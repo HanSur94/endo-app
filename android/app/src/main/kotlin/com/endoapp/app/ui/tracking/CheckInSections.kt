@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.endoapp.app.content.CheckInCopy
+import com.endoapp.app.content.DayLogCopy
 import com.endoapp.app.content.TrackingCopy
 import com.endoapp.app.designsystem.EyebrowLabel
 import com.endoapp.app.designsystem.LocalBloomColors
@@ -126,6 +127,21 @@ fun SymptomsSection(draft: DayDraft, onDraft: (DayDraft) -> Unit, modifier: Modi
                 )
             }
         }
+    }
+}
+
+/** Pain areas — the accessible [BodyMapView], revealed when a pain-location symptom is selected
+ *  or marks already exist (marks must never become invisible/un-clearable). Reuses the Day Log
+ *  editor's section header (single-source). */
+@Composable
+fun PainAreasSection(draft: DayDraft, onDraft: (DayDraft) -> Unit, modifier: Modifier = Modifier) {
+    CheckInSection(DayLogCopy.SECTION_PAIN, modifier) {
+        BodyMapView(
+            draft = draft,
+            onSetRegion = { region, severity -> onDraft(draft.copy(pain = draft.pain + (region to severity))) },
+            onClearRegion = { region -> onDraft(draft.copy(pain = draft.pain - region)) },
+            modifier = Modifier.testTag("checkin.bodyMap"),
+        )
     }
 }
 

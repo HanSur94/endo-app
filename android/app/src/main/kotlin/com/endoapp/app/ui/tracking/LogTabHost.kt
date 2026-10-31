@@ -17,22 +17,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.endoapp.app.CheckInRouter
 import com.endoapp.app.data.entities.DayEntry
 import com.endoapp.app.data.entities.Medication
+import com.endoapp.app.domain.CycleSummary
 import com.endoapp.app.export.ExportImportViewModel
 import com.endoapp.app.export.ui.ExportImportHost
-import com.endoapp.app.report.ui.ReportBuilderViewModel
-import com.endoapp.app.report.ui.ReportBuilderHost
 import com.endoapp.app.health.HealthConnectController
 import com.endoapp.app.health.ui.HealthImportHost
 import com.endoapp.app.reminders.ReminderController
+import com.endoapp.app.report.ui.ReportBuilderHost
+import com.endoapp.app.report.ui.ReportBuilderViewModel
 import com.endoapp.app.ui.settings.SettingsScreen
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import java.time.LocalDate
 
 /**
  * The Log-tab host. [recentDays] is the live day history off the consent-gated repository;
@@ -58,6 +60,7 @@ fun LogTabHost(
     persistDayLog: suspend (DayLogRows) -> Unit = {},
     loadYesterday: suspend () -> DayDraft? = { null },
     loadDay: suspend (Long) -> DayDraft? = { null },
+    loadCycleSummary: suspend () -> CycleSummary? = { null },
     deleteDay: suspend (Long) -> Unit = {},
     medications: Flow<List<Medication>> = emptyFlow(),
     addMedication: suspend (Medication) -> Unit = {},
@@ -88,8 +91,10 @@ fun LogTabHost(
     Box(modifier = modifier.fillMaxSize()) {
         when (val route = stack.current) {
             TrackingRoute.LogHome -> LogHomeScreen(
+                cycleSummary = produceState<CycleSummary?>(null, days) { value = loadCycleSummary() }.value,
                 recentDays = days,
                 onCheckIn = { stack.push(TrackingRoute.CheckIn) },
+                onLogToday = { stack.push(TrackingRoute.DayLog(today)) },
                 onEditDay = { epochDay -> stack.push(TrackingRoute.DayLog(epochDay)) },
                 onOpenSettings = { stack.push(TrackingRoute.Settings) },
             )

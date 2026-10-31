@@ -31,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -97,12 +98,19 @@ fun ExportImportScreen(
     val canExport = fieldsMatch && !working
     val canImport = importPass.isNotBlank() && !working
 
+    // The status surface sits under both forms, below the fold on a phone — bring it into view
+    // whenever it changes so "Your backup is ready." / an error is actually seen.
+    val scrollState = rememberScrollState()
+    LaunchedEffect(current) {
+        if (current != ExportImportUiState.Idle) scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
     Column(
         modifier = modifier
             .testTag("exportImport.root")
             .fillMaxSize()
             .background(colors.canvas)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .safeDrawingPadding()
             .imePadding()
             .padding(horizontal = 20.dp, vertical = 20.dp),

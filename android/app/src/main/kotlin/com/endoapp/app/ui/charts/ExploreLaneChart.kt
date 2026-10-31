@@ -19,6 +19,7 @@ package com.endoapp.app.ui.charts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -171,5 +172,13 @@ fun ExploreLaneChart(
                 modifier = Modifier.matchParentSize(),
             )
         }
+
+        // The shared x-domain endpoints, so the lane reads as a dated window (not a bare squiggle).
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(LANE_DATE_FORMAT.format(windowStart), style = bloomChipLabel, fontWeight = FontWeight.Normal, color = colors.inkMuted)
+            Text(LANE_DATE_FORMAT.format(asOf), style = bloomChipLabel, fontWeight = FontWeight.Normal, color = colors.inkMuted)
+        }
     }
 }
+
+private val LANE_DATE_FORMAT: java.time.format.DateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM d")

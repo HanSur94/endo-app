@@ -13,10 +13,10 @@ package com.endoapp.app.ui.explore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -82,7 +82,6 @@ fun chipEnabled(series: ExploreSeries, selected: Set<ExploreSeries>): Boolean {
  * chip. The range control drives the x-domain window. Renders inside the Explore `Column` (no scroll of
  * its own).
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SeriesPicker(
     offered: List<ExploreSeries>,
@@ -101,12 +100,15 @@ fun SeriesPicker(
             .testTag("explore.picker"),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
+        // One horizontally scrolling row (iOS quick-260618-eei parity): ~40 wrapped chips pushed the lanes
+        // below the fold. Selected chips lead so the current choice stays visible without scrolling.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            offered.forEach { series ->
+            offered.sortedByDescending { it in selected }.forEach { series ->
                 val isSelected = series in selected
                 val enabled = chipEnabled(series, selected)
                 SeriesChip(

@@ -14,6 +14,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,11 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -139,12 +143,25 @@ private fun SideToggle(side: BodySide, onSide: (BodySide) -> Unit) {
 @Composable
 private fun Silhouette(side: BodySide, draft: DayDraft, onOpen: (BodyRegion) -> Unit) {
     val colors = LocalBloomColors.current
+    val hotspots = BodySilhouette.hotspotsFor(side)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth(0.6f)
             .aspectRatio(BodySilhouette.ASPECT)
             .clip(RoundedCornerShape(22.dp))
-            .background(colors.surfaceSunken),
+            .background(colors.surfaceSunken)
+            // Neighbouring ≥48dp hotspots overlap (the pelvic cluster sits ~0.12 of the width apart),
+            // so a tap goes to the NEAREST hotspot centre rather than whichever box is drawn on top.
+            .pointerInput(side) {
+                detectTapGestures { tap ->
+                    val maxReach = HOTSPOT_SIZE.toPx()
+                    hotspots
+                        .map { it to (Offset(it.x * size.width, it.y * size.height) - tap).getDistance() }
+                        .filter { it.second <= maxReach }
+                        .minByOrNull { it.second }
+                        ?.let { onOpen(it.first.region) }
+                }
+            },
     ) {
         val boxW = maxWidth
         val boxH = maxHeight
@@ -152,7 +169,7 @@ private fun Silhouette(side: BodySide, draft: DayDraft, onOpen: (BodyRegion) -> 
         Canvas(modifier = Modifier.fillMaxWidth().aspectRatio(BodySilhouette.ASPECT)) {
             drawPath(path = BodySilhouette.path(size), brush = SolidColor(colors.inkMuted.copy(alpha = 0.25f)))
         }
-        BodySilhouette.hotspotsFor(side).forEach { hotspot ->
+        hotspots.forEach { hotspot ->
             Hotspot(
                 region = hotspot.region,
                 severity = draft.pain[hotspot.region],
@@ -189,12 +206,14 @@ private fun Hotspot(
         modifier = Modifier
             .offset(x = offsetX, y = offsetY)
             .size(HOTSPOT_SIZE)
-            .clickable(onClick = onClick)
             .testTag("bodymap.region.${region.raw}")
+            // Touch is routed by the silhouette's nearest-centre handler; the semantic click keeps the
+            // hotspot a real TalkBack/Switch Access button.
             .semantics(mergeDescendants = true) {
                 role = Role.Button
                 contentDescription = label
                 stateDescription = state
+                onClick(label = label) { onClick(); true }
             },
         contentAlignment = Alignment.Center,
     ) {

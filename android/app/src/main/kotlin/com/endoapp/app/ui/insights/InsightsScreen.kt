@@ -168,9 +168,11 @@ fun InsightsDashboard(
                         .testTag("insights.statStrip"),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    StatTile(value = insights.size, label = InsightsCopy.STAT_TOTAL_LABEL, modifier = Modifier.weight(1f))
+                    // "Not enough data yet" notices are honesty placeholders, not patterns (iOS parity).
+                    val surfaced = insights.filterNot { it.isInsufficiencyNotice }
+                    StatTile(value = surfaced.size, label = InsightsCopy.STAT_TOTAL_LABEL, modifier = Modifier.weight(1f))
                     StatTile(
-                        value = insights.map { it.kind }.distinct().size,
+                        value = surfaced.map { it.kind }.distinct().size,
                         label = InsightsCopy.STAT_KINDS_LABEL,
                         modifier = Modifier.weight(1f),
                     )
@@ -249,7 +251,7 @@ private fun LazyListScope.kindSection(
             Text(text = section.header, style = bloomH2, color = LocalBloomColors.current.ink)
         }
     }
-    items(section.insights, key = { it.signalKey }) { insight ->
+    items(section.insights, key = { it.id.toString() }) { insight ->
         InsightCard(
             insight = insight,
             onDismiss = onDismiss,

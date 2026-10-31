@@ -247,7 +247,7 @@ fun RemindersSection(
                         editing = null
                     },
                     modifier = Modifier.testTag("reminders.timeConfirm"),
-                ) { Text(ReminderCopy.ADD_A_TIME, style = bloomButtonLabel, color = colors.plum) }
+                ) { Text(ReminderCopy.SAVE_TIME, style = bloomButtonLabel, color = colors.plum) }
             },
             dismissButton = {
                 TextButton(onClick = { editing = null }) {

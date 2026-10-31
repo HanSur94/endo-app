@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
                     report = dependencies.reportBuilderViewModel,
                     insightsCoordinator = dependencies.insightsCoordinator,
                     exploreScatterRouter = dependencies.exploreScatterRouter,
+                    writeScope = dependencies.applicationScope,
                 )
             }
         }

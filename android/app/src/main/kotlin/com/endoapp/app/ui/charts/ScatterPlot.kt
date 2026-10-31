@@ -23,7 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.endoapp.app.content.ExploreCopy
 import com.endoapp.app.designsystem.LocalBloomColors
 import com.endoapp.app.designsystem.bloomBody
@@ -35,6 +38,21 @@ import kotlin.math.sqrt
 
 /** The square scatter plot side (22-UI-SPEC §Chart Rendering — 320dp square). */
 private val PLOT_SIDE = 320.dp
+
+/** Room for the y tick labels left of the axis and the x tick labels below it. */
+private val AXIS_GUTTER_LEFT = 28.dp
+private val AXIS_GUTTER_BOTTOM = 22.dp
+
+/** Keeps the largest edge mark fully inside the plot instead of half-clipped by the axis. */
+private val PLOT_INSET = 12.dp
+
+/** Start, middle and end of a fixed real-unit domain — the whole tick set (no data-driven ticks). */
+private fun axisTicks(domain: ClosedFloatingPointRange<Double>): List<Double> =
+    listOf(domain.start, (domain.start + domain.endInclusive) / 2, domain.endInclusive)
+
+/** An axis name with its unit, e.g. "Sleep (h)" / "Pelvic pain (of 10)". */
+private fun axisName(series: ExploreSeries): String =
+    if (series.unit.isBlank()) series.displayName else "${series.displayName} (${series.unit})"
 
 /** The mark radius (dp) for a cell of the given day-[count] — AREA grows with the count so a denser cell
  *  reads as a visibly bigger dot (H5: density by size). PURE + monotonic non-decreasing in [count] (radius
@@ -105,6 +123,8 @@ fun ScatterPlot(
 
     // The both-logged day tally = the sum of the per-cell counts (each dot is one-or-more days at a cell).
     val bothLoggedDays = points.sumOf { it.count }
+    val textMeasurer = rememberTextMeasurer()
+    val tickStyle = bloomBody.copy(color = colors.inkSecondary, fontSize = 11.sp)
 
     Column(
         modifier = modifier
@@ -131,18 +151,38 @@ fun ScatterPlot(
                     .matchParentSize()
                     .testTag("explore.scatter.plot"),
             ) {
-                val w = size.width
-                val h = size.height
+                // Reserve gutters for the tick labels, and inset the data area so edge marks are never
+                // clipped. The semantics overlay keeps its own full-size layout (reader order only).
+                val left = AXIS_GUTTER_LEFT.toPx()
+                val bottom = size.height - AXIS_GUTTER_BOTTOM.toPx()
+                val inset = PLOT_INSET.toPx()
+                val plotW = size.width - left - 2 * inset
+                val plotH = bottom - 2 * inset
+                fun px(v: Double) = left + inset + ((v - xDomain.start) / xSpan).toFloat().coerceIn(0f, 1f) * plotW
+                // y inverted so the domain floor sits at the bottom.
+                fun py(v: Double) = inset + (1f - ((v - yDomain.start) / ySpan).toFloat().coerceIn(0f, 1f)) * plotH
+
+                // Axis lines + the fixed-domain ticks (start / middle / end) in real units.
+                val axisStroke = 1.dp.toPx()
+                drawLine(colors.inkMuted, Offset(left, 0f), Offset(left, bottom), axisStroke)
+                drawLine(colors.inkMuted, Offset(left, bottom), Offset(size.width, bottom), axisStroke)
+                axisTicks(xDomain).forEach { v ->
+                    val label = textMeasurer.measure(tagValue(v), tickStyle)
+                    val cx = px(v).coerceIn(left + label.size.width / 2f, size.width - label.size.width / 2f)
+                    drawText(label, topLeft = Offset(cx - label.size.width / 2f, bottom + 4.dp.toPx()))
+                }
+                axisTicks(yDomain).forEach { v ->
+                    val label = textMeasurer.measure(tagValue(v), tickStyle)
+                    val cy = py(v).coerceIn(label.size.height / 2f, bottom - label.size.height / 2f)
+                    drawText(label, topLeft = Offset(left - label.size.width - 6.dp.toPx(), cy - label.size.height / 2f))
+                }
+
                 points.forEach { p ->
-                    val fx = ((p.x - xDomain.start) / xSpan).toFloat().coerceIn(0f, 1f)
-                    val fy = ((p.y - yDomain.start) / ySpan).toFloat().coerceIn(0f, 1f)
-                    // y inverted so the domain floor sits at the bottom.
-                    val center = Offset(fx * w, (1f - fy) * h)
                     // Single accent hue — the count is encoded by SIZE + the a11y value, never by colour.
                     drawCircle(
                         color = colors.plum,
                         radius = scatterMarkRadiusDp(p.count).dp.toPx(),
-                        center = center,
+                        center = Offset(px(p.x), py(p.y)),
                     )
                 }
             }
@@ -156,9 +196,9 @@ fun ScatterPlot(
             )
         }
 
-        // The two data-derived axis names (factual only).
+        // The two data-derived axis names (factual only), each with its real unit.
         Text(
-            text = ExploreCopy.scatterAxisTitles(x.displayName, y.displayName),
+            text = ExploreCopy.scatterAxisTitles(axisName(x), axisName(y)),
             style = bloomBody,
             color = colors.ink,
             modifier = Modifier.testTag("explore.scatter.axisTitles"),
