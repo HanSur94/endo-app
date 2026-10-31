@@ -47,7 +47,7 @@ Languages: English (source), German, French, Spanish. Platforms: Android (`andro
 
 ### Data portability
 
-- [ ] **PORT-01**: An encrypted export made in one language imports unchanged on a device set to another language and on the other platform; no translated text is ever stored or exported
+- [ ] **PORT-01**: An encrypted export made in one language imports unchanged on a device set to another language; the export file contains no translated text and stays language- and platform-neutral (iOS has no export/import today)
 
 ### Legal & store
 
@@ -83,12 +83,44 @@ Languages: English (source), German, French, Spanish. Platforms: Android (`andro
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| LANG-01 | Phase 28 | Pending |
+| LANG-02 | Phase 30 | Pending |
+| LANG-03 | Phase 30 | Pending |
+| LANG-04 | Phase 30 | Pending |
+| LANG-05 | Phase 30 | Pending |
+| LANG-06 | Phase 28 | Pending |
+| SAFE-01 | Phase 26 | Pending |
+| SAFE-02 | Phase 26 | Pending |
+| SAFE-03 | Phase 26 | Pending |
+| SAFE-04 | Phase 26 | Pending |
+| INSL-01 | Phase 32 | Pending |
+| INSL-02 | Phase 27 | Pending |
+| INSL-03 | Phase 27 | Pending |
+| INSL-04 | Phase 32 | Pending |
+| TRNS-01 | Phase 29 | Pending |
+| TRNS-02 | Phase 30 | Pending |
+| TRNS-03 | Phase 32 | Pending |
+| TRNS-04 | Phase 32 | Pending |
+| TRNS-05 | Phase 30 | Pending |
+| FMT-01 | Phase 31 | Pending |
+| FMT-02 | Phase 31 | Pending |
+| FMT-03 | Phase 31 | Pending |
+| FMT-04 | Phase 31 | Pending |
+| PORT-01 | Phase 29 | Pending |
+| LEGL-01 | Phase 33 | Pending |
+| LEGL-02 | Phase 33 | Pending |
+| LEGL-03 | Phase 33 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 27 total
-- Mapped to phases: 0 (filled by roadmap)
-- Unmapped: 27 ⚠️
+- Mapped to phases: 27 ✓
+- Unmapped: 0
+
+**Traceability notes:**
+- **Cross-platform ownership:** LANG-03, LANG-04, LANG-05 and TRNS-05 cover both platforms. Phase 28 builds the Android half and Phase 30 (owner) builds the iOS half. They close on Phase 30 completion, which must confirm the Android half already passed Phase 28 verification. If Phase 30 ever completes before Phase 28 verifies, re-open them.
+- **PORT-01:** re-worded 2026-10-31 — iOS has no encrypted export/import, so the requirement covers Android cross-language import plus format neutrality (checked against the committed golden fixture). An iOS importer is out of scope.
+- **LANG-02 / LANG-04:** if the Phase 30 spike adopts the Settings deep-link fallback, LANG-02 and the iOS clause of LANG-04 are re-worded in Phase 30.
 
 ---
 *Requirements defined: 2026-10-31*
-*Last updated: 2026-10-31 after milestone v2.1 research*
+*Last updated: 2026-10-31 after v2.1 roadmap creation (traceability filled, 27/27 mapped)*
