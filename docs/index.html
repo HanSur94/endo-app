@@ -10,7 +10,7 @@
 <meta property="og:image" content="screenshots/02-home.png">
 <meta name="theme-color" content="#efe0e6">
 <link rel="icon" href="assets/app-icon.png">
-<script>document.documentElement.classList.add("js")</script>
+<script>document.documentElement.classList.add("js"); if ("scrollRestoration" in history) history.scrollRestoration = "manual";</script>
 <style>
   :root{
     --canvas:#e9e0e6; --surface:#fbf8fa; --sunken:#f3ecf0; --card:#ffffff;
@@ -132,13 +132,13 @@
   }
 
   /* ---- section-to-section flow: fade + rise on entry ---- */
-  .js .reveal{opacity:0; transform:translateY(38px); transition:opacity .85s cubic-bezier(.22,.61,.36,1), transform .85s cubic-bezier(.22,.61,.36,1)}
-  .js .reveal.in{opacity:1; transform:none}
-  .js .reveal .card, .js .reveal .stat, .js .reveal .shot{opacity:0; transform:translateY(20px); transition:opacity .7s cubic-bezier(.22,.61,.36,1), transform .7s cubic-bezier(.22,.61,.36,1)}
+  .js .reveal{opacity:0; transform:translateY(72px) scale(.972); filter:blur(5px); transition:opacity 1s cubic-bezier(.22,.61,.36,1), transform 1s cubic-bezier(.22,.61,.36,1), filter 1s cubic-bezier(.22,.61,.36,1); will-change:opacity, transform}
+  .js .reveal.in{opacity:1; transform:none; filter:none}
+  .js .reveal .card, .js .reveal .stat, .js .reveal .shot{opacity:0; transform:translateY(34px); transition:opacity .8s cubic-bezier(.22,.61,.36,1), transform .8s cubic-bezier(.22,.61,.36,1)}
   .js .reveal.in .card, .js .reveal.in .stat, .js .reveal.in .shot{opacity:1; transform:none}
-  .js .reveal.in .card:nth-child(2), .js .reveal.in .stat:nth-child(2), .js .reveal.in .shot:nth-child(2){transition-delay:.09s}
-  .js .reveal.in .card:nth-child(3), .js .reveal.in .stat:nth-child(3), .js .reveal.in .shot:nth-child(3){transition-delay:.18s}
-  .js .reveal.in .card:nth-child(4), .js .reveal.in .shot:nth-child(4){transition-delay:.27s}
+  .js .reveal.in .card:nth-child(2), .js .reveal.in .stat:nth-child(2), .js .reveal.in .shot:nth-child(2){transition-delay:.12s}
+  .js .reveal.in .card:nth-child(3), .js .reveal.in .stat:nth-child(3), .js .reveal.in .shot:nth-child(3){transition-delay:.24s}
+  .js .reveal.in .card:nth-child(4), .js .reveal.in .shot:nth-child(4){transition-delay:.36s}
   @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important; scroll-behavior:auto!important} .js .reveal,.js .reveal .card,.js .reveal .stat,.js .reveal .shot{opacity:1!important; transform:none!important}}
 </style>
 </head>
@@ -337,7 +337,7 @@
       entries.forEach(function (e) {
         if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    }, { threshold: 0.08, rootMargin: '0px 0px -14% 0px' });
     els.forEach(function (el) { io.observe(el); });
   })();
 </script>
