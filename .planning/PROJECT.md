@@ -26,21 +26,20 @@ A free, privacy-first **iOS app for people with endometriosis** to track their s
 
 Turn everyday self-tracking into **understanding** — surfacing correlations, cycle/trend patterns, flare predictions, and personalized recommendations that help people with endometriosis make sense of their condition. If everything else fails, the insights must make the effort of logging feel worth it.
 
-## Current Milestone: v2.0 Android Version (Port) — ✅ FEATURE-COMPLETE (2026-07-10, audit PASSED 42/42)
+## Current Milestone: v2.1 Multilingual
 
-**Goal:** Ship a native Android version of Endo-App — Kotlin + Jetpack Compose, feature-equivalent to iOS v1.1, with every honesty/privacy invariant carried over as an enforcing test.
+**Goal:** Every screen, insight sentence and PDF report reads in the user's language — English, German, French or Spanish — chosen inside the app, on both Android and iOS.
 
 **Target features:**
-- `:insights` engine port to pure Kotlin JVM with test parity against the shipped Swift suite (trends, cycle-phase, correlations, recommendations, flare, honesty gate, forbidden terms)
-- Room persistence with consent-gated repository and a born-complete delete-day cascade (iOS GDPR Art. 17 lesson carried verbatim)
-- Consent-by-construction UI shell + Bloom design-system port (Compose + Material 3)
-- Tracking screens: Daily Check-In, Day Log editor + BodyMap, medications, reminders
-- Health Connect read-only import (menstruation, sleep, exercise, nutrition) with manual-wins/nil-honest merge
-- Explore + charts under the locked chart-honesty rules (no dual-y, no normalization, gaps stay gaps)
-- Vector PDF doctor report with share-intent export
-- Play Store prep: Health apps policy declaration, truthful Data safety form, claims-audited store copy
+- In-app language picker (default: follow the system language), on Android and iOS
+- All UI copy translated into DE/FR/ES (~700 strings per platform), English stays the source
+- Insight-engine generated sentences (trends, correlations, recommendations, flare) translated
+- Locale-aware dates, numbers and units in the app and in the PDF doctor report
+- ClaimsPolicy / CopyAudit enforced per language — forbidden medical/causal/alarmist term lists for DE/FR/ES
+- One shared cross-platform glossary so Android and iOS use identical terms
+- Store listing copy (Play + App Store) in all four languages
 
-**Key context:** All architectural decisions are pre-made and locked in [research/ANDROID-PORT-PLAN.md](research/ANDROID-PORT-PLAN.md) (stack, local-only-v1 sync with encrypted export/import, monorepo `android/` layout with `:app` + `:insights`). iOS↔Android live sync is out of scope by decision. The iOS codebase stays untouched.
+**Key context:** Translations ship inside the app (no network, no translation service — the no-`INTERNET` invariant holds). Claude drafts DE/FR/ES; a native-speaker review is a human-gated release step, not faked. Android work continues on `claude/endo-android-version-e608a7`; iOS work starts from `main`. v2.0 (Android port) is feature-complete — its emulator pass (2026-10-31) fixed check-in persistence, an Insights crash, body-map hit-testing and parity gaps.
 
 ## Requirements
 
@@ -67,6 +66,7 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 - [ ] Physical activity / sport tracking
 - [ ] Insights: correlations & triggers across logged factors (symptoms ↔ food, sleep, activity, cycle) — engine shipped (Phase 7) + rendered in dashboard (Phase 8); pending confirmation with real multi-factor data
 - [ ] Private iCloud (CloudKit) sync across the user's own devices — no account/login
+- [ ] App language selectable in-app: English, German, French, Spanish (Android + iOS) — v2.1
 
 ### Out of Scope
 
@@ -110,6 +110,7 @@ Turn everyday self-tracking into **understanding** — surfacing correlations, c
 | On-device + private iCloud/CloudKit sync, no accounts/backend | Privacy-first for sensitive health data + free to run | — Pending |
 | Apple HealthKit integration | Reduce double-logging by importing cycle/sleep/workouts/nutrition | — Pending |
 | Position as wellness tool, not a certified medical device | Avoid regulated DiGA/medical-device path; appropriate for a free v1 | — Pending |
+| v2.1: EN/DE/FR/ES on both platforms, in-app picker, per-language claims audit, Claude-drafted translations + native-speaker review | Global audience + German home market; a translated health app must not slip into medical claims, so the safety audit has to be per language | — Pending |
 | v2.0 Android port: native Kotlin + Compose, `android/` monorepo dir, `:insights` ported first, local-only v1 + encrypted export/import (no backend, no accounts) | Mirrors the all-first-party iOS philosophy; CloudKit has no Android client and the no-backend constraint is hard; the pure insights engine is the core value and the safest anchor to port first (decisions locked in research/ANDROID-PORT-PLAN.md) | — Pending |
 
 ## Evolution
@@ -130,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-10 — v2.0 Android Version (Port) feature-complete; audit PASSED (42/42, 636 tests). Next: run the docs/release/ human-gated checklist, or /gsd-new-milestone.*
+*Last updated: 2026-10-31 — milestone v2.1 Multilingual started (v2.0 Android port feature-complete; audit PASSED 42/42).*
