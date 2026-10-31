@@ -116,6 +116,30 @@
     section{padding:64px 0}
     .hero{padding-top:44px}
   }
+
+  /* ---- section-to-section reveal: CSS scroll-driven, no JS ---- */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      @keyframes bloomRise {
+        from { opacity: 0; transform: translateY(26px) scale(.995); }
+        to   { opacity: 1; transform: none; }
+      }
+      main > section {
+        animation: bloomRise linear both;
+        animation-timeline: view();
+        animation-range: entry 2% entry 42%;
+      }
+      .cards .card, .oss .stat {
+        animation: bloomRise linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 34%;
+      }
+      .cards .card:nth-child(2), .oss .stat:nth-child(2) { animation-range: entry 6% entry 40%; }
+      .cards .card:nth-child(3), .oss .stat:nth-child(3) { animation-range: entry 10% entry 44%; }
+      .cards .card:nth-child(4) { animation-range: entry 14% entry 48%; }
+      .hero .phones { animation: bloomRise linear both; animation-timeline: view(); animation-range: entry 0% entry 30%; }
+    }
+  }
   @media (prefers-reduced-motion:reduce){*{transition:none!important; scroll-behavior:auto!important}}
 </style>
 </head>
