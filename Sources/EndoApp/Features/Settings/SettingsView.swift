@@ -56,7 +56,7 @@ struct SettingsView: View {
         // No own NavigationStack — pushed onto the shell's stack (HomeView's NavigationStack).
         Form {
                 // (b) Terminology customization (D-07).
-                Section("How Endo-App refers to things") {
+                Section("How OpenEndo refers to things") {
                     Picker("Bleeding", selection: bleedingTermBinding) {
                         ForEach(TerminologyPreference.BleedingTerm.allCases, id: \.self) { term in
                             Text(term.noun.capitalized).tag(term)
@@ -81,7 +81,7 @@ struct SettingsView: View {
                 } footer: {
                     Text(
                         "Turn this on if you don't have a cycle right now — for example on continuous "
-                        + "treatment. Endo-App stops showing any cycle estimate, and you can still log "
+                        + "treatment. OpenEndo stops showing any cycle estimate, and you can still log "
                         + "symptoms and bleeding as usual."
                     )
                 }
@@ -119,7 +119,7 @@ struct SettingsView: View {
                     }
                 } footer: {
                     Text(
-                        "Endo-App syncs only to your own private iCloud — no third party, no account. "
+                        "OpenEndo syncs only to your own private iCloud — no third party, no account. "
                         + "When iCloud is off, everything stays on this device."
                     )
                 }
@@ -277,7 +277,7 @@ struct SettingsView: View {
 
             // Denied-state (D-20): non-nagging line + a path to Settings.app. The app stays usable.
             if authStatus == .denied {
-                Text("Notifications are turned off for Endo-App. You can turn them on anytime in Settings.")
+                Text("Notifications are turned off for OpenEndo. You can turn them on anytime in Settings.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

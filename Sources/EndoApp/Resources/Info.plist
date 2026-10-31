@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   iOS app Info.plist.
-  CFBundleDisplayName "Endo-App" is the D-09 placeholder display name (finalize at branding/enrollment).
+  CFBundleDisplayName "OpenEndo" is the D-09 placeholder display name (finalize at branding/enrollment).
   No HealthKit / usage-description strings are present — none are needed yet (HealthKit is Phase 9).
   CloudKit sync is now ACTIVE (runtime-gated) in Phase 4: UIBackgroundModes (remote-notification, D-01/D-21
   — the CloudKit-sync decisions, NOT the D-04 withdraw-consent flow) ships below to let CloudKit drive
@@ -13,7 +13,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Endo-App</string>
+	<string>OpenEndo</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -49,7 +49,7 @@
 	     HealthConnectCopy.healthShareUsageDescription and is ClaimsPolicy-audited by
 	     HealthConnectCopyAuditTests (no forbidden verb, no gendered token). -->
 	<key>NSHealthShareUsageDescription</key>
-	<string>Endo-App can read your cycle, sleep, workout, and meal-day records from Apple Health so you do not have to log them twice. It stays on your device and in your private iCloud, and it is entirely optional.</string>
+	<string>OpenEndo can read your cycle, sleep, workout, and meal-day records from Apple Health so you do not have to log them twice. It stays on your device and in your private iCloud, and it is entirely optional.</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

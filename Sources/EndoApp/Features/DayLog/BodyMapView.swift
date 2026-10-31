@@ -1,7 +1,7 @@
 // Requirement: SYMP-02 — record pain location on an accessible body map (D-04, Pitfall 4).
 //
 // A human-silhouette pain map over the named `BodyRegion` set, matching the approved Pencil design
-// "Endo-App — Body Map Pain Selection". A gender-neutral front/back silhouette renders as a single
+// "OpenEndo — Body Map Pain Selection". A gender-neutral front/back silhouette renders as a single
 // SwiftUI `Path`; one tappable, accessible hotspot per region sits anatomically over it. Per RESEARCH
 // §"Discrete-region accessible body map hotspot" + Pitfall 4, the ACCESSIBILITY CONTRACT — not the
 // exact geometry — is what's load-bearing and is shipped here:

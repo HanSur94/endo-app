@@ -206,7 +206,7 @@ final class AppDependencies {
             //
             // NOTE: only the error TYPE is logged (never `error` verbatim) — SwiftDataError describes
             // the store/migration, not record contents, so no health values are surfaced.
-            print("⚠️ Endo-App: \(syncMode) ModelContainer failed to open (\(type(of: error))); recovering.")
+            print("⚠️ OpenEndo: \(syncMode) ModelContainer failed to open (\(type(of: error))); recovering.")
             // Destructive store deletion is SAFE only on the local-only path: there is no synced copy,
             // so a fresh on-disk store loses nothing the user could recover elsewhere. On the `.cloudKit`
             // path the failing store may be MID-SYNC, so we must NOT silently wipe it (data not yet
@@ -221,13 +221,13 @@ final class AppDependencies {
                     // Retry on-disk against the now-clean store so future data still persists across launches.
                     recovered = try makeModelContainer(syncMode: syncMode, inMemory: uiTestReset)
                 } catch {
-                    print("⚠️ Endo-App: on-disk recovery failed (\(type(of: error))); using in-memory store.")
+                    print("⚠️ OpenEndo: on-disk recovery failed (\(type(of: error))); using in-memory store.")
                 }
             } else {
                 // `.cloudKit` failure with no safe wipe — surface it loudly. The in-memory fallback keeps
                 // the app usable this launch WITHOUT touching the possibly-mid-sync on-disk store; on the
                 // next launch a healed iCloud/store state can open normally.
-                print("⚠️ Endo-App: \(syncMode) store not safely recoverable on disk (left intact); using in-memory store this launch.")
+                print("⚠️ OpenEndo: \(syncMode) store not safely recoverable on disk (left intact); using in-memory store this launch.")
             }
             if let recovered {
                 self.modelContainer = recovered
