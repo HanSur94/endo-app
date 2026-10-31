@@ -37,13 +37,13 @@ class LocalizedPolicySelfTests {
     }
 
     @ParameterizedTest
-    @EnumSource(value = PolicyLanguage::class, names = ["DE"])
+    @EnumSource(PolicyLanguage::class)
     fun mustFailYieldsExpectedFirstHit(lang: PolicyLanguage) {
         assertMustFail(lang, "")
     }
 
     @ParameterizedTest
-    @EnumSource(value = PolicyLanguage::class, names = ["DE"])
+    @EnumSource(PolicyLanguage::class)
     fun mustPassHasNoViolation(lang: PolicyLanguage) {
         val p = policy(lang)
         for (text in p.selfTest.mustPass) {
@@ -55,7 +55,7 @@ class LocalizedPolicySelfTests {
     }
 
     @ParameterizedTest
-    @EnumSource(value = PolicyLanguage::class, names = ["DE"])
+    @EnumSource(PolicyLanguage::class)
     fun normalizationFixturesFold(lang: PolicyLanguage) {
         val p = policy(lang)
         for (case in p.selfTest.normalization) {
@@ -68,7 +68,7 @@ class LocalizedPolicySelfTests {
     }
 
     @ParameterizedTest
-    @EnumSource(value = PolicyLanguage::class, names = ["DE"])
+    @EnumSource(PolicyLanguage::class)
     fun tokenizeFixturesMatch(lang: PolicyLanguage) {
         val p = policy(lang)
         for (case in p.selfTest.tokenize) {
@@ -83,7 +83,7 @@ class LocalizedPolicySelfTests {
     }
 
     @ParameterizedTest
-    @EnumSource(value = PolicyLanguage::class, names = ["DE"])
+    @EnumSource(PolicyLanguage::class)
     fun fixturesAreNotVacuous(lang: PolicyLanguage) {
         val st = policy(lang).selfTest
         assertTrue(st.mustFail.size >= 8, "[$lang] needs at least 8 mustFail fixtures, has ${st.mustFail.size}")
@@ -93,13 +93,13 @@ class LocalizedPolicySelfTests {
     }
 
     @ParameterizedTest
-    @EnumSource(value = PolicyLanguage::class, names = ["DE"])
+    @EnumSource(PolicyLanguage::class)
     fun forLanguageIsCached(lang: PolicyLanguage) {
         assertSame(ForbiddenTerms.forLanguage(lang), ForbiddenTerms.forLanguage(lang), "[$lang] forLanguage must return the cached instance")
     }
 
     @ParameterizedTest
-    @EnumSource(value = PolicyLanguage::class, names = ["DE"])
+    @EnumSource(PolicyLanguage::class)
     fun verdictsIgnoreDefaultLocale(lang: PolicyLanguage) {
         val saved = Locale.getDefault()
         try {
@@ -130,6 +130,49 @@ class LocalizedPolicySelfTests {
         assertNull(de.violation("BEHANDLUNGSTEAM"))
         assertEquals(listOf("schub", "frühwarnung"), de.tokens("Schub-Frühwarnung").map { it.folded })
         assertEquals("strasse", de.fold("STRAẞE"))
+    }
+
+    /** French: an elided causal verb is caught behind U+2019, the host word entraînement passes in
+     *  every spelling and case, and a decomposed (NFD) accent cannot dodge the diagnostic stem. */
+    @Test
+    fun frenchVerdicts() {
+        val fr = ForbiddenTerms.forLanguage(PolicyLanguage.FR)
+        assertEquals(
+            Violation(category = "causal", kind = "prefix", term = "entraîn"),
+            fr.violation("Le café l’entraîne."),
+        )
+        assertNull(fr.violation("entraînement"))
+        assertNull(fr.violation("entrainement"))
+        assertNull(fr.violation("ENTRAÎNEMENT"))
+        val nfd = "L'application détecte vos poussées."
+        assertTrue(nfd != java.text.Normalizer.normalize(nfd, java.text.Normalizer.Form.NFC), "fixture must really be NFD")
+        assertEquals("diagnostic", fr.violation(nfd)?.category)
+        assertEquals("détect", fr.violation(nfd)?.term)
+    }
+
+    /** Spanish: the everyday phrases that contain a forbidden-looking word stay clean, and the
+     *  diagnostic stem is caught in any case. */
+    @Test
+    fun spanishVerdicts() {
+        val es = ForbiddenTerms.forLanguage(PolicyLanguage.ES)
+        for (clean in listOf("Se trata de tus registros", "Mejor día", "Datos seguros", "Por cierto")) {
+            assertNull(es.violation(clean), "[ES] \"$clean\" must be clean, but hit ${es.violations(clean)}")
+        }
+        for (text in listOf("La app detecta tus brotes.", "LA APP DETECTA TUS BROTES.")) {
+            val v = es.violation(text)
+            assertEquals("diagnostic", v?.category, "[ES] \"$text\"")
+            assertEquals("detect", v?.term, "[ES] \"$text\"")
+        }
+    }
+
+    /** Every category that holds rules is exercised by at least one mustFail fixture, per language. */
+    @ParameterizedTest
+    @EnumSource(PolicyLanguage::class)
+    fun everyCategoryHasAMustFail(lang: PolicyLanguage) {
+        val covered = policy(lang).selfTest.mustFail.map { it.category }.toSet()
+        for (category in RuleKinds.CATEGORY_ORDER) {
+            assertTrue(category in covered, "[$lang] no mustFail fixture for category $category")
+        }
     }
 
     @Test

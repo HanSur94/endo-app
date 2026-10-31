@@ -70,7 +70,7 @@ case-insensitive flags, so the data uses plain strings only.
 | Key | Value |
 |-----|-------|
 | `schemaVersion` | `1` |
-| `policyRevision` | integer, bumped on every data change |
+| `policyRevision` | integer, `1` through the Phase 26 seed tuning; bumped on every data change from the 26-03 freeze onward (see Branch rule) |
 | `language` | equals the filename tag (`de`, `fr`, `es`) |
 | `reviewStatus` | `"draft-unreviewed"` (see Review status) |
 | `folding` | `{ "replace": [[from, to], ...] }`, applied in array order after lowercasing |
@@ -172,8 +172,9 @@ git checkout claude/endo-android-version-e608a7 -- l10n
 ```
 
 Any data fix goes to the Android branch first and is then re-copied. Never edit `l10n/` on the iOS
-branch to make a Swift test pass. Bump `policyRevision` on every data change, so a mismatch between
-the two branches shows up in test output.
+branch to make a Swift test pass. From the 26-03 freeze onward, bump `policyRevision` on every data
+change, so a mismatch between the two branches shows up in test output. During the Phase 26 seed tuning
+(26-01..26-03, before any iOS copy exists) it stays `1`.
 
 ## Review status
 
