@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "policyRevision": 1,
+  "language": "es",
+  "reviewStatus": "draft-unreviewed",
+  "folding": {
+    "replace": []
+  },
+  "categories": {
+    "diagnostic": {
+      "raw": [],
+      "word": [],
+      "prefix": ["diagnos", "diagnós", "detect", "detecc"],
+      "stem": [],
+      "phrase": []
+    },
+    "treatment": {
+      "raw": [],
+      "word": ["curar", "cura"],
+      "prefix": ["tratamient", "terapi", "terapéutic", "alivi", "preven", "curaci"],
+      "stem": [],
+      "phrase": []
+    },
+    "causal": {
+      "raw": [],
+      "word": ["porque", "mejora", "mejoran", "mejorar", "mejoró", "reduce", "reducen", "reducir"],
+      "prefix": ["caus", "provoc", "desencaden", "empeor", "agrav", "vinculad"],
+      "stem": [],
+      "phrase": ["debido a", "gracias a", "se debe a"]
+    },
+    "certainty": {
+      "raw": [],
+      "word": ["definitivamente"],
+      "prefix": ["predic", "predec", "predij", "pronóstic", "pronostic", "garantiz"],
+      "stem": [],
+      "phrase": ["vas a tener", "sin duda"]
+    },
+    "alarmist": {
+      "raw": [],
+      "word": ["ataque", "crisis", "grave"],
+      "prefix": ["peligr", "urgen", "alert", "alarm", "emergenc", "inminen"],
+      "stem": [],
+      "phrase": []
+    },
+    "imperative": {
+      "raw": [],
+      "word": ["toma", "evita", "debes", "deberías", "intenta"],
+      "prefix": [],
+      "stem": [],
+      "phrase": ["deja de", "tienes que"]
+    },
+    "gendered": {
+      "raw": [],
+      "word": ["mujer", "mujeres", "chica", "chicas", "señora", "cansada", "agotada", "estresada", "preocupada", "nerviosa", "aliviada", "afectada"],
+      "prefix": ["femenin"],
+      "stem": [],
+      "phrase": []
+    },
+    "precision": {
+      "raw": ["%", "p =", "p=", "r =", "r=", "valor p", "p-value"],
+      "word": [],
+      "prefix": [],
+      "stem": [],
+      "phrase": []
+    }
+  },
+  "allow": {
+    "tokens": [],
+    "phrases": []
+  },
+  "framing": ["no es consejo médico", "no es un producto sanitario", "posible asociación"],
+  "selfTest": {
+    "normalization": [
+      { "input": "Diagnóstico", "folded": "diagnóstico" },
+      { "input": "Diagno\u0301stico", "folded": "diagnóstico" },
+      { "input": "Curacio\u0301n", "folded": "curación" },
+      { "input": "15\u00A0%", "folded": "15 %" },
+      { "input": "15\u202F%", "folded": "15 %" },
+      { "input": "L\u2019app", "folded": "l'app" }
+    ],
+    "tokenize": [
+      { "input": "¿Estás cansada? Sí.", "tokens": ["estás", "cansada", "sí"], "sentenceInitial": [true, false, true] },
+      { "input": "Se trata de tus registros", "tokens": ["se", "trata", "de", "tus", "registros"], "sentenceInitial": [true, false, false, false, false] },
+      { "input": "L\u2019app", "tokens": ["l", "app"], "sentenceInitial": [true, false] }
+    ],
+    "mustFail": [
+      { "text": "La app detecta tus brotes.", "category": "diagnostic", "term": "detect" },
+      { "text": "LA APP DETECTA TUS BROTES.", "category": "diagnostic", "term": "detect" },
+      { "text": "Un diagno\u0301stico preciso.", "category": "diagnostic", "term": "diagnós" },
+      { "text": "Este tratamiento alivia el dolor.", "category": "treatment", "term": "tratamient" },
+      { "text": "El estrés provoca dolor.", "category": "causal", "term": "provoc" },
+      { "text": "Esto se debe al estrés.", "category": "causal", "term": "se debe a" },
+      { "text": "Vas a tener un brote mañana.", "category": "certainty", "term": "vas a tener" },
+      { "text": "¡Alerta de brote!", "category": "alarmist", "term": "alert" },
+      { "text": "Debes evitar los lácteos.", "category": "imperative", "term": "debes" },
+      { "text": "¿Estás cansada?", "category": "gendered", "term": "cansada" },
+      { "text": "En el 80\u00A0% de tus registros", "category": "precision", "term": "%" }
+    ],
+    "mustPass": [
+      "Se trata de tus registros",
+      "SE TRATA DE TUS REGISTROS",
+      "Mejor día",
+      "Datos seguros",
+      "Una sola vez",
+      "Lista de medicamentos",
+      "Por cierto",
+      "¿Por qué?"
+    ]
+  }
+}

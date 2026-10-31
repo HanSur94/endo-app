@@ -1,0 +1,308 @@
+{
+  "schemaVersion": 1,
+  "policyRevision": 1,
+  "reviewStatus": "draft-unreviewed",
+  "register": {
+    "de": { "form": "du", "banned": { "wordCased": ["Ihnen"], "wordCasedMidSentence": ["Sie", "Ihr", "Ihre", "Ihren", "Ihrem", "Ihrer", "Ihres"] } },
+    "fr": { "form": "vous", "banned": { "word": ["tu", "toi", "ton", "ta", "tes", "te", "t"] } },
+    "es": { "form": "tú", "banned": { "word": ["usted", "ustedes"] } }
+  },
+  "doNotTranslate": ["Health Connect", "Endo-App"],
+  "concepts": [
+    {
+      "id": "people_with_endometriosis",
+      "context": "the audience; always gender-neutral person-first wording",
+      "en": { "triggers": ["people with endometriosis"] },
+      "de": { "approved": ["Menschen mit Endometriose"], "banned": { "stem": ["frau", "patientin"] } },
+      "fr": { "approved": ["personnes atteintes d'endométriose"], "banned": { "word": ["femmes", "patientes"] } },
+      "es": { "approved": ["personas con endometriosis"], "banned": { "word": ["mujeres", "pacientes"] } }
+    },
+    {
+      "id": "possible_association",
+      "context": "a correlation the app noticed; never a cause",
+      "en": { "triggers": ["possible association"] },
+      "de": { "approved": ["möglicher Zusammenhang", "mögliche Zusammenhänge"], "banned": { "stem": ["ursach"] } },
+      "fr": { "approved": ["association possible"], "banned": { "prefix": ["caus"], "phrase": ["lien de cause"] } },
+      "es": { "approved": ["posible asociación"], "banned": { "prefix": ["caus"] } }
+    },
+    {
+      "id": "confidence_low",
+      "context": "lowest of three plain-language confidence words; never a number or certainty word",
+      "en": { "triggers": ["low — possible association"] },
+      "de": { "approved": ["Niedrig"], "banned": { "word": ["sicher", "gewissheit"] } },
+      "fr": { "approved": ["Faible"], "banned": { "word": ["certain", "certaine", "certitude"] } },
+      "es": { "approved": ["Baja"], "banned": { "word": ["seguro", "segura", "certeza"] } }
+    },
+    {
+      "id": "confidence_medium",
+      "context": "middle confidence word",
+      "en": { "triggers": ["medium — possible association"] },
+      "de": { "approved": ["Mittel"], "banned": { "word": ["sicher", "gewissheit"] } },
+      "fr": { "approved": ["Moyenne"], "banned": { "word": ["certain", "certaine", "certitude"] } },
+      "es": { "approved": ["Media"], "banned": { "word": ["seguro", "segura", "certeza"] } }
+    },
+    {
+      "id": "confidence_high",
+      "context": "highest confidence word; still only a possible association",
+      "en": { "triggers": ["high — possible association"] },
+      "de": { "approved": ["Hoch"], "banned": { "word": ["sicher", "gewissheit"] } },
+      "fr": { "approved": ["Élevée"], "banned": { "word": ["certain", "certaine", "certitude"] } },
+      "es": { "approved": ["Alta"], "banned": { "word": ["seguro", "segura", "certeza"] } }
+    },
+    {
+      "id": "clinician",
+      "context": "whoever treats the user; neutral, never a gendered specialist title",
+      "en": { "triggers": ["clinician"] },
+      "de": { "approved": ["Behandlungsteam", "Ärztin oder Arzt"], "banned": { "stem": ["frauenarzt"] } },
+      "fr": { "approved": ["professionnel de santé", "votre médecin"], "banned": { "word": ["gynécologue"] } },
+      "es": { "approved": ["profesional de la salud", "tu médico"], "banned": { "word": ["ginecólogo", "ginecóloga"] } }
+    },
+    {
+      "id": "flare",
+      "context": "a period of worse symptoms; never an attack or crisis",
+      "en": { "triggers": ["flare"] },
+      "de": { "approved": ["Schub", "Schübe", "Schubs"], "banned": { "word": ["anfall", "krise"], "stem": ["attacke"] } },
+      "fr": { "approved": ["poussée", "poussées"], "banned": { "word": ["crise", "crises", "attaque"] } },
+      "es": { "approved": ["brote", "brotes"], "banned": { "word": ["crisis", "ataque"] } }
+    },
+    {
+      "id": "flare_early_warning",
+      "context": "header of the flare hint card; a gentle hint, never a warning or alarm",
+      "en": { "triggers": ["early warning", "early sign"] },
+      "de": { "approved": ["Hinweis auf einen möglichen Schub"], "banned": { "stem": ["warn", "alarm"] } },
+      "fr": { "approved": ["signe d'une possible poussée"], "banned": { "prefix": ["alert", "alarm"] } },
+      "es": { "approved": ["indicio de un posible brote"], "banned": { "prefix": ["alert", "alarm"] } }
+    },
+    {
+      "id": "not_medical_advice",
+      "context": "standing disclaimer",
+      "en": { "triggers": ["not medical advice"] },
+      "de": { "approved": ["keine medizinische Beratung"], "banned": {} },
+      "fr": { "approved": ["ne remplace pas un avis médical"], "banned": {} },
+      "es": { "approved": ["no es consejo médico"], "banned": {} }
+    },
+    {
+      "id": "not_a_medical_device",
+      "context": "regulatory framing; ES uses the EU MDR term (LatAm 'dispositivo médico' is an open point)",
+      "en": { "triggers": ["not a medical device"] },
+      "de": { "approved": ["kein Medizinprodukt"], "banned": {} },
+      "fr": { "approved": ["pas un dispositif médical"], "banned": {} },
+      "es": { "approved": ["no es un producto sanitario"], "banned": {} }
+    },
+    {
+      "id": "self_tracking",
+      "context": "what the app is: a self-tracking tool",
+      "en": { "triggers": ["self-tracking"] },
+      "de": { "approved": ["Selbstbeobachtung", "Selbst-Tracking"], "banned": { "stem": ["therap"] } },
+      "fr": { "approved": ["suivi personnel"], "banned": { "prefix": ["thérap"] } },
+      "es": { "approved": ["autoseguimiento", "registro personal"], "banned": { "prefix": ["terapi"] } }
+    },
+    {
+      "id": "insights",
+      "context": "the insights tab and cards; observations, never findings or diagnoses",
+      "en": { "triggers": ["insight"] },
+      "de": { "approved": ["Einblicke"], "banned": { "stem": ["erkenntnis", "diagnos"] } },
+      "fr": { "approved": ["observations"], "banned": { "prefix": ["diagnos"] } },
+      "es": { "approved": ["observaciones"], "banned": { "prefix": ["diagnos", "diagnós"] } }
+    },
+    {
+      "id": "patterns",
+      "context": "recurring shapes in the user's own logs",
+      "en": { "triggers": ["pattern"] },
+      "de": { "approved": ["Muster"], "banned": {} },
+      "fr": { "approved": ["tendance", "tendances"], "banned": {} },
+      "es": { "approved": ["patrón", "patrones"], "banned": {} }
+    },
+    {
+      "id": "trend",
+      "context": "direction of a series over time",
+      "en": { "triggers": ["trend"] },
+      "de": { "approved": ["Verlauf", "Trend"], "banned": {} },
+      "fr": { "approved": ["évolution"], "banned": {} },
+      "es": { "approved": ["tendencia"], "banned": {} }
+    },
+    {
+      "id": "check_in",
+      "context": "the quick daily log screen",
+      "en": { "triggers": ["check-in"] },
+      "de": { "approved": ["Check-in", "Tageseintrag"], "banned": {} },
+      "fr": { "approved": ["suivi du jour"], "banned": {} },
+      "es": { "approved": ["registro diario"], "banned": {} }
+    },
+    {
+      "id": "symptom",
+      "context": "a logged symptom",
+      "en": { "triggers": ["symptom"] },
+      "de": { "approved": ["Symptom", "Symptome"], "banned": { "stem": ["befund"] } },
+      "fr": { "approved": ["symptôme", "symptômes"], "banned": {} },
+      "es": { "approved": ["síntoma", "síntomas"], "banned": {} }
+    },
+    {
+      "id": "severity",
+      "context": "how strong a symptom felt; never clinical gravity",
+      "en": { "triggers": ["severity"] },
+      "de": { "approved": ["Stärke", "Intensität"], "banned": { "stem": ["schweregrad"] } },
+      "fr": { "approved": ["intensité"], "banned": { "word": ["gravité"] } },
+      "es": { "approved": ["intensidad"], "banned": { "word": ["gravedad"] } }
+    },
+    {
+      "id": "period",
+      "context": "TerminologyPreference: everyday term for the menstrual period",
+      "en": { "triggers": ["period"] },
+      "de": { "approved": ["Periode", "Regel"], "banned": {} },
+      "fr": { "approved": ["règles"], "banned": {} },
+      "es": { "approved": ["regla", "periodo"], "banned": {} }
+    },
+    {
+      "id": "bleeding",
+      "context": "TerminologyPreference: neutral term for bleeding days",
+      "en": { "triggers": ["bleeding"] },
+      "de": { "approved": ["Blutung"], "banned": {} },
+      "fr": { "approved": ["saignement", "saignements"], "banned": {} },
+      "es": { "approved": ["sangrado"], "banned": {} }
+    },
+    {
+      "id": "menstruation",
+      "context": "TerminologyPreference: formal term",
+      "en": { "triggers": ["menstruation"] },
+      "de": { "approved": ["Menstruation"], "banned": {} },
+      "fr": { "approved": ["menstruation", "menstruations"], "banned": {} },
+      "es": { "approved": ["menstruación"], "banned": {} }
+    },
+    {
+      "id": "spotting",
+      "context": "light bleeding outside the period",
+      "en": { "triggers": ["spotting"] },
+      "de": { "approved": ["Schmierblutung"], "banned": {} },
+      "fr": { "approved": ["petits saignements", "spotting"], "banned": {} },
+      "es": { "approved": ["manchado"], "banned": {} }
+    },
+    {
+      "id": "endo_belly",
+      "context": "lay term for endometriosis-related bloating",
+      "en": { "triggers": ["endo belly"] },
+      "de": { "approved": ["Blähbauch", "Endo-Bauch"], "banned": {} },
+      "fr": { "approved": ["ballonnements", "ventre gonflé"], "banned": {} },
+      "es": { "approved": ["hinchazón abdominal"], "banned": {} }
+    },
+    {
+      "id": "painful_sex",
+      "context": "UI lay term; the clinical term is banned in UI copy",
+      "en": { "triggers": ["painful sex"] },
+      "de": { "approved": ["Schmerzen beim Sex"], "banned": { "stem": ["dyspareun"] } },
+      "fr": { "approved": ["douleurs pendant les rapports"], "banned": { "prefix": ["dyspareun"] } },
+      "es": { "approved": ["dolor durante las relaciones sexuales"], "banned": { "prefix": ["dispareun"] } }
+    },
+    {
+      "id": "period_pain",
+      "context": "UI lay term; the clinical term is banned in UI copy",
+      "en": { "triggers": ["period pain"] },
+      "de": { "approved": ["Periodenschmerzen", "Regelschmerzen"], "banned": { "stem": ["dysmenorr"] } },
+      "fr": { "approved": ["douleurs de règles"], "banned": { "prefix": ["dysménorr"] } },
+      "es": { "approved": ["dolor menstrual", "dolor de regla"], "banned": { "prefix": ["dismenorr"] } }
+    },
+    {
+      "id": "bowel_pain",
+      "context": "UI lay term; the clinical term is banned in UI copy",
+      "en": { "triggers": ["bowel pain", "painful bowel movements"] },
+      "de": { "approved": ["Schmerzen beim Stuhlgang"], "banned": { "stem": ["dyschez"] } },
+      "fr": { "approved": ["douleurs en allant à la selle"], "banned": { "prefix": ["dyschés"] } },
+      "es": { "approved": ["dolor al ir al baño"], "banned": { "prefix": ["disquec"] } }
+    },
+    {
+      "id": "urination_pain",
+      "context": "UI lay term; the clinical term is banned in UI copy",
+      "en": { "triggers": ["painful urination", "pain when urinating"] },
+      "de": { "approved": ["Schmerzen beim Wasserlassen"], "banned": { "stem": ["dysuri"] } },
+      "fr": { "approved": ["douleurs en urinant"], "banned": { "prefix": ["dysuri"] } },
+      "es": { "approved": ["dolor al orinar"], "banned": { "prefix": ["disuri"] } }
+    },
+    {
+      "id": "pelvic_pain",
+      "context": "a symptom type",
+      "en": { "triggers": ["pelvic pain"] },
+      "de": { "approved": ["Unterleibsschmerzen", "Beckenschmerzen"], "banned": {} },
+      "fr": { "approved": ["douleurs pelviennes"], "banned": {} },
+      "es": { "approved": ["dolor pélvico"], "banned": {} }
+    },
+    {
+      "id": "fatigue",
+      "context": "a symptom type; never a gendered adjective about the user",
+      "en": { "triggers": ["fatigue"] },
+      "de": { "approved": ["Erschöpfung", "Müdigkeit"], "banned": {} },
+      "fr": { "approved": ["fatigue"], "banned": { "word": ["fatiguée"] } },
+      "es": { "approved": ["cansancio", "fatiga"], "banned": { "word": ["cansada"] } }
+    },
+    {
+      "id": "brain_fog",
+      "context": "a symptom type",
+      "en": { "triggers": ["brain fog"] },
+      "de": { "approved": ["Gehirnnebel", "Konzentrationsprobleme"], "banned": {} },
+      "fr": { "approved": ["brouillard mental"], "banned": {} },
+      "es": { "approved": ["niebla mental"], "banned": {} }
+    },
+    {
+      "id": "medication",
+      "context": "a logged medicine; never a therapy or treatment",
+      "en": { "triggers": ["medication"] },
+      "de": { "approved": ["Medikament", "Medikamente"], "banned": { "stem": ["therap", "behandl"] } },
+      "fr": { "approved": ["médicament", "médicaments"], "banned": { "prefix": ["trait", "thérap"] } },
+      "es": { "approved": ["medicación", "medicamento", "dosis"], "banned": { "prefix": ["tratamient", "terapi"] } }
+    },
+    {
+      "id": "pain_relief",
+      "context": "a logged pain medicine; never a treatment claim",
+      "en": { "triggers": ["pain relief"] },
+      "de": { "approved": ["Schmerzmittel"], "banned": { "stem": ["schmerzbehandlung", "linder"] } },
+      "fr": { "approved": ["antidouleur", "antidouleurs"], "banned": { "prefix": ["soulag"], "phrase": ["traitement de la douleur"] } },
+      "es": { "approved": ["analgésico", "analgésicos"], "banned": { "prefix": ["alivi"], "phrase": ["tratamiento del dolor"] } }
+    },
+    {
+      "id": "activity",
+      "context": "logged physical activity",
+      "en": { "triggers": ["activity"] },
+      "de": { "approved": ["Aktivität", "Bewegung"], "banned": {} },
+      "fr": { "approved": ["activité physique", "entraînement"], "banned": {} },
+      "es": { "approved": ["actividad física"], "banned": {} }
+    },
+    {
+      "id": "report",
+      "context": "the PDF the user can share; never a medical finding",
+      "en": { "triggers": ["report"] },
+      "de": { "approved": ["Bericht"], "banned": { "stem": ["befund"] } },
+      "fr": { "approved": ["rapport"], "banned": { "phrase": ["compte rendu médical"] } },
+      "es": { "approved": ["informe"], "banned": { "word": ["diagnóstico"] } }
+    },
+    {
+      "id": "not_enough_data",
+      "context": "empty-state copy when a range has too few logs",
+      "en": { "triggers": ["not enough data"] },
+      "de": { "approved": ["Noch nicht genug Daten", "nicht genug Daten"], "banned": {} },
+      "fr": { "approved": ["Pas encore assez de données", "pas assez de données"], "banned": {} },
+      "es": { "approved": ["Aún no hay suficientes datos", "no hay suficientes datos"], "banned": {} }
+    },
+    {
+      "id": "encrypted",
+      "context": "encrypted export/import",
+      "en": { "triggers": ["encrypted"] },
+      "de": { "approved": ["verschlüsselt"], "banned": {} },
+      "fr": { "approved": ["chiffré", "chiffrée"], "banned": { "word": ["crypté", "cryptée"] } },
+      "es": { "approved": ["cifrado", "cifrada"], "banned": { "word": ["encriptado", "encriptada"] } }
+    }
+  ],
+  "selfTest": {
+    "pairs": [
+      { "en": "Possible flare pattern", "lang": "de", "text": "Mögliches Schub-Muster", "expect": "pass", "concept": null, "term": null },
+      { "en": "You logged pain?", "lang": "de", "text": "Sie haben Schmerzen eingetragen?", "expect": "pass", "concept": null, "term": null },
+      { "en": "Possible flare pattern", "lang": "de", "text": "Möglicher Anfall", "expect": "banned", "concept": "flare", "term": "anfall" },
+      { "en": "Worth discussing with your clinician", "lang": "de", "text": "Das könnten Sie mit Ihrem Behandlungsteam besprechen.", "expect": "register", "concept": null, "term": "Sie" },
+      { "en": "Possible flare pattern", "lang": "fr", "text": "Tendance possible de poussée", "expect": "pass", "concept": null, "term": null },
+      { "en": "Any patterns?", "lang": "fr", "text": "Y a-t-il des tendances ?", "expect": "pass", "concept": null, "term": null },
+      { "en": "Possible flare pattern", "lang": "fr", "text": "Crise possible", "expect": "banned", "concept": "flare", "term": "crise" },
+      { "en": "Worth discussing with your clinician", "lang": "fr", "text": "Tu peux en parler avec un professionnel de santé.", "expect": "register", "concept": null, "term": "tu" },
+      { "en": "Possible flare pattern", "lang": "es", "text": "Posible patrón de brote", "expect": "pass", "concept": null, "term": null },
+      { "en": "Possible flare pattern", "lang": "es", "text": "Posible crisis", "expect": "banned", "concept": "flare", "term": "crisis" },
+      { "en": "Worth discussing with your clinician", "lang": "es", "text": "Usted puede comentarlo con su profesional de la salud.", "expect": "register", "concept": null, "term": "usted" }
+    ]
+  }
+}

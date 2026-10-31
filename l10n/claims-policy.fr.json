@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "policyRevision": 1,
+  "language": "fr",
+  "reviewStatus": "draft-unreviewed",
+  "folding": {
+    "replace": []
+  },
+  "categories": {
+    "diagnostic": {
+      "raw": [],
+      "word": [],
+      "prefix": ["diagnos", "détect", "dépist"],
+      "stem": [],
+      "phrase": []
+    },
+    "treatment": {
+      "raw": [],
+      "word": ["prévenir", "remède"],
+      "prefix": ["trait", "thérap", "guér", "soulag", "prévent"],
+      "stem": [],
+      "phrase": []
+    },
+    "causal": {
+      "raw": [],
+      "word": [],
+      "prefix": ["caus", "provoqu", "déclench", "entraîn", "entrain", "aggrav", "amélior", "rédui"],
+      "stem": [],
+      "phrase": ["parce qu", "en raison d", "grâce à", "lié à", "liée à", "liés à", "liées à"]
+    },
+    "certainty": {
+      "raw": [],
+      "word": ["certainement", "certitude", "sûrement", "assurément", "forcément"],
+      "prefix": ["prédi", "prévis", "garanti", "inévitabl"],
+      "stem": [],
+      "phrase": ["vous allez avoir", "c est certain"]
+    },
+    "alarmist": {
+      "raw": [],
+      "word": ["crise", "crises", "grave"],
+      "prefix": ["dang", "urgen", "alert", "alarm", "attaqu", "imminen"],
+      "stem": [],
+      "phrase": []
+    },
+    "imperative": {
+      "raw": [],
+      "word": ["prenez", "arrêtez", "évitez", "essayez", "commencez", "réduisez", "consultez", "devez", "devriez"],
+      "prefix": [],
+      "stem": [],
+      "phrase": ["il faut", "vous devez"]
+    },
+    "gendered": {
+      "raw": [],
+      "word": ["femme", "femmes", "patiente", "patientes", "madame", "fille", "filles", "fatiguée", "épuisée", "stressée", "inquiète", "prête", "reposée", "soulagée"],
+      "prefix": ["fémin"],
+      "stem": [],
+      "phrase": []
+    },
+    "precision": {
+      "raw": ["%", "p =", "p=", "r =", "r=", "valeur p", "p-value"],
+      "word": [],
+      "prefix": [],
+      "stem": [],
+      "phrase": []
+    }
+  },
+  "allow": {
+    "tokens": [
+      { "token": "entraînement", "reason": "noun 'workout': approved activity term (glossary activity); the verb s'entraîner stays caught", "collidesWith": ["entraîn"] },
+      { "token": "entraînements", "reason": "plural of the approved activity term", "collidesWith": ["entraîn"] },
+      { "token": "entrainement", "reason": "1990-reform spelling of 'entraînement' (workout)", "collidesWith": ["entrain"] },
+      { "token": "entrainements", "reason": "plural of the 1990-reform spelling", "collidesWith": ["entrain"] }
+    ],
+    "phrases": [
+      { "phrase": "a t il", "reason": "formal-compatible inversion 'Y a-t-il': the euphonic t is not the tu-form register word t (glossary register)", "collidesWith": ["t"] }
+    ]
+  },
+  "framing": ["ne remplace pas un avis médical", "pas un dispositif médical", "association possible"],
+  "selfTest": {
+    "normalization": [
+      { "input": "Guérir", "folded": "guérir" },
+      { "input": "Gue\u0301rir", "folded": "guérir" },
+      { "input": "15\u202F%", "folded": "15 %" },
+      { "input": "L\u2019entraîne", "folded": "l'entraîne" },
+      { "input": "Alerte\u00A0:", "folded": "alerte :" },
+      { "input": "ÉVITEZ", "folded": "évitez" }
+    ],
+    "tokenize": [
+      { "input": "l\u2019entraîne", "tokens": ["l", "entraîne"], "sentenceInitial": [true, false] },
+      { "input": "Y a-t-il des tendances ?", "tokens": ["y", "a", "t", "il", "des", "tendances"], "sentenceInitial": [true, false, false, false, false, false] },
+      { "input": "Le café. L'alcool aussi !", "tokens": ["le", "café", "l", "alcool", "aussi"], "sentenceInitial": [true, false, true, false, false] }
+    ],
+    "mustFail": [
+      { "text": "L'application détecte vos poussées.", "category": "diagnostic", "term": "détect" },
+      { "text": "L'application de\u0301tecte vos pousse\u0301es.", "category": "diagnostic", "term": "détect" },
+      { "text": "Ce traitement soulage la douleur.", "category": "treatment", "term": "trait" },
+      { "text": "Le stress provoque des douleurs.", "category": "causal", "term": "provoqu" },
+      { "text": "LE STRESS PROVOQUE DES DOULEURS.", "category": "causal", "term": "provoqu" },
+      { "text": "Le café l\u2019entraîne.", "category": "causal", "term": "entraîn" },
+      { "text": "Vous allez avoir une poussée.", "category": "certainty", "term": "vous allez avoir" },
+      { "text": "Alerte\u202F: poussée imminente\u202F!", "category": "alarmist", "term": "alert" },
+      { "text": "Évitez les produits laitiers.", "category": "imperative", "term": "évitez" },
+      { "text": "Êtes-vous fatiguée ?", "category": "gendered", "term": "fatiguée" },
+      { "text": "Dans 80\u202F% de vos entrées", "category": "precision", "term": "%" }
+    ],
+    "mustPass": [
+      "entraînement",
+      "entrainement",
+      "ENTRAÎNEMENT",
+      "Certains jours",
+      "Y a-t-il des tendances ?",
+      "Une seule fois",
+      "Personnes atteintes d'endométriose"
+    ]
+  }
+}
