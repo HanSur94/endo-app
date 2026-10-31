@@ -4,17 +4,17 @@ milestone: v2.1
 milestone_name: Multilingual
 current_phase: 26
 current_phase_name: Shared l10n Foundation
-status: executing
-stopped_at: Completed 26-02-PLAN.md
-last_updated: "2026-10-31T14:25:23.495Z"
+status: verifying
+stopped_at: Completed 26-03-PLAN.md
+last_updated: "2026-10-31T14:51:08.824Z"
 last_activity: 2026-10-31
 last_activity_desc: v2.1 roadmap created (Phases 26–33, 27/27 requirements mapped)
-state_head: 3d638ada1bbbfd1e5fa13f63fe4734e08c6276ae
+state_head: 5d39b15fd80d1b3816540fe2cffce0b806029bdb
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-10-31)
 
 Phase: 26 (Shared l10n Foundation) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-10-31 — Completed 26-02 (DE/FR/ES claims matcher, self/schema/parity suites)
+Status: Android half complete (26-01..26-03); iOS half 26-04/26-05 not yet planned, phase NOT complete
+Last activity: 2026-10-31 — Completed 26-03 (:app delegate, glossary enforcement, allow hygiene, tripwire; l10n/ frozen at 411463b)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 |------|----------|-------|-------|
 | Phase 26 P01 | 9min | 3 tasks | 8 files |
 | Phase 26 P02 | 12min | 3 tasks | 8 files |
+| Phase 26 P03 | 20min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase 26]: 26-01: SAFE-01..03 left unchecked until the failing tests land in 26-02/26-03 (plan delivers data only)
 - [Phase 26]: 26-02: No seed-data tuning needed; all DE/FR/ES fixtures green against the Kotlin matcher on first run (policyRevision stays 1)
 - [Phase 26]: 26-02: README clarifies policyRevision stays 1 through Phase 26 seed tuning and is bumped on every data change from the 26-03 freeze onward
+- [Phase 26]: 26-03: l10n/ frozen for the iOS copy at 411463b (last l10n change 3e70c3f); iOS takes it only via git checkout claude/endo-android-version-e608a7 -- l10n; any later data change bumps policyRevision on the Android branch first
+- [Phase 26]: 26-03: glossary conformance order is register, then banned over all triggered concepts (mask on), then missing approved (mask off)
+- [Phase 26]: 26-03: later phases register each localized source with one L10nSource line in the :app test registry; the tripwire fails until they do
 
 ### Pending Todos
 
@@ -113,8 +117,8 @@ Items carried forward from previous milestone closes (release/device/human-gated
 
 ## Session Continuity
 
-Last session: 2026-10-31T14:25:23.470Z
-Stopped at: Completed 26-02-PLAN.md
+Last session: 2026-10-31T14:51:08.799Z
+Stopped at: Completed 26-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

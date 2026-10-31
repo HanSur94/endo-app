@@ -91,7 +91,7 @@ Languages: English (source), German, French, Spanish. Platforms: Android (`andro
 | LANG-06 | Phase 28 | Pending |
 | SAFE-01 | Phase 26 | Android done (26-02), iOS pending (26-04/05) |
 | SAFE-02 | Phase 26 | Android done (26-02), iOS pending (26-04/05) |
-| SAFE-03 | Phase 26 | Pending |
+| SAFE-03 | Phase 26 | Android done (26-03), iOS pending (26-04/05) |
 | SAFE-04 | Phase 26 | Android done (26-02), iOS pending (26-04/05) |
 | INSL-01 | Phase 32 | Pending |
 | INSL-02 | Phase 27 | Pending |
