@@ -26,7 +26,7 @@ See [MILESTONES.md](MILESTONES.md) for shipped-version history. Release checklis
 
 **Pre-translation verification:** until Phase 32 adds real DE/FR/ES text, Phases 28–31 verify non-English behaviour with pseudo-locales (Android `en-XA`, the iOS double-length pseudolanguage) and seeded test strings; Phase 32 re-runs those checks with the real translations.
 
-- [ ] **Phase 26: Shared l10n Foundation** - One shared glossary and per-language (DE/FR/ES) claims policies, enforced on both platforms before any translation exists
+- [x] **Phase 26: Shared l10n Foundation** - One shared glossary and per-language (DE/FR/ES) claims policies, enforced on both platforms before any translation exists
 - [ ] **Phase 27: Language-Neutral Insight Messages** - Both engines emit structured messages beside the unchanged English text; the insight cache becomes language-neutral
 - [ ] **Phase 28: Android Language Switching** - In-app picker + Android 13+ App languages, live switching, persistence on Android 8–16, reminders in the chosen language
 - [ ] **Phase 29: Android String Catalog** - Every Android string moves into `strings.xml` + plurals; the catalog becomes the audit registry; exports stay language-neutral
