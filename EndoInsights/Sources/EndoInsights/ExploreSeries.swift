@@ -206,7 +206,7 @@ public enum ExploreSeriesCatalog {
         for type in SymptomType.allCases {
             series.append(ExploreSeries(
                 id: "symptom.\(type.rawValue).severity",
-                displayName: "\(type.rawValue) severity",
+                displayName: "\(type.displayName) severity",
                 unit: "of 10",
                 scaleKind: .ordinal0to10,
                 field: .symptomSeverity(type)
@@ -217,7 +217,7 @@ public enum ExploreSeriesCatalog {
         for region in BodyRegion.allCases {
             series.append(ExploreSeries(
                 id: "pain.\(region.rawValue).severity",
-                displayName: "\(region.rawValue) pain severity",
+                displayName: "\(region.displayName) pain severity",
                 unit: "of 10",
                 scaleKind: .ordinal0to10,
                 field: .painSeverity(region)

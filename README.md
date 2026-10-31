@@ -1,5 +1,12 @@
 # OpenEndo
 
+<p align="center">
+  <img src="docs/screenshots/02-home.png" width="220" alt="OpenEndo home screen">
+  <img src="docs/screenshots/05-insights.png" width="220" alt="OpenEndo insights screen">
+  <img src="docs/screenshots/09-explore-lanes.png" width="220" alt="OpenEndo explore screen">
+</p>
+
+
 **A free, privacy-first endometriosis symptom tracker — native iOS and native Android.**
 No account, no backend, no analytics. Your data stays on your device and in your own private iCloud.
 
