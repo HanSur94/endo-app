@@ -5,16 +5,16 @@ milestone_name: Multilingual
 current_phase: 26
 current_phase_name: Shared l10n Foundation
 status: executing
-stopped_at: v2.1 roadmap created — ROADMAP.md (Phases 26–33) + REQUIREMENTS.md traceability written; awaiting approval
-last_updated: "2026-10-31T13:57:36.241Z"
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-10-31T14:13:00.788Z"
 last_activity: 2026-10-31
 last_activity_desc: v2.1 roadmap created (Phases 26–33, 27/27 requirements mapped)
-state_head: 7065d654953c0686a3277b8f7e45050090bb84b1
+state_head: 725686ea06b418658c384e21c06380731c039278
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-10-31)
 
 ## Current Position
 
-Phase: 26 (Shared l10n Foundation) — READY TO EXECUTE
-Plan: — (not planned yet)
+Phase: 26 (Shared l10n Foundation) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-10-31 — v2.1 roadmap created (Phases 26–33, 27/27 requirements mapped)
+Last activity: 2026-10-31 — Completed 26-01 (shared l10n data, Gradle classpath wiring, CI trigger)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -49,6 +49,11 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 26 P01 | 9min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -63,6 +68,9 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Research v2.1]: Android per-app language WITHOUT AppCompat (framework `LocaleManager` on 33+, app-owned controller on 26–32, tag in SharedPreferences read synchronously); fallback AppCompat 1.7.1 if the API 30 check fails. iOS in-app override gated by a 1-day spike (fallback: Settings deep-link + re-word LANG-02); do not write `AppleLanguages` by default.
 - [Research v2.1]: Shared dir is `l10n/` (`glossary.json`, `insight-messages.json`, `claims-policy.{de,fr,es}.json`, `golden/`); English forbidden lists stay in code unchanged (the drift test regex-parses the Swift declarations). Register fixed by SAFE-03: DE "du", FR "vous", ES "tú".
 - [Carried invariants]: absence ≠ 0, the single `HonestyGate`, the ClaimsPolicy copy choke-point, no-`INTERNET` manifest, read-only Health Connect/HealthKit, zero analytics — all stay green through v2.1. Substring traps are real ("her" ⊂ "here", "cause" ⊂ "because") — the DE/FR/ES lists need allow-lists from day one.
+- [Phase 26]: 26-01: DE certainty uses stems vorhersag/vorhergesag/vorherseh so allow token vorher is a pure EN-trap control
+- [Phase 26]: 26-01: selfTest first-hit {category, term} fixtures verified against a reference matcher of the README spec; 26-02 Kotlin matcher must reproduce them
+- [Phase 26]: 26-01: SAFE-01..03 left unchecked until the failing tests land in 26-02/26-03 (plan delivers data only)
 
 ### Pending Todos
 
@@ -102,8 +110,8 @@ Items carried forward from previous milestone closes (release/device/human-gated
 
 ## Session Continuity
 
-Last session: 2026-10-31T10:48:28.000Z
-Stopped at: v2.1 roadmap created — ROADMAP.md (Phases 26–33) + REQUIREMENTS.md traceability written; awaiting approval
+Last session: 2026-10-31T14:12:50.562Z
+Stopped at: Completed 26-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
