@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenEndo — a private endometriosis symptom tracker</title>
+<meta name="description" content="OpenEndo is a free, open-source symptom tracker for endometriosis. Log your day in under a minute, see patterns in your own logs, export a report for your appointment. Everything stays on your device.">
+<meta property="og:title" content="OpenEndo — a private endometriosis symptom tracker">
+<meta property="og:description" content="Free and open source. No account, no server, no analytics. Your data stays on your device.">
+<meta property="og:image" content="screenshots/02-home.png">
+<meta name="theme-color" content="#efe0e6">
+<link rel="icon" href="assets/favicon.svg">
+<style>
+  :root{
+    --canvas:#e9e0e6; --surface:#fbf8fa; --sunken:#f3ecf0; --card:#ffffff;
+    --ink:#2a1020; --ink2:#6b4f61; --ink3:#715a68;
+    --rose:#ef6e8e; --rose-deep:#dc4f73; --plum:#6e2153; --plum-deep:#4a1338;
+    --gold:#f7b544; --petal:#f7e3ea; --petal-line:#edd9e4; --stroke:#e8dce5;
+    --serif:ui-serif,"New York","Iowan Old Style",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    --shadow:0 6px 14px rgba(110,33,83,.08);
+    --shadow-lg:0 24px 60px rgba(110,33,83,.16);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:var(--canvas); color:var(--ink); font-family:var(--sans); font-size:17px; line-height:1.6; -webkit-font-smoothing:antialiased}
+  img{max-width:100%; display:block}
+  a{color:var(--plum)}
+  .wrap{width:min(1120px,calc(100% - 48px)); margin-inline:auto}
+  .eyebrow{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); margin:0 0 14px}
+  h1,h2,h3{font-family:var(--serif); font-weight:600; letter-spacing:-.01em; margin:0}
+
+  header{position:sticky; top:0; z-index:10; background:rgba(233,224,230,.86); backdrop-filter:saturate(1.4) blur(14px); border-bottom:1px solid var(--stroke)}
+  nav{display:flex; align-items:center; gap:28px; height:64px}
+  .wordmark{font-family:var(--serif); font-size:21px; font-weight:600; text-decoration:none; color:var(--ink)}
+  .wordmark span{color:var(--rose-deep)}
+  nav .links{display:flex; gap:22px; margin-left:auto}
+  nav a.plain{color:var(--ink2); text-decoration:none; font-size:15px}
+  nav a.plain:hover{color:var(--ink)}
+  .btn{display:inline-flex; align-items:center; gap:8px; text-decoration:none; font-weight:600; font-size:15px; padding:11px 18px; border-radius:999px; border:1px solid transparent; transition:transform .15s ease, box-shadow .15s ease}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-primary{background:var(--plum); color:#fff; box-shadow:var(--shadow)}
+  .btn-primary:hover{background:var(--plum-deep)}
+  .btn-ghost{background:var(--card); color:var(--ink); border-color:var(--stroke); box-shadow:var(--shadow)}
+  .btn-ghost:hover{border-color:var(--petal-line)}
+  .btn-sm{padding:9px 15px; font-size:14px}
+
+  .hero{padding:72px 0 20px; position:relative; overflow:clip}
+  .hero::before{content:""; position:absolute; inset:-64px -20% auto; height:620px; background:linear-gradient(180deg,#f7e3ea 0%,rgba(247,227,234,0) 78%); z-index:-1}
+  .hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center}
+  h1{font-size:clamp(38px,4.6vw,60px); line-height:1.06; text-wrap:balance}
+  h1 em{font-style:normal; color:var(--rose-deep)}
+  .lede{font-size:19px; color:var(--ink2); margin:22px 0 0; max-width:34ch}
+  .cta{display:flex; flex-wrap:wrap; gap:12px; margin-top:32px}
+  .meta{display:flex; flex-wrap:wrap; gap:18px; margin-top:26px; font-size:14px; color:var(--ink3)}
+  .meta span{display:inline-flex; align-items:center; gap:7px}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--rose)}
+
+  .phones{display:flex; justify-content:center; align-items:flex-end; gap:16px}
+  .phone{background:var(--card); border-radius:38px; padding:8px; box-shadow:var(--shadow-lg); border:1px solid var(--petal-line); flex:1 1 0; min-width:0; max-width:210px}
+  .phone img{border-radius:31px; width:100%; height:auto}
+  .phone.mid{transform:translateY(-22px); z-index:1}
+
+  section{padding:88px 0}
+  .section-head{max-width:62ch; margin-bottom:44px}
+  h2{font-size:clamp(28px,3vw,38px); line-height:1.14; margin-top:8px}
+  h2 + p{color:var(--ink2); margin:14px 0 0}
+
+  .cards{display:grid; grid-template-columns:repeat(2,1fr); gap:20px}
+  .card{background:var(--card); border:1px solid var(--stroke); border-radius:22px; padding:28px; box-shadow:var(--shadow)}
+  .card h3{font-size:20px; margin-bottom:10px}
+  .card p{margin:0; color:var(--ink2); font-size:16px}
+  .card .n{display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:9px; background:var(--petal); color:var(--plum); font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; margin-bottom:16px}
+
+  .rail{display:flex; gap:22px; overflow-x:auto; padding:6px 0 22px; scroll-snap-type:x mandatory}
+  .rail figure{flex:0 0 auto; margin:0; scroll-snap-align:start; width:230px}
+  .rail .phone{padding:7px; border-radius:34px; width:100%}
+  .rail .phone img{border-radius:27px; width:100%}
+  figcaption{font-size:13.5px; color:var(--ink2); margin-top:14px; text-align:center}
+
+  .band{background:var(--plum); color:#f3e7ee}
+  .band .eyebrow{color:#e5b9cc}
+  .band h2{color:#fff}
+  .band p{color:#e3ccda}
+  .band-grid{display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center}
+  .checks{list-style:none; padding:0; margin:26px 0 0; display:grid; gap:14px}
+  .checks li{display:flex; gap:12px; align-items:flex-start; color:#efdbe5; font-size:16px}
+  .checks svg{flex:0 0 auto; margin-top:4px}
+  .band .btn-ghost{background:transparent; color:#fff; border-color:rgba(255,255,255,.34); box-shadow:none}
+  .band .btn-ghost:hover{background:rgba(255,255,255,.1)}
+  .quote{font-family:var(--serif); font-size:22px; line-height:1.45; color:#fff; border-left:3px solid var(--rose); padding-left:22px; margin:0}
+  .quote small{display:block; font-family:var(--sans); font-size:13.5px; color:#d3b3c4; margin-top:14px; letter-spacing:.02em}
+
+  .oss{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+  .stat{background:var(--surface); border:1px solid var(--stroke); border-radius:18px; padding:22px}
+  .stat b{display:block; font-family:var(--serif); font-size:30px; color:var(--plum); line-height:1.1; margin-bottom:6px}
+  .stat span{font-size:14px; color:var(--ink2)}
+
+  footer{border-top:1px solid var(--stroke); padding:40px 0 56px; color:var(--ink2); font-size:14px}
+  .foot{display:flex; flex-wrap:wrap; gap:18px; align-items:center; justify-content:space-between}
+  .disclaimer{max-width:70ch; margin:18px 0 0; color:var(--ink3); font-size:13px; line-height:1.55}
+
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr; gap:40px}
+    .lede{max-width:100%}
+    .phones{justify-content:flex-start; gap:12px}
+    .phone.mid{transform:translateY(-8px)}
+    .cards,.band-grid,.oss{grid-template-columns:1fr}
+    nav .links{display:none}
+    section{padding:64px 0}
+    .hero{padding-top:44px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="wrap">
+    <a class="wordmark" href="#top">Open<span>Endo</span></a>
+    <div class="links">
+      <a class="plain" href="#how">How it works</a>
+      <a class="plain" href="#screens">Screens</a>
+      <a class="plain" href="#privacy">Privacy</a>
+      <a class="plain" href="#source">Open source</a>
+    </div>
+    <a class="btn btn-primary btn-sm" href="https://github.com/HanSur94/endo-app">GitHub</a>
+  </nav>
+</header>
+
+<main id="top">
+
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Free · Open source · No account</p>
+        <h1>A quieter way to keep track of <em>endo.</em></h1>
+        <p class="lede">Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/HanSur94/endo-app">View on GitHub<svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+          <a class="btn btn-ghost" href="#screens">See the screens</a>
+        </div>
+        <div class="meta">
+          <span><i class="dot"></i>iPhone &amp; iPad</span>
+          <span><i class="dot"></i>Android</span>
+          <span><i class="dot"></i>MIT licensed</span>
+        </div>
+      </div>
+
+      <div class="phones">
+        <div class="phone side"><img src="screenshots/02-home.png" alt="Home screen showing the cycle estimate, today's check-in button and recent history"></div>
+        <div class="phone mid"><img src="screenshots/05-insights.png" alt="Insights screen with pattern cards built from logged days"></div>
+        <div class="phone side"><img src="screenshots/09-explore-lanes.png" alt="Explore screen with one lane per tracked signal"></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">How it works</p>
+        <h2>Five taps a day. That is the whole routine.</h2>
+        <p>OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.</p>
+      </div>
+      <div class="cards">
+        <div class="card">
+          <span class="n">01</span>
+          <h3>Check in once a day</h3>
+          <p>Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.</p>
+        </div>
+        <div class="card">
+          <span class="n">02</span>
+          <h3>See what moves together</h3>
+          <p>Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.</p>
+        </div>
+        <div class="card">
+          <span class="n">03</span>
+          <h3>Explore any two signals</h3>
+          <p>Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.</p>
+        </div>
+        <div class="card">
+          <span class="n">04</span>
+          <h3>Hand over a report</h3>
+          <p>Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screens" style="background:var(--surface); border-block:1px solid var(--stroke)">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Screens</p>
+        <h2>Every screenshot here is the shipping app.</h2>
+        <p>Captured from the real build with demo data by an automated UI test — not a mockup, not a redesign.</p>
+      </div>
+      <div class="rail">
+        <figure class="phone"><img src="screenshots/02-home.png" alt="Home"><figcaption>Home — cycle estimate and today</figcaption></figure>
+        <figure class="phone"><img src="screenshots/03-check-in.png" alt="Daily check-in"><figcaption>Daily check-in</figcaption></figure>
+        <figure class="phone"><img src="screenshots/04-check-in-factors.png" alt="Symptoms and severity"><figcaption>Symptoms and severity</figcaption></figure>
+        <figure class="phone"><img src="screenshots/05-insights.png" alt="Insights"><figcaption>Insights — with the days behind each card</figcaption></figure>
+        <figure class="phone"><img src="screenshots/08-explore.png" alt="Explore"><figcaption>Explore — lanes and scatter</figcaption></figure>
+        <figure class="phone"><img src="screenshots/07-report.png" alt="Report preview"><figcaption>Exportable PDF report</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" class="band">
+    <div class="wrap band-grid">
+      <div>
+        <p class="eyebrow">Privacy</p>
+        <h2>There is no server to send your data to.</h2>
+        <p style="margin-top:16px">No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.</p>
+        <ul class="checks">
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Data lives in the app's own store on your phone</span></li>
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Backups go through your own iCloud or Android backup, if you use one</span></li>
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Nothing is sent anywhere, so nothing can be sold or leaked</span></li>
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>You can read the privacy policy — and the code that implements it</span></li>
+        </ul>
+        <div class="cta">
+          <a class="btn btn-ghost" href="https://github.com/HanSur94/endo-app/blob/main/docs/privacy.md">Read the privacy policy</a>
+        </div>
+      </div>
+      <div>
+        <blockquote class="quote">
+          &ldquo;Tracking is the one thing I can actually do between appointments. I wanted a tool that stops asking for an account and starts showing me what I already wrote down.&rdquo;
+          <small>Why OpenEndo exists</small>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <section id="source">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Open source</p>
+        <h2>MIT licensed, and small enough to read.</h2>
+        <p>Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.</p>
+      </div>
+      <div class="oss">
+        <div class="stat"><b>474</b><span>unit tests across the two codebases</span></div>
+        <div class="stat"><b>0</b><span>third-party analytics SDKs</span></div>
+        <div class="stat"><b>MIT</b><span>fork it, audit it, ship your own</span></div>
+      </div>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/HanSur94/endo-app">github.com/HanSur94/endo-app</a>
+        <a class="btn btn-ghost" href="https://github.com/HanSur94/endo-app/blob/main/CONTRIBUTING.md">Contributing</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <span class="wordmark" style="font-size:17px">Open<span>Endo</span></span>
+      <span><a href="https://github.com/HanSur94/endo-app/blob/main/docs/privacy.md">Privacy</a> · <a href="https://github.com/HanSur94/endo-app/issues">Support</a> · <a href="https://github.com/HanSur94/endo-app">GitHub</a> · MIT</span>
+    </div>
+    <p class="disclaimer">OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.</p>
+  </div>
+</footer>
+
+</body>
+</html>
