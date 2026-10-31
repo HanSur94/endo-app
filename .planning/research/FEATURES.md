@@ -1,164 +1,216 @@
 # Feature Research
 
-**Domain:** Android port of a privacy-first endometriosis tracking app (feature set locked by iOS v1.1 parity — this document covers only the Android-specific delivery of those features)
-**Researched:** 2026-07-08
-**Confidence:** MEDIUM (verified against developer.android.com / Play Console Help pages surfaced in search; provider-tier per `classify-confidence`: websearch-verified = MEDIUM)
+**Domain:** Multilingual support (EN/DE/FR/ES) with in-app language selection, for an existing endometriosis self-tracking and insights app (Android Kotlin/Compose + iOS SwiftUI)
+**Researched:** 2026-10-31
+**Confidence:** MEDIUM overall. Platform mechanics are HIGH (official docs, corroborated). Competitor behaviour is MEDIUM (vendor help pages). Patient terminology and per-language claims lists are MEDIUM/LOW: drafted from patient-org and health-portal usage. A native speaker must review them before release, and that review is already a human-gated step in PROJECT.md.
 
-> **Scope note:** WHAT to build is fixed by parity (see PROJECT.md Validated + ANDROID-PORT-PLAN.md Section 4). This file answers HOW those features behave natively on Android — the platform norms Android users expect, what is table stakes vs. optional, and what to deliberately not do.
+> Scope: only what v2.1 adds. Everything in PROJECT.md "Validated" is treated as existing infrastructure that this work depends on.
+
+## How good period/health apps handle language (observed behaviour)
+
+| App | Where the picker lives | Default | Switch behaviour | Notes |
+|-----|------------------------|---------|------------------|-------|
+| **Clue** (27 languages) | **iOS:** system per-app language (Settings › Clue › Language). **Android:** follows the device language, with no in-app picker documented. | Device language | iOS relaunches the app. On Android some OEMs (Xiaomi) needed a reinstall. | Clue added no in-app picker. It relies on the OS. |
+| **Flo** | **iOS:** in-app (Menu › Settings › Change Language). **Android:** device language only. | Device language | iOS needs a force-quit and reopen | A "restart required" picker is an old, clunky pattern that gets user complaints. |
+| **Endo-App (DiGA)** | German-first, with only the website/FAQ in English | German | n/a | It is a medical device (Class I, PZN listed). Its copy can say "Therapie"; ours cannot. Its German content uses "Endo-Belly" / "Blähbauch". |
+| **Bearable** | Could not verify (LOW) | n/a | n/a | n/a |
+
+**Platform reality (HIGH):**
+- **Android 13+** has system per-app language (`LocaleManager`, plus `locales_config.xml` and `android:localeConfig`, which also list the app under System Settings › App languages). **AndroidX AppCompat** `AppCompatDelegate.setApplicationLocales()` backports this to older API levels. It persists the choice (`autoStoreLocales`) and **recreates the Activity**, so there is no app restart. An empty list means "follow system". **Dependency:** the app is `ComponentActivity` with minSdk 26 and has no AppCompat. The backport for API 26–32 needs `androidx.appcompat` and `AppCompatActivity`, or an API-33-only path plus a manual fallback. This is a STACK/ARCHITECTURE decision.
+- **iOS 13+** has system per-app language under Settings › App › Language. The app relaunches on change. Apple discourages custom in-app language choosers and recommends deep-linking to Settings (`UIApplication.openSettingsURLString`). The Language row is hidden when the user has only one preferred language. The workaround is the Info.plist key `UIPrefersShowingLanguageSettings = YES` (MEDIUM: forum-sourced, verify against the current SDK).
+
+**Opinionated recommendation:** Settings › "Language" on both platforms, showing the current language and a "System default" option.
+- **Android:** a true in-app list (System default / English / Deutsch / Français / Español) via AppCompat per-app locales. It switches live through Activity recreation.
+- **iOS:** an in-app row that names the current language and opens the system per-app language page. Do **not** override `AppleLanguages` or hot-swap `Bundle`s. This still meets "chosen inside the app": the entry point is in the app, the OS does the switch, and the app relaunches without data loss.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Platform behaviors Android users (and Google Play review) assume exist. Missing these = the port feels like a bad iOS transplant or fails review.
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Health Connect rationale surface (manifest-declared)** | Hard Play requirement, not UX polish: an Activity handling `ACTION_SHOW_PERMISSIONS_RATIONALE` (Android 13-) **plus** an activity-alias handling `VIEW_PERMISSION_USAGE` + category `HEALTH_PERMISSIONS` (Android 14+), reachable from the privacy-policy link on Health Connect's own permission screen. Must show the same privacy policy as the store listing. | LOW | Phase 5 builds it; Phase 8 declares it. Missing/mismatched = rejection under the Health apps policy (Jan 2026 enforcement added per-data-type justification). |
-| **Health Connect availability gating** | HC is a framework module on Android 14+, but a separate Play-installed app on 13 and below. `getSdkStatus()` returns SDK_AVAILABLE / SDK_UNAVAILABLE / SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED — the import surface must render all three honestly (offer the Play deep link to install/update, never block manual logging). | LOW–MEDIUM | Already a locked decision (plan Section 1 note). minSdk 26 guarantees the "separate app" path exists on a large slice of devices. |
-| **"Health Connect can be empty" expectation-setting** | HC is a broker, not a data source. Data exists only if a provider app (Samsung Health, Fitbit, etc.) wrote it. A permission grant followed by zero records is the *common* first-run outcome — the import UI needs an honest "nothing to import yet, here's why" state, which happens to match the app's absence ≠ 0 ethos exactly. | LOW | Reuse the iOS nil-honest empty-state copy patterns; register all new strings in the copy audit. |
-| **Graceful handling of the ~30-day history read window** | By default HC only lets an app read records from up to ~30 days before its first permission grant; older history needs the separate `READ_HEALTH_DATA_HISTORY` permission (its own toggle on the HC screen, its own Play justification). Users who grant import expect their *history* to appear — the UX must either request history read with rationale or say plainly why older data is absent. | MEDIUM | Decision needed in Phase 5: request history permission (one more toggle, one more Play justification) vs. honest "imports start from ~30 days back" copy. Confidence: MEDIUM — verify the exact window against current HC docs during Phase 5. |
-| **POST_NOTIFICATIONS just-in-time runtime permission** | Runtime permission since Android 13. Norm: request only at the moment the user turns reminders ON in settings — never at app launch. Denial must leave reminders visibly off with calm copy, not a nag loop. | LOW | Mirrors the iOS contextual-rationale-before-prompt pattern already shipped. Plan Phase 4 already words it this way. |
-| **Notification channel for reminders** | Android users expect per-channel control (silence "Daily reminder" in system settings without killing all app notifications). One channel, sensible defaults, respect user overrides. | LOW | Channel name/description are user-facing copy → copy audit. Keep the channel *only* for reminders — the flare no-notification structural scan stays clean because flare code never touches notification APIs. |
-| **Inexact scheduling for the daily reminder** | `SCHEDULE_EXACT_ALARM` is denied by default since Android 14 and Play restricts its justification to alarm-clock/calendar-class apps — a symptom tracker will not qualify. A daily check-in reminder tolerates minutes of drift: use `AlarmManager.setAndAllowWhileIdle`/`setWindow` (inexact) or WorkManager periodic work. | LOW–MEDIUM | Also handle `BOOT_COMPLETED` re-scheduling (alarms die on reboot; WorkManager survives it — a point in WorkManager's favor). See Anti-Features for the exact-alarm trap. |
-| **SAF-based export/import (zero storage permissions)** | `ActivityResultContracts.CreateDocument` / `OpenDocument` is the modern norm: user picks the destination (local, their own Drive, anywhere), app declares **no** storage permissions. Suggest a filename + MIME type, stream via ContentResolver, handle cancellation as a non-event. | LOW–MEDIUM | Already the locked mechanism for the encrypted export/import (plan Section 2). The permission-free posture is itself a Data-safety-form talking point. |
-| **Auto Backup exclusion for the health DB** | Without `dataExtractionRules`/`fullBackupContent` rules, Android silently copies app data into the user's Google-account-tied backup — an opaque cloud copy of special-category health data the user never consented to. Excluding the Room DB (keeping only prefs/consent flag) is table stakes for the privacy posture and must be testable. | LOW | Locked decision (plan Section 2 alternatives table). Land the rules in Phase 2 alongside Room, with a rules-file assertion test. |
-| **Edge-to-edge from day one** | Mandatory at targetSdk 36 (`windowOptOutEdgeToEdgeEnforcement` deprecated/disabled) and Play's target-API deadline for 36 is Aug 31 2026 — i.e., before or around this port ships. Compose makes it cheap if built in from the shell phase: `Scaffold` insets, `systemBarsPadding`, IME-union padding on sheets. | LOW (if Phase 3) / MEDIUM (retrofit) | Build the Bloom shell edge-to-edge in Phase 3. Retrofitting insets across finished screens is the expensive path — don't take it. |
-| **Predictive back compatibility** | Predictive back animations are on by default at targetSdk 36; `onBackPressed`/`KEYCODE_BACK` interception no longer fires. Norm: don't intercept back at all except where truly needed (e.g., unsaved Daily Check-In sheet), and there use the supported `BackHandler`/`PredictiveBackHandler` APIs so the back-preview animation works. | LOW–MEDIUM | Navigation-Compose handles the common cases. Test back-to-home and cross-destination previews on an Android 16 device in Phase 3. |
-| **Material 3 `NavigationBar` app shell** | The direct analog of the iOS 3-tab bar; M3 recommends 3–5 destinations, so the 3-tab shell ports cleanly. Android norms on top: selected-state indicator pill, per-tab state preservation (`saveState`/`restoreState` back-stack pattern), reselect-tab returns to tab root, system back from a non-start tab does NOT walk tab history (unlike some iOS conventions) — back from a secondary tab conventionally returns to the start tab or exits. | MEDIUM | Bloom-theme the M3 NavigationBar rather than hand-building iOS tab chrome. The consent `AppGate` composes *around* the shell exactly as on iOS — deep links and notification taps land on the gate, never inside. |
-| **TalkBack access to every chart (overlay semantics)** | Compose `Canvas` drawing — including `drawText` axis labels — is completely invisible to TalkBack. There is **no Android equivalent of iOS Audio Graphs / `AXChartDescriptor`**. The norm for accessible custom charts: a chart-level `Modifier.semantics { contentDescription }` summary node plus focusable invisible overlay nodes per data point/day so TalkBack can step through values — which is precisely the Android translation of the v1.1 "non-gesture VoiceOver path" requirement. | HIGH | This is real, bespoke work in Phase 6 (and the strongest hidden argument for the owned-Canvas decision: a library wouldn't give honesty-aware descriptions anyway). Gap days must announce "not logged", severity-0 must announce zero — the honesty contract extends into the semantics tree and should be pinned by a semantics-tree test. |
-| **BodyMap TalkBack semantics** | Same Canvas-invisibility problem: each of the 10 body regions needs a focusable semantics node with role, name, and selected/severity state (`stateDescription`), plus 48dp minimum touch targets. | MEDIUM | Phase 4. iOS shipped the VoiceOver equivalent, so the per-region description copy already exists — port and register it for audit. |
-| **PDF share via `FileProvider` + `ACTION_SEND`** | The Android norm for handing a file to the share sheet: write the PDF to an app-private cache subdir, expose through a manifest-declared `FileProvider`, share with `FLAG_GRANT_READ_URI_PERMISSION` via `Intent.createChooser`. No storage permission; the grant is scoped to the user's chosen target — this *is* the "no silent upload" property, mechanically. | LOW–MEDIUM | Phase 7 (already locked). Two Android extras users expect: (1) also offer "Save as file" via SAF `CreateDocument` (Android users look for save-to-Files as a peer of share), (2) clean up cached PDFs so old reports don't linger readable in cache. The exit criterion "no file readable by other apps beyond the explicit share target" maps to FileProvider-only exposure + cache cleanup. |
-| **Truthful Data safety form ("no data collected, no data shared")** | Health-app users on Play read the Data safety section; a genuinely all-"No" form is rare in this category and is the storefront proof of the architecture. Must stay consistent with the manifest (zero write health permissions, no INTERNET-dependent SDKs) and the privacy policy. | LOW (but exacting) | Phase 8. The version catalog + manifest are the audit artifacts; the Jan-2026 Health apps declaration wants per-HC-data-type justifications — write them from the four read types' user-facing features. |
+| Feature | Why Expected | Complexity | Notes / Dependencies |
+|---------|--------------|------------|----------------------|
+| **Default = system language, with fallback to English** | Every reference app does this. Users never want to pick on first launch. | LOW | An unsupported system locale (e.g. `it`) falls back to English. Regional variants (`de-AT`, `de-CH`, `es-MX`, `fr-CA`) resolve to the base language. Use base-language resources only, no regional variants in v2.1. |
+| **Language row in Settings**, listing each language by its own name ("Deutsch", not "German"), plus "System default" | Users must be able to find a way back if the device language is wrong | LOW (Android), LOW (iOS deep-link) | Depends on the existing Settings screen (`SettingsCopy`). Endonyms also mean the row stays readable while the app is in the wrong language. |
+| **Switch without losing in-progress data** | A check-in half done when the language changes must survive | MEDIUM | Android recreation needs state in ViewModel/`rememberSaveable`. The v2.0 emulator pass fixed check-in persistence, so re-verify the day editor and body-map state across recreation. iOS relaunch needs state restoration or autosaved drafts. |
+| **All UI copy localized** (~700 strings per platform) | A half-translated health app reads as untrustworthy | HIGH (volume, not difficulty) | Android has **no `strings.xml`**: copy lives in Kotlin `*Copy.kt` objects (`content/`). It must move to resources, or to a locale-aware copy layer, while keeping `AuditableCopy`/ClaimsPolicy able to scan every string in every language. iOS has no String Catalog yet, so `Localizable.xcstrings` would be added. |
+| **Insight sentences localized** (trends, correlations, recommendations, flare) | Insights are the core value. English insights in a German UI break the product promise. | HIGH | The `:insights` module (pure JVM, mirrored in Swift `EndoInsights`) **builds English sentences inside the engine** (`TrendsEngine`, `CorrelationEngine`, `RecommendationsEngine`; `Locale.ROOT` number formatting). It must emit **structured results (template key plus typed args)**, rendered per locale in the app layer. Templates should be whole sentences per language, never concatenated fragments, because German word order and FR/ES gender agreement break concatenation. The 157-case parity suite and the HonestyGate must keep passing. |
+| **Plurals and grammatical agreement** | "1 Tage" / "2 day" errors look broken | MEDIUM | Android `<plurals>` / ICU, iOS String Catalog plural variants. FR/ES add gender agreement. See the TerminologyPreference row. |
+| **Locale-aware dates, numbers, units in the app** | A German user expects `31.10.2026`, `7,5 h` and a Monday week start | MEDIUM | Several places hardcode `Locale.US` (`ReportPdfRenderer`, `ReportBuilderScreen`) and `Locale.ROOT` in the insights. Use `DateTimeFormatter.ofLocalizedDate`/skeletons and `Date.FormatStyle` instead of fixed patterns. All four languages use metric, so no unit conversion is needed. Only the formatting (decimal comma) and the symbols (`h`, `min`, `Std.`) change. |
+| **First day of week follows locale/region** | DE/FR/ES calendars start on Monday. A Sunday start feels American and wrong. | LOW–MEDIUM | Affects the check-in calendar, weekly trend buckets in charts/Explore, and the PDF. Take it from **region** (`WeekFields.of(locale)`, `Calendar.current.firstWeekday`), not language. An en-GB user also expects Monday. **Insight math must not change with locale.** Keep engine bucketing locale-independent or pinned, otherwise the same data yields different insights per language (a parity and honesty risk). |
+| **Notifications in the current language** | A German UI with English reminders feels broken | LOW (Android), MEDIUM (iOS) | Android `ReminderNotifier` builds text at fire time, so resolving via a locale-aware `Context` is enough. iOS `UNNotificationContent` is frozen at schedule time, so pending reminders must be **rescheduled on language change and at launch**. Depends on Reminders. The no-flare-push invariant is unaffected. |
+| **PDF doctor report localized**, including dates and numbers | The report is shown to a local clinician | MEDIUM | `ReportPdfRenderer` runs outside the UI, so it must take an **explicit locale** rather than the ambient one. The "self-tracked, not diagnostic" framing must be translated and audited. Longer DE/FR strings break fixed-width vector layout. Budget about 30% expansion and test pagination per language. The v1.1 "byte-identical PDF" guard on iOS needs re-baselining per locale. |
+| **Onboarding, consent and in-app privacy policy localized** | GDPR Art. 9 consent must be understandable, and consent given in a language the user can't read is weak | MEDIUM | `OnboardingCopy`, `PrivacyPolicyText` (both platforms), `Disclaimer`. Legal text needs a human/legal review per language, not just a translation review. Decide which version is authoritative: German for the home market, or a statement that all versions are equivalent. |
+| **Store listings in 4 languages** (Play + App Store), with localized screenshots | Store search and conversion are per locale. German users filter on German listings. | MEDIUM | `StoreListingCopy` is already ClaimsPolicy-audited (incl. store copy), so extend the audit per language. Screenshots per locale can be generated from the emulator/simulator. Play Data Safety and App Privacy answers don't change. Hosted privacy-policy URLs are needed per language (release-checklist item). |
+| **Health Connect / HealthKit rationale strings localized** | The permission sheet appears in the system language next to our rationale | LOW | iOS `NSHealthShareUsageDescription` goes through `InfoPlist.xcstrings`. Android `HealthConnectCopy` plus the rationale activity. The system sheet itself is localized by the OS. |
+| **User free text stays untouched** | Notes and medication names are the user's own words | LOW | Never translate, transliterate or re-case `note`, `Medication.name` or similar fields. Display them as-is in any UI language and in the PDF. Label them in the report as "your notes (verbatim)". A language-agnostic ClaimsPolicy must **not** scan user text. |
+| **Export/import works across languages** | The user exports in German and imports on a phone set to Spanish (also the iOS↔Android handoff idea) | LOW, if kept that way | Entities store **locale-independent raw keys** (`typeRaw`) and ISO dates. That is correct. Invariant to add: **no localized string is ever persisted or exported**, and numbers are serialized with `Locale.ROOT`. Add a round-trip test (export under `de`, import under `es`, assert equality). Export *file names* and any human-readable header can be localized, but the parser must never depend on them. |
+| **ClaimsPolicy / CopyAudit per language** | A translated health app can slip into medical-device claims that the English audit cannot see | HIGH | Separate curated forbidden lists per language, **not translations of the English list**. See "Claims boundary by language". The audit must also fail if any key lacks a translation (completeness check), to prevent a silent English fallback in release. |
 
 ### Differentiators (Competitive Advantage)
 
-Android-specific touches that are not required for parity but land well in this category. None are launch-blocking.
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Optional biometric/PIN app lock (`androidx.biometric` BiometricPrompt)** | Common and increasingly *expected* in period/health trackers (Clue, Flo ship it). For a stigmatized condition, "my phone can be borrowed without my symptom history being open" is real user value. Opt-in, with device-credential fallback, gating app open — never gating data deletion. | MEDIUM | `androidx.biometric` is first-party-adjacent (fits the dependency posture). Interacts with consent gate ordering: lock screen sits *outside* AppGate. Post-parity candidate — if user-facing demand shows, this borders on table stakes for the category. |
-| **Recents-thumbnail privacy (without blocking screenshots)** | `Activity.setRecentsScreenshotEnabled(false)` (API 33+) hides the app-switcher preview of symptom screens while still letting users screenshot their *own* data for their doctor — the privacy win of FLAG_SECURE without its user-hostility. | LOW | Elegant middle path in the FLAG_SECURE debate (see Anti-Features). Verify exact API surface/behavior on target devices during implementation. Below API 33, accept the thumbnail or pair with the app lock. |
-| **Per-permission grant awareness used *gently*** | Health Connect (unlike HealthKit) tells the app which read permissions are granted. Locked product stance: same graceful-denial UX as iOS — but the extra signal can quietly skip pointless re-reads and make the import status screen more truthful ("Sleep: connected · Nutrition: not connected") without ever nagging. | LOW | Already anticipated in plan Section 1 notes. A small honesty *upgrade* over iOS, aligned with the brand. |
-| **Direct-share / share-sheet niceties for the PDF report** | Correct MIME type + a preview title makes the report land cleanly in the user's mail/messaging target — small polish that reads as native quality. | LOW | Part of Phase 7 acceptance polish, not a separate feature. |
-| **App-shortcut ("Log today") static shortcut** | Long-press launcher shortcut straight to the Daily Check-In — the lightweight Android cousin of a widget, near-zero maintenance. Must still land on the consent gate when unconsented. | LOW | Post-parity nicety. A full Glance widget is deferred (see below). |
+| Feature | Value Proposition | Complexity | Notes / Dependencies |
+|---------|-------------------|------------|----------------------|
+| **Separate "Report language" in the PDF builder** (defaults to app language) | Endo patients are often expats or travel for specialists, e.g. an English-speaking user seeing a German gynaecologist. None of Clue, Flo or the DiGA offer this. Strong fit with the doctor-report value. | LOW–MEDIUM (once the renderer takes an explicit locale, which it needs anyway) | A one-row picker in `ReportBuilderScreen`. Also offer clinician-register terms in the report with the lay term in parentheses (e.g. "Dyspareunie (Schmerzen beim Sex)"). Free text stays verbatim with a note "Notes are in the patient's own words". Highest value-to-cost item in the milestone. |
+| **Live switching on Android, no restart** | Flo and Clue need a restart or reinstall, so this one is noticeably smoother | LOW (comes with AppCompat per-app locales) | Needs the state-survival work from Table Stakes. |
+| **Listed in Android 13+ system "App languages"** | Users can change it from where they expect, consistent with iOS | LOW | `locales_config.xml` plus manifest attribute. Must stay in sync with the in-app list. |
+| **Patient-friendly, inclusive terminology per language** (not literal translation) | Most trackers translate clinically or use "women" by default. Endo patients feel seen by lay terms like "Endo-Belly". | MEDIUM (glossary work plus native review) | One shared cross-platform glossary (milestone goal). Neutral, non-gendered phrasing: in DE "Menschen mit Endometriose", not "Patientinnen"/"Frauen", consistent with ONBD-03 and the app-only gendered-token list. |
+| **Honest translation status** ("translations reviewed by a native speaker: yes/pending") | Transparency fits the honesty positioning | LOW | Optional. Only ship a language publicly after its review gate passes. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **Exact-alarm reminders (`SCHEDULE_EXACT_ALARM`)** | "Remind me at exactly 20:00" | Denied by default since Android 14; Play policy restricts the permission's justification to alarm-clock/calendar-class apps — a health tracker requesting it invites review friction; battery cost; users must flip a special system toggle. | Inexact `AlarmManager` window or WorkManager periodic work; a check-in reminder drifting a few minutes is imperceptible. |
-| **Blanket `FLAG_SECURE` (screenshot blocking app-wide)** | "Health data must never be screenshotted" — feels privacy-serious | User-hostile for *this* app: users legitimately screenshot their own charts to show clinicians; blocks casting/accessibility screen tools; research on reproductive-health apps shows the real privacy failures are third-party sharing/tracking (which this app has none of), not screenshots. Blanket FLAG_SECURE protects the app *from its own user*. | Recents-thumbnail hiding (API 33+) + optional biometric app lock. If any single screen ever warrants FLAG_SECURE, scope it per-window, never app-wide. |
-| **Background Health Connect sync (foreground service / `READ_HEALTH_DATA_IN_BACKGROUND`)** | "Import should just always be up to date" | Extra sensitive permission with its own Play justification; foreground-service notification noise; iOS parity imports on app-open and that shipped fine. | Refresh on app-open / import-screen visit, exactly like iOS. Revisit only on real user demand. |
-| **Material You dynamic color theming** | Android users increasingly expect wallpaper-derived theming | Bloom token colors are brand *and* chart-semantic (mark colors carry meaning in the honesty rendering); dynamic color would recolor them arbitrarily and break cross-platform product identity. | Static Bloom Material 3 color scheme; explicitly do not call `dynamicColorScheme()`. Light/dark variants of Bloom tokens instead. |
-| **Relying on Auto Backup for health data** | Zero-code backup "for free" | Opaque, Google-account-tied copy of special-category data with no deliberate consent moment; size-capped; already rejected in the plan. | Backup rules exclude the DB; the encrypted SAF export is the one deliberate, user-controlled backup surface. |
-| **Notification content that reveals health state** | Richer reminders "feel smarter" | Lock-screen notifications are semi-public; any symptom/flare wording in a notification leaks condition info to shoulder-surfers — and flare push is *already forbidden* by the carried-over invariant. | Generic, audited reminder copy ("Time for your daily check-in"); reminder code physically separate from flare code so the structural no-flare-notification scan stays clean. |
-| **Google Fit APIs as an HC fallback** | Older devices coverage | Deprecated; HC is the only sanctioned broker going forward; adds a dead-end integration. | HC-only, with the Android 13- "install Health Connect from Play" path. |
-| **In-app "sync to my Drive" convenience button (appDataFolder)** | Users ask for effortless backup | Requires Google Sign-In/OAuth — collides with the no-accounts posture; already deferred by locked decision. | SAF export → user can pick their own Drive as destination themselves, no OAuth, no account surface. |
+| **Runtime / machine translation** (on-device MT or a translation API) | "Cover more languages for free" | An API breaks the no-`INTERNET` invariant. MT output bypasses the curated ClaimsPolicy, so a correct English insight can become a causal or diagnostic claim. | Bundled, human-reviewed strings only. Add languages one at a time behind the audit. |
+| **Translating user free text / notes in the PDF** | "My doctor doesn't read English" | Alters the patient's words in a medical context, needs MT, and creates liability for mistranslated symptoms | Report language chooser for app-generated text. Notes stay verbatim and are labelled as such. |
+| **Persisting localized labels** (e.g. storing "Blähbauch" in the DB or export) | Seems simpler to display | Breaks import across languages, breaks insight grouping (the same factor gets two keys), and breaks parity | Persist raw enum keys and localize only at render time |
+| **Per-locale insight logic** (thresholds or week bucketing changing with locale) | Falls out of using `Locale.current` in the engine | The same data gives different correlations and flare output per language, which breaks the parity suite and is dishonest | The engine stays locale-free (ISO weeks or a pinned calendar). Only the presentation layer is localized. |
+| **iOS in-app override via `AppleLanguages` / custom Bundle swizzling** | Matches the Android UX exactly | Unsupported by Apple, leaves the system UI, HealthKit sheet and date formatters inconsistent, and is fragile across iOS releases | An in-app row that deep-links to system per-app language settings |
+| **Forcing a language pick on first launch** | "Make sure users choose" | Adds friction to an already-heavy onboarding with consent. The system language is right for nearly everyone. | System default, with the picker in Settings and optionally a subtle link on the first onboarding screen |
+| **Regional variants in v2.1** (de-CH "ss", es-MX, fr-CA) | Completeness | Multiplies review and audit cost for little gain | Base languages only, using neutral pan-regional wording (e.g. ES avoids Spain-only slang, prefers "regla"/"período" over "periodo" regionalisms). Revisit later. |
+| **Literal translation of the English forbidden-term list** | Quick way to get a per-language audit | It both misses and over-matches. "will" maps to German "wird", which appears in nearly every sentence. French "prévenir" also means "to notify". Spanish "se trata de" means "it's about". | Curated per-language lists with documented collisions (the existing SUBSTRING SHARP EDGE note) |
+
+## Claims boundary by language
+
+The existing English policy forbids causal and medical-purpose verbs and connectives, imperatives, and alarmist terms. Below are draft per-language equivalents for the curated lists. **Confidence: MEDIUM.** A native speaker review is needed, plus ideally a German-market MDR-aware reviewer for DE, since German is the home market of the DiGA comparator and the most scrutinized.
+
+| Concept | DE (avoid) | FR (avoid) | ES (avoid) | Safe framing |
+|---------|-----------|-----------|-----------|--------------|
+| Diagnose / detect | diagnostizieren, Diagnose, feststellen, nachweisen | diagnostiquer, diagnostic, détecter, dépister | diagnosticar, diagnóstico, detectar | DE "fällt auf", "zeigt sich in deinen Einträgen"; FR "on observe", "vos données montrent"; ES "se observa", "tus registros muestran" |
+| Treat / cure / prevent / therapy | behandeln, Behandlung, Therapie, heilen, vorbeugen, verhindern, lindern | traiter, traitement, thérapie, guérir, soulager, prévenir* | tratar*, tratamiento, terapia, curar, prevenir, aliviar | Medication logging is "Medikamente eintragen" / "noter vos médicaments" / "registrar medicamentos", never "Therapie" |
+| Cause / trigger | verursacht, Ursache, auslösen, Auslöser, Trigger (common German loanword), führt zu, wegen, weil, aufgrund, verschlimmert, verbessert | cause, causer, à cause de, déclencheur, déclenche, provoque, entraîne, parce que, en raison de, aggrave, améliore | causa, causar, provoca, desencadena, desencadenante, porque, debido a, empeora, mejora | "tritt häufiger zusammen auf mit" / "apparaît souvent en même temps que" / "suele coincidir con"; "mögliche Zusammenhänge" / "association possible" / "posible asociación" |
+| Prediction certainty (EN "will") | wird … haben/bekommen as a prediction, voraussagen, Prognose | vous allez avoir, prédire, prévision | vas a tener, predecir, pronóstico | "könnte", "möglicherweise" / "pourrait", "possiblement" / "podría", "posiblemente". Use a phrase-level list, not a bare "wird"/"va" substring. |
+| Alarmist | gefährlich, Gefahr, Notfall, dringend, Alarm, Warnung (for the flare card) | danger, dangereux, urgence, urgent, alerte, alarme | peligro, peligroso, urgencia, urgente, alerta, alarma | Flare card: DE "Hinweis auf einen möglichen Schub", FR "signe d'une possible poussée", ES "indicio de un posible brote" |
+| Imperatives (medical) | "nimm", "setze … ab", "du solltest" | "prenez", "arrêtez", "vous devez" | "toma", "deja de", "debes" | "Vielleicht möchtest du das mit deiner Ärztin/deinem Arzt besprechen" / "Vous pourriez en parler à votre médecin" / "Podrías comentarlo con tu médico" |
+
+\* Collisions to document in the per-language SHARP EDGE notes: FR *prévenir* also means "notify" (reminder copy), ES *tratar* sits inside "se trata de", DE *weil*/*wird* are high-frequency. These need word-boundary or phrase matching, or curated copy that avoids them.
+
+**Also cross the line in any language:** a symptom score labelled as a "Befund"/"résultat"/"resultado clínico", a "Risiko" score, "Endometriose-Test", "Schweregrad deiner Endometriose", or stage language ("Stadium", "stade", "estadio"). Wellness wording such as Tagebuch/journal/diario, Muster/tendances/patrones and Zusammenhänge/associations/asociaciones is safe.
+
+## Patient-friendly symptom terminology (draft glossary seed)
+
+| Concept | DE (UI) | FR (UI) | ES (UI) | Clinical term (PDF, in parentheses) |
+|---------|---------|---------|---------|------------------------|
+| Endo belly | Blähbauch (Endo-Belly) | ventre gonflé (endo belly) / ballonnements | hinchazón abdominal (endo belly) | DE Meteorismus; FR/ES distension abdominale/distensión abdominal |
+| Painful sex | Schmerzen beim oder nach dem Sex | douleurs pendant ou après les rapports | dolor durante o después de las relaciones sexuales | Dyspareunie / dyspareunie / dispareunia |
+| Period pain | Regelschmerzen / Periodenschmerzen | règles douloureuses | dolor menstrual | Dysmenorrhoe / dysménorrhée / dismenorrea |
+| Painful bowel movements | Schmerzen beim Stuhlgang | douleurs en allant à la selle | dolor al ir al baño (defecar) | Dyschezie / dyschésie / disquecia |
+| Painful urination | Schmerzen beim Wasserlassen | douleurs en urinant | dolor al orinar | Dysurie / dysurie / disuria |
+| Pelvic / lower-abdominal pain | Unterleibsschmerzen | douleurs pelviennes (bas-ventre) | dolor pélvico (bajo vientre) | n/a |
+| Fatigue | Erschöpfung | fatigue | cansancio / fatiga | Fatigue |
+| Brain fog | Konzentrationsprobleme (Brain Fog) | brouillard mental | niebla mental | n/a |
+| Spotting | Schmierblutung | spotting / petits saignements | manchado | n/a |
+| Flare | Schub | poussée | brote | n/a |
+| Bleeding / period / menstruation (TerminologyPreference) | Blutung / Periode / Menstruation (all feminine) | saignements (m. pl.) / règles (f. pl.) / menstruation (f.) | sangrado (m.) / regla (f.) / menstruación (f.) | n/a |
+
+**Register:** use informal address (DE "du", ES "tú"), matching Clue, Flo and the German Endo-App. FR is less settled. "vous" is the safer health-app default (MEDIUM, so decide in the glossary phase). **TerminologyPreference dependency:** the existing bleeding/period/menstruation choice is currently substituted as a bare noun (`noun = rawValue`). That works in DE (all feminine) but breaks FR/ES articles and agreement ("le/les/la", "el/la", adjectives). Sentences containing the term need **per-term full-sentence variants** (or ICU `select`), not noun interpolation. The pronoun field is free text and stays as entered.
 
 ## Feature Dependencies
 
 ```
-HC rationale Activity/alias (manifest)
-    └──required-by──> HC permission request (Phase 5)
-                          └──required-by──> Play Health apps declaration (Phase 8)
+Locale-free insights engine (structured keys + args)
+    └──requires──> refactor of :insights / EndoInsights sentence builders (parity suite must stay green)
+                       └──enables──> localized insight sentences
+                                         └──requires──> per-language ClaimsPolicy / HonestyGate lists
 
-Backup rules (exclude DB) ──lands-with──> Room schema (Phase 2)
+String extraction (Android *Copy.kt → resources; iOS → String Catalog)
+    └──requires──> AuditableCopy / CopyAudit able to enumerate every locale
+    └──enables──> all UI / onboarding / privacy / store copy translations
 
-Edge-to-edge insets + predictive back ──land-with──> Compose shell (Phase 3)
-    └──retrofit-cost──> every later screen if skipped
+Shared cross-platform glossary ──required by──> every translation task (do it first)
 
-POST_NOTIFICATIONS request ──triggered-by──> reminders toggle (Phase 4)
-    └──requires──> notification channel (Phase 4)
-    └──kept-separate-from──> flare code (no-flare-notification scan)
+Locale-aware formatting helpers (dates, numbers, week start)
+    └──required by──> app UI, charts/Explore, PDF report
 
-Chart TalkBack overlay semantics ──requires──> Canvas chart layer + scrub resolver (Phase 6)
-    └──reuses──> gap-honest day resolution (ported ChartScrubSelection logic)
+In-app language picker
+    ├──requires (Android)──> AppCompat per-app locales (ComponentActivity → AppCompatActivity) + locales_config
+    ├──requires (iOS)──> UIPrefersShowingLanguageSettings + Settings deep-link + state restoration
+    └──requires──> state survives recreation/relaunch (day editor, body map, check-in draft)
 
-FileProvider + ACTION_SEND ──requires──> PdfDocument report (Phase 7)
-SAF "Save as file" for PDF ──reuses──> SAF plumbing from export/import
-
-Biometric app lock (post-parity) ──sits-outside──> consent AppGate (Phase 3 structure)
-Recents-thumbnail hiding ──independent──> (any phase after shell)
+PDF renderer takes explicit locale ──enables──> separate "Report language" (differentiator)
+Reminders ──requires (iOS)──> reschedule pending notifications on language change
+Export/import ──requires──> invariant: no localized strings persisted; cross-locale round-trip test
+TerminologyPreference ──conflicts──> noun interpolation in FR/ES (needs sentence variants)
+Machine translation ──conflicts──> no-INTERNET invariant + ClaimsPolicy
 ```
 
 ### Dependency Notes
 
-- **Rationale surface before any HC request:** the HC permission screen itself links to it; building the permission flow without it means re-review later. Cheap to do first in Phase 5.
-- **Edge-to-edge/predictive back are shell-phase decisions:** both are effectively free when the Phase 3 scaffold is built for them and a cross-cutting retrofit if deferred — the single biggest "do it early" item in this file.
-- **Chart a11y depends on the scrub data layer:** the overlay semantics nodes should read from the same gap-honest day-resolution logic as the visual scrub tooltip, so "not logged" vs. "0" is answered once, in one tested place.
-- **App lock vs. consent gate:** lock authenticates the *person*, consent gates the *feature*; lock wraps the whole UI including the gate. Keeping them structurally distinct avoids ever composing health UI pre-consent to "show it behind the lock".
+- **The glossary comes first:** all string work and both platforms consume it. Doing translations before it exists guarantees Android and iOS diverge.
+- **The engine refactor comes before insight translation:** the engine currently produces English text. Localizing downstream of the engine would mean parsing English sentences.
+- **Per-language claims audit before shipping any language:** the audit plus a completeness check is the release gate, together with the human native review.
+- **Explicit-locale PDF renderer:** required anyway, because rendering is off the UI path. It makes the report-language differentiator nearly free.
 
 ## MVP Definition
 
-### Launch With (v1 parity — maps onto the 8 locked phases)
+### Launch With (v2.1)
 
-- [ ] All **Table Stakes** rows above — each lands inside its indicated phase, with its enforcing test, per the plan's invariant philosophy
-- [ ] Edge-to-edge + predictive-back-clean shell (Phase 3) — Play target-API reality, cheapest now
-- [ ] HC rationale surface + availability gating + empty-broker honest states (Phase 5)
-- [ ] Inexact daily reminder + just-in-time POST_NOTIFICATIONS + reboot rescheduling (Phase 4)
-- [ ] Chart + BodyMap TalkBack semantics with honesty-preserving announcements (Phases 4/6)
-- [ ] FileProvider share + SAF save for the PDF; cache cleanup (Phase 7)
-- [ ] Backup-rules DB exclusion with assertion test (Phase 2)
-- [ ] Truthful Data safety form + Health apps declaration + per-data-type justifications (Phase 8)
+- [ ] Shared glossary (EN/DE/FR/ES) incl. symptom terms, register and flare wording, because every translation depends on it
+- [ ] String extraction on both platforms plus a per-locale CopyAudit with completeness check, because this is the safety gate
+- [ ] Locale-free engine output (keys + args) and localized insight templates, because insights are the core value
+- [ ] Per-language ClaimsPolicy lists (curated, collision-documented), because the regulatory boundary must hold in every language
+- [ ] Language picker: Android in-app via AppCompat, iOS in-app row to system setting; default = system with EN fallback
+- [ ] Locale-aware dates, numbers and week start in the UI, charts and PDF (engine math pinned)
+- [ ] Localized notifications (iOS reschedule on change)
+- [ ] Localized PDF report (explicit locale) with free text verbatim
+- [ ] Localized onboarding, consent, privacy policy and Health rationale strings
+- [ ] Export/import cross-locale round-trip test
+- [ ] Store listing copy ×4 (audited)
 
-### Add After Validation (v1.x)
+### Add After Validation (v2.x)
 
-- [ ] **Biometric/PIN app lock** — add when any user signal asks for it; category norm pressure makes this the first post-parity item
-- [ ] **Recents-thumbnail hiding (API 33+)** — small, high-signal privacy polish
-- [ ] **Per-permission import status display** — the gentle HC grant-state upgrade
-- [ ] **"Log today" static app shortcut** — launcher-level quick entry
-- [ ] **`READ_HEALTH_DATA_HISTORY`** — if Phase 5 ships with the ~30-day window and users report missing history
+- [ ] Separate PDF "Report language" picker. It is cheap, so pull it into v2.1 if the renderer refactor lands early.
+- [ ] Localized store screenshots (can follow the copy)
+- [ ] Clinician-term parentheses in the PDF
 
-### Future Consideration (v2+)
+### Future Consideration
 
-- [ ] Glance home-screen widget — real maintenance surface; shortcut covers most of the value
-- [ ] Google Drive `appDataFolder` sync — the plan's recorded revisitable call; only on real multi-device demand
-- [ ] Wear OS anything — out of scope entirely
+- [ ] More languages (IT, PT, NL, PL) once the per-language audit pipeline is proven
+- [ ] Regional variants (de-CH, es-419, fr-CA)
+- [ ] RTL languages (AR/HE), which would need a layout and chart mirroring audit
 
 ## Feature Prioritization Matrix
 
-| Feature (Android-specific) | User Value | Implementation Cost | Priority |
+| Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| HC rationale surface + availability gating | HIGH (gatekeeper) | LOW | P1 |
-| Edge-to-edge + predictive back in shell | HIGH (platform-mandated) | LOW now / HIGH later | P1 |
-| Inexact reminder + POST_NOTIFICATIONS flow | HIGH | LOW | P1 |
-| Backup-rules DB exclusion | HIGH (privacy invariant) | LOW | P1 |
-| Chart TalkBack overlay semantics | HIGH | HIGH | P1 |
-| FileProvider PDF share + SAF save | HIGH | MEDIUM | P1 |
-| Data safety form + health declaration | HIGH (ship gate) | LOW | P1 |
-| HC history-read decision (window vs. permission) | MEDIUM | MEDIUM | P2 |
-| Biometric app lock | MEDIUM–HIGH | MEDIUM | P2 |
-| Recents-thumbnail hiding | MEDIUM | LOW | P2 |
-| Per-permission import status | LOW–MEDIUM | LOW | P2 |
-| App shortcut | LOW | LOW | P3 |
-| Widget / Drive appData / Wear | LOW (v1) | HIGH | P3 |
-
-**Priority key:** P1 = required for the parity launch · P2 = post-parity, add on signal · P3 = deferred by decision
+| Glossary | HIGH (indirect) | LOW | P1 |
+| UI string extraction + translation | HIGH | HIGH | P1 |
+| Localized insight sentences (engine refactor) | HIGH | HIGH | P1 |
+| Per-language ClaimsPolicy + completeness audit | HIGH (safety) | MEDIUM | P1 |
+| Language picker + system default | HIGH | LOW–MEDIUM | P1 |
+| Locale formatting + week start | MEDIUM | MEDIUM | P1 |
+| Localized notifications | MEDIUM | LOW–MEDIUM | P1 |
+| Localized PDF report | HIGH | MEDIUM | P1 |
+| Onboarding/consent/privacy localized | HIGH (legal) | MEDIUM | P1 |
+| Export cross-locale invariant/test | MEDIUM | LOW | P1 |
+| Store listings ×4 | MEDIUM | LOW | P1 |
+| Separate report language | MEDIUM–HIGH | LOW | P2 |
+| Android system "App languages" listing | LOW–MEDIUM | LOW | P2 (comes with the picker) |
+| Localized screenshots | MEDIUM | MEDIUM | P2 |
 
 ## Competitor Feature Analysis
 
-How comparable Android period/health trackers handle the platform-specific surfaces (category norms, not feature envy):
-
-| Surface | Category norm (Clue / Flo / period trackers) | Our Approach |
-|---------|--------------|--------------|
-| App lock | Optional PIN/biometric lock is standard in the category | Post-parity P2; opt-in, outside the consent gate |
-| Health Connect | Read *and often write*; some sync to own backends | Read-only, four types, no backend — the differentiation is the *absence* of collection, made legible via the Data safety form |
-| Reminders | Daily inexact notifications, channel-based | Same; plus audited generic copy and the no-flare-push invariant |
-| Screenshot policy | Almost none use blanket FLAG_SECURE | None app-wide; recents-thumbnail hiding as polish |
-| Data export | Often account-based or PDF-only | Encrypted SAF export (portability + backup + migration in one consent surface) — a genuine differentiator |
+| Feature | Clue | Flo | Endo-App (DiGA) | Our Approach |
+|---------|------|-----|-----------------|--------------|
+| Language choice | OS-driven (iOS per-app setting) | In-app on iOS (restart), OS on Android | German-first | Android: live in-app. iOS: in-app row to OS setting. |
+| Languages | 27 | Many | DE (+ EN web) | EN/DE/FR/ES, each audited |
+| Report in other language | No | n/a | n/a | Optional separate report language |
+| Medical framing | Wellness | Wellness | Medical device ("Therapie" allowed) | Wellness. Per-language claims audit so translations never borrow DiGA vocabulary. |
+| Endo-specific lay terms | Generic | Generic | "Endo-Belly / Blähbauch" | Shared lay glossary, clinical terms only in the PDF |
 
 ## Sources
 
-- Play/Health Connect policy & rationale flow — [Play Console: Android Health Permissions FAQ](https://support.google.com/googleplay/android-developer/answer/12991134), [Publish your health app](https://developer.android.com/health-and-fitness/health-connect/publish), [HC get-started (availability, rationale intents)](https://developer.android.com/health-and-fitness/health-connect/get-started), [HC codelab](https://developer.android.com/codelabs/health-connect), [Health apps Jan 2026 requirements recap](https://myappmonitor.com/blog/google-play-health-apps-update-2026-requirements) — MEDIUM
-- Reminders/alarms — [Schedule alarms](https://developer.android.com/develop/background-work/services/alarms), [Exact alarms denied by default (Android 14)](https://developer.android.com/about/versions/14/changes/schedule-exact-alarms) — MEDIUM
-- Edge-to-edge & predictive back — [Android 16 behavior changes (targetSdk 36)](https://developer.android.com/about/versions/16/behavior-changes-16), migration write-ups (Halodoc, Medium) — MEDIUM
-- Compose chart accessibility — [Compose semantics](https://developer.android.com/develop/ui/compose/accessibility/semantics), [Eevis Panula: accessible graphs in Compose](https://eevis.codes/blog/2023-07-24/more-accessible-graphs-with-jetpack-compose-part-1-adding-content/) — MEDIUM (official + specialist a11y engineer, corroborating)
-- FLAG_SECURE / privacy norms — [Secure sensitive activities](https://developer.android.com/security/fraud-prevention/activities), [Play FLAG_SECURE guidance](https://support.google.com/googleplay/android-developer/answer/14638385), reproductive-health app privacy studies (JMIR/PMC) — LOW–MEDIUM (the "debate" framing is synthesis; the APIs are official)
-- Locked project context — `.planning/PROJECT.md`, `.planning/research/ANDROID-PORT-PLAN.md` — HIGH (internal source of truth)
-
-**Verify during implementation (flagged, not assumed):** exact HC history-read window and `READ_HEALTH_DATA_HISTORY` semantics (Phase 5); `setRecentsScreenshotEnabled` behavior on target OEMs; current Play target-API deadline at build time.
+- [Android: Per-app language preferences](https://developer.android.com/guide/topics/resources/app-languages) (HIGH)
+- [Zendesk Android SDK app-language notes](https://developer.zendesk.com/documentation/zendesk-web-widget-sdks/sdks/android/app_language/), [DEV: Compose multilingual](https://dev.to/sagar0_0/add-multilingual-support-multiple-languages-to-your-android-app-3ihf), [Kotlin Slack on Compose recreation](https://slack-chats.kotlinlang.org/t/2442867/reading-through-the-per-app-language-https-developer-android) (MEDIUM)
+- [WWDC19 403 Creating Great Localized Experiences](https://developer.apple.com/wwdc19/403), [WWDC notes](https://wwdcnotes.com/notes/wwdc19/403) (HIGH)
+- [Apple Developer Forums 721302: language setting hidden / UIPrefersShowingLanguageSettings](https://developer.apple.com/forums/thread/721302) (MEDIUM)
+- [Clue: How to change the language](https://support.helloclue.com/hc/en-us/articles/4404372946580-How-can-I-change-the-language-in-the-app), [Clue DE article](https://helloclue.com/de/artikel/nutzung-von-clue/wie-man-die-sprache-in-clue-aendert) (MEDIUM)
+- [Flo: How can I change the language](https://help.flo.health/hc/en-us/articles/360015114832-How-can-I-change-the-language-of-Flo) (MEDIUM)
+- [Endo-App: Endo-Belly or Bloated Belly](https://endometriose.app/en/endometriosis-symptom-endobelly-or-bloated-belly/), [Endo-App Gebrauchsanweisung](https://diga.endometriose.app/wp-content/uploads/2024/03/Gebrauchsanweisung_Endo_App.pdf), [Verordnungshilfe](https://endometriose.app/wp-content/uploads/2024/01/Verordnungshilfe.pdf) (MEDIUM)
+- [sante.fr: La dyspareunie](https://www.sante.fr/endometriose/la-dyspareunie-douleurs-lors-des-rapports-sexuels), [sante.fr: symptômes](https://www.sante.fr/node/1263779), [EndoFrance](https://www.endofrance.org/wp-content/uploads/2022/07/Endometriose-et-Vie-Affective-et-Sexuelle.pdf) (MEDIUM)
+- [Endo Belly narrative review (PMC10671958)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10671958/) (HIGH for concept)
+- Codebase inspection: `android/app/src/main/kotlin/com/endoapp/app/content/*Copy.kt`, `report/ReportPdfRenderer.kt` (`Locale.US`), `insights/*Engine.kt` (`Locale.ROOT`, English sentence building), `insights/ForbiddenTerms.kt`, `reminders/ReminderNotifier.kt`, `MainActivity.kt` (`ComponentActivity`, minSdk 26), `Sources/EndoApp/Terminology/TerminologyPreference.swift`
+- ES/DE claims lists and glossary: drafted (LOW–MEDIUM). Native-speaker review is required.
 
 ---
-*Feature research for: Endo-App v2.0 Android port (platform-specific delivery of the iOS-parity feature set)*
-*Researched: 2026-07-08*
+*Feature research for: multilingual (EN/DE/FR/ES) endometriosis tracker, v2.1*
+*Researched: 2026-10-31*

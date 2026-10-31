@@ -1,10 +1,28 @@
 # Architecture Research
 
-**Domain:** Native Android port (Kotlin + Jetpack Compose) of a shipped privacy-first iOS health tracker — v2.0 milestone, `android/` monorepo directory
-**Researched:** 2026-07-08
-**Confidence:** HIGH (concrete realization of the locked module layout in ANDROID-PORT-PLAN.md §3; grounded in the shipped iOS codebase inventory + current first-party Android docs)
+**Domain:** Localization (EN/DE/FR/ES) and an in-app language picker added to an existing dual-platform (Android Kotlin/Compose + iOS SwiftUI) privacy-first health tracker that enforces its claims policy in tests
+**Researched:** 2026-10-31
+**Confidence:** HIGH for the code-grounded integration points (read from the live sources). MEDIUM for platform locale API behavior (AppCompat backport on API < 33, SwiftUI lookup), which needs checking against current docs and on a device before it is locked.
 
-**Scope note:** The module layout (`:app` + pure-Kotlin-JVM `:insights`, one-way dependency, `insightsbridge` seam, manual DI) is **locked** in ANDROID-PORT-PLAN.md §3 and is NOT re-opened here. This document answers only: *how do we realize it concretely?*
+> This replaces the v1 ARCHITECTURE.md, which is still in git history. Scope is limited to what v2.1 adds. The v1/v2.0 architecture stays as it is.
+
+---
+
+## 0. What the code looks like today (the ground truth this plan builds on)
+
+| Concern | Android (`android/`) | iOS (`Sources/EndoApp`, `EndoInsights/`) |
+|---|---|---|
+| UI copy storage | ~19 `object FooCopy : AuditableCopy` in `app/.../content/*Copy.kt`. All English `const val`. **There are no `strings.xml` string resources** (`res/values` holds only colors and themes). There are also a few literals outside the Copy objects, e.g. `Text("Cancel")` in `RemindersSection.kt:254`. | A mix: `*Copy` enums/structs with `static let` English Strings (`InsightsCopy.swift`, `FlareCopy`, `RecommendationsCopy`, `ReportCopy`, `ExploreCopy`, `HealthConnectCopy`, `ReminderCopy` inside `NotificationScheduler.swift`), about 70 inline `Text("literal")` calls, and Domain-enum `plainLabel`. **There is no String Catalog / `.strings` file.** |
+| Audit | `CopyAuditRegistry.sources` (explicit list) feeds `CopyAuditTest` against `ClaimsPolicy`. The causal, imperative and alarmist lists are **reused** from `:insights` `ForbiddenTerms`. | `Tests/EndoAppTests/CopyAuditTests.swift` scans `X.auditableStrings` and enum `plainLabel`s against `ClaimsPolicy.swift`. |
+| Cross-platform drift guards | `insights/.../ClaimsPolicyDriftTests.kt` regex-parses `static let forbiddenVerbs/forbiddenImperatives/forbiddenAlarmist: [String] = [...]` out of the **live Swift file**. `EnumRawValueParityTests` does the same for enums. | (none; iOS is the source of truth) |
+| Insight sentences | Generated **in the pure engines** as English strings (`TrendsEngine.kt:103` `"$label logged on $daysPresent of …"`, `CorrelationEngine.kt:382`, `FlareCopyText`, `RecommendationCopy`). Numbers come from `String.format(Locale.ROOT,"%.1f")`, and `label.lowercase()` is used for mid-sentence labels. `HonestyGate` runs `ForbiddenTerms.violation(headline/detail)` and fails closed. | The same templates in `EndoInsights/Sources/*Engine.swift` (byte-equal through the 157-case parity port). |
+| Insight cache | Room `CachedInsight.payload` = the serialized `Insight` JSON **including the rendered English headline/detail**. The fingerprint is `count|latestDay|dismissed`. | SwiftData `CachedInsight.payload: Data` = the Codable `Insight` (the same English text). |
+| Notifications | `ReminderNotifier` builds the notification **at fire time** inside the WorkManager worker from `ReminderCopy.*`. The channel name and description are set when the channel is created. | `NotificationScheduler` builds the `UNMutableNotificationContent` **at schedule time**, so the text is frozen into each pending request. |
+| PDF | `ReportPdfRenderer` uses hard-coded `Locale.US` date/number formatters and `ReportCopy` consts, and draws `insight.headline` verbatim. | `ReportCopy` + CG renderer (same pattern). |
+| Prefs | DataStore (consent, reminders, HC token). `MainActivity : ComponentActivity` (**not** AppCompat). minSdk 26. | `UserDefaults` (`TerminologyStore`). `TerminologyPreference.BleedingTerm.noun` **returns `rawValue`**, so the English word is the raw value. |
+| Insight inputs | Closed sets only: Factor labels come from enums (food/activity/phase/sleep/stress/mood/medication-taken). **No free text reaches insight copy** (medications enter as UUIDs). | Same. |
+
+That last row matters. Every word an insight can render comes from a finite set of templates and a finite set of labels, so a **static, exhaustive audit of every template × every label in every language is possible and complete**.
 
 ---
 
@@ -13,537 +31,328 @@
 ### System Overview
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│  android/app  (module :app — Android, Compose)                         │
-│                                                                        │
-│  MainActivity (single activity, setContent { BloomTheme { AppGate } }) │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ AppGate (composable when-switch on ConsentState)                 │  │
-│  │  ├─ Unknown      → blank/splash (DataStore first emission)       │  │
-│  │  ├─ NotConsented → OnboardingScreen (disclaimer + privacy +      │  │
-│  │  │                 explicit consent action)                      │  │
-│  │  └─ Consented    → ConsentedShell: Scaffold + NavigationBar      │  │
-│  │       tabs: Log · Insights · Explore  (ConsentedTab enum state)  │  │
-│  │       — the ONLY branch that composes any health UI              │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│                                                                        │
-│  ui/ (screens)   designsystem/ (Bloom)   report/ (PdfDocument)         │
-│        │                                        │                      │
-│        ▼                                        ▼                      │
-│  ┌──────────────────┐   ┌──────────────────────────────────────────┐   │
-│  │ InsightsCoordi-  │   │ data/ EndoRepository (consent-gated:     │   │
-│  │ nator (app-      │◄──│ every health read/write checks consent   │   │
-│  │ scoped, State-   │   │ FIRST) → Room DAOs (10 entities)         │   │
-│  │ Flow<UiState>)   │   │ ConsentStore → Preferences DataStore     │   │
-│  └───────┬──────────┘   │ (consent flag OUTSIDE the health DB)     │   │
-│          │              └───────────────┬──────────────────────────┘   │
-│          │ withContext(Dispatchers      │                              │
-│          │ .Default)  ← Task.detached   │ health/ HealthConnect-       │
-│          │ analog                       │ Importer (READ-only client,  │
-│          ▼                              │ ImportedSample provenance)   │
-│  ┌──────────────────────────────┐       │                              │
-│  │ insightsbridge/              │◄──────┘                              │
-│  │ SnapshotProjector: Room rows │                                      │
-│  │ → List<DaySnapshot>          │  ← the ONLY file(s) where Room       │
-│  │ (union-of-days + manual-wins │    entity types and :insights        │
-│  │  merge, iOS daySnapshots())  │    domain types both appear          │
-│  └──────────┬───────────────────┘                                      │
-├─────────────┼──────────────────── one-way Gradle dependency ───────────┤
-│             ▼                                                          │
-│  android/insights  (module :insights — kotlin("jvm") ONLY)             │
-│                                                                        │
-│  DaySnapshot · sealed Factor · enums (raw-value parity w/ Swift)       │
-│  TrendsEngine · CyclePhaseMapper · CorrelationEngine (BH-FDR, Fisher,  │
-│  Mann-Whitney U, Cliff's δ) · RecommendationsEngine · FlareEngine      │
-│  HonestyGate (single choke point) · ForbiddenTerms                     │
-│  ExploreSeries/Extraction · ScatterPairing · SeriesNormalization ·     │
-│  ChartScrubSelection  (chart data-prep, consumed by :app Phase 6)      │
-│                                                                        │
-│  test/: ported EndoInsights suite (file-for-file, ~157 case parity)    │
-│         + boundary lint (no android./androidx. imports)                │
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  i18n/  (repo root, NEW, the single cross-platform source)                     │
+│  ┌──────────────────┐ ┌───────────────────────┐ ┌──────────────────────────┐ │
+│  │ glossary.json    │ │ insight-messages.json │ │ claims-policy.l10n.json  │ │
+│  │ term → en/de/fr/es│ │ msgKey → en/de/fr/es  │ │ de/fr/es forbidden lists │ │
+│  │ (+ do-not-use)   │ │ + label keys          │ │ (+ gendered, allowed)    │ │
+│  └────────┬─────────┘ └──────────┬────────────┘ └────────────┬─────────────┘ │
+│           │ test-time only       │ bundled + test           │ bundled + test │
+└───────────┼──────────────────────┼──────────────────────────┼───────────────┘
+            │                      │                          │
+┌───────────┴──────────┐  ┌────────┴─────────────────┐  ┌──────┴────────────────┐
+│ PURE ENGINE LAYER    │  │ APP LAYER (per platform) │  │ AUDIT LAYER (tests)   │
+│ :insights / EndoIns. │  │                          │  │                       │
+│ engines → Insight{   │→ │ InsightMessageRenderer   │  │ CopyAudit per locale  │
+│  headline(EN legacy) │  │  (table + AppLanguage)   │  │ Key-completeness      │
+│  detail  (EN legacy) │  │ AppLanguage store/applier│  │ Placeholder parity    │
+│  message: key+args } │  │ L10n façade → native     │  │ Glossary conformance  │
+│ InsightTemplate      │  │  catalog (strings.xml /  │  │ Cross-platform drift  │
+│  (pure renderer fn)  │  │  Localizable.xcstrings)  │  │ Insight goldens ×4    │
+│ HonestyGate (EN, as  │  │ → Compose/SwiftUI, PDF,  │  │                       │
+│  today)              │  │   notifications          │  │                       │
+└──────────────────────┘  └──────────────────────────┘  └───────────────────────┘
+            Persisted data: raw values, signalKeys, UUIDs, ISO dates. No language anywhere.
 ```
 
 ### Component Responsibilities
 
-| Component | New/Modified | Responsibility | Concrete Implementation |
-|-----------|--------------|----------------|-------------------------|
-| `MainActivity` | NEW | Single activity; hosts the whole app; receives reminder-notification deep-link intents and only flips a non-sensitive router flag | `ComponentActivity`, `enableEdgeToEdge()`, `setContent { BloomTheme { AppGate() } }` |
-| `AppGate` (composable) | NEW (port of iOS `AppGate.swift`) | Consent-by-construction routing: health composables exist ONLY in the `Consented` branch | Plain `when (consentState)` — no navigation library (see Pattern 1) |
-| `ConsentStore` | NEW (port of iOS `ConsentStore` on UserDefaults) | Consent flag persisted OUTSIDE the health DB; exposes `StateFlow<ConsentState>` | Preferences DataStore + `stateIn(appScope)`; 3-state `Unknown/NotConsented/Consented` |
-| `EndoRepository` | NEW (port of iOS `Repository.swift`, 36 `assertConsented` call sites) | The ONLY health-data access path; consent check is the first statement of every health read/write; owns `deleteDay` cascade | Kotlin class wrapping Room DAOs; `checkConsented()` throws `IllegalStateException` pre-consent |
-| Room schema (10 entities) | NEW | Local persistence mirroring the 10 SwiftData models by name | Room 2.8.x entities + DAOs, `@Transaction` cascade, UUID string PKs (see Room section) |
-| `SnapshotProjector` (`insightsbridge/`) | NEW (port of iOS `daySnapshots()` + `DaySnapshotMappingTests`, 24 cases) | Room rows → `List<DaySnapshot>`; union-of-day-buckets; manual-wins/nil-honest merge; suppressed flag stamping | Pure function over fetched row lists; only file importing both Room entities and `:insights` types |
-| `InsightsCoordinator` | NEW (port of iOS `InsightsCoordinator.swift`) | Fingerprint-checked recompute of gated insights off the main thread; cache replace-all; `StateFlow<InsightsUiState>` | App-scoped class; engine call inside `withContext(Dispatchers.Default)` (Task.detached analog) |
-| `:insights` engines | NEW (verbatim port of 19 Swift files) | All analysis; one public producer behind `HonestyGate` | Kotlin-stdlib-only (`kotlin("jvm")`, `java.time` allowed — it's JDK, not Android) |
-| `HealthConnectImporter` (`health/`) | NEW | Read-only Health Connect pulls for 4 record types → `ImportedSample` provenance rows | `androidx.health.connect:connect-client`; runtime availability gating (Android 14 built-in vs installable) |
-| `designsystem/` (Bloom) | NEW | Bloom tokens/typography/components over Material 3 | `BloomTheme` wrapping `MaterialTheme` with custom color/type objects |
-| `report/` | NEW | Vector PDF + share intent | `android.graphics.pdf.PdfDocument` + `FileProvider` + `ACTION_SEND` |
-| `ClaimsPolicy` + `CopyAudit` (app `src/test`) | NEW (port; substring lists copied verbatim from iOS) | Copy gating with same-change registration rule | JVM test over a registered copy catalog + Swift-source drift scan (Pattern 4) |
-| `.github/workflows/android.yml` | NEW (repo root — the only file added outside `android/`) | CI for the Android tree only, path-filtered | See CI section |
-| iOS tree (`project.yml`, `Sources/`, `EndoInsights/`, `Tests/`) | **UNTOUCHED** | Port SOURCE only; drift tests read it, never write it | — |
+| Component | Responsibility | Implementation | New / Modified |
+|---|---|---|---|
+| `i18n/glossary.json` | One canonical term list (e.g. "possible association", "flare early-warning", "check-in", "endo belly", bleeding/period/menstruation) with the approved DE/FR/ES rendering, plus per-term "never translate as" variants | Hand-edited JSON. Read **only by tests** on both platforms | NEW |
+| `i18n/insight-messages.json` | Every insight template key and every insight label key (symptom/factor/window/direction/phase) in the 4 languages | JSON map `key → {en,de,fr,es}` with named `{placeholders}`. **Bundled at runtime** into both apps | NEW |
+| `i18n/claims-policy.l10n.json` | DE/FR/ES forbidden causal/imperative/alarmist lists, gendered tokens, precision tokens, allowed framing | JSON. Bundled (runtime fail-closed guard) and read by tests | NEW |
+| `InsightMessage` (+ `InsightArg`) | A structured, language-neutral description of an insight sentence | Kotlin `@Serializable` data class / Swift `Codable` struct in the pure packages | NEW (in `:insights` / `EndoInsights`) |
+| `Insight.message` | Carries the structured message beside the legacy EN `headline`/`detail` | A new optional field, with no change to `id` derivation | MODIFIED `Insight.kt` / `Insight.swift` + every engine |
+| `InsightTemplate.render(template, args, labels, numberStyle)` | Pure placeholder substitution plus deterministic number formatting | Pure Kotlin / Foundation-only Swift, **no platform locale APIs** | NEW (pure package) |
+| `InsightMessageRenderer` | Loads `insight-messages.json` for the active language, resolves label args, calls `InsightTemplate.render`, runs the per-language runtime claims guard | App layer, one per platform | NEW |
+| `AppLanguage` | The chosen language: `system` \| `en` \| `de` \| `fr` \| `es` → resolved `Locale` | Android: DataStore mirror + `AppCompatDelegate` applier. iOS: `@Observable` store over `UserDefaults` | NEW |
+| `L10n` façade | Every UI string lookup goes through it with an explicit or current language | Android: `@StringRes` accessors + `Context`. iOS: `L10n.tr(key)` over the per-language `.lproj` bundle | NEW |
+| Native catalogs | UI chrome strings | Android `res/values{,-de,-fr,-es}/strings.xml`. iOS `Sources/EndoApp/Resources/Localizable.xcstrings` | NEW |
+| `*Copy` objects | Change from string holders to typed key accessors (call sites keep their shape) | Android `const val X = "…"` → `val X = R.string.x`. iOS `static let x = "…"` → `static var x: String { L10n.tr("x") }` | MODIFIED (all ~19 / ~8) |
+| `CopyAuditTest` / `CopyAuditTests` | Per-language scans + completeness, with the catalog as the registry | Pure-JVM XML parse (like `ManifestPermissionsTest`) / JSON parse of `.xcstrings` | MODIFIED (major) |
+| `ClaimsPolicy` / `ForbiddenTerms` | EN lists unchanged. Gains `forLanguage(lang)` backed by the l10n JSON | Kotlin + Swift | MODIFIED (additive) |
+| Language picker UI | Settings row + sheet | `ui/settings/LanguageSection.kt`, `Features/Settings/LanguagePickerView.swift` | NEW |
 
 ---
 
 ## Recommended Project Structure
 
-Concrete file-level realization of the locked §3 sketch (locked directories kept verbatim; files below are the recommendation):
-
 ```
+i18n/                                   # NEW — cross-platform single source (no build step)
+├── glossary.json                       # canonical terms × 4 langs (+ banned variants)
+├── insight-messages.json               # insight templates + label keys × 4 langs (runtime-bundled)
+├── claims-policy.l10n.json             # de/fr/es forbidden + gendered + precision + allowed lists
+├── golden/                             # NEW — rendered fixture sentences, both platforms must match
+│   └── insights.{en,de,fr,es}.txt
+└── README.md                           # translator rules (no inflection by code, no lowercase())
+
 android/
-├── settings.gradle.kts              # include(":app", ":insights")
-├── build.gradle.kts                 # root: plugin versions via catalog, no logic
-├── gradle/libs.versions.toml        # THE audited dependency list (short by design)
-├── gradle.properties                # AndroidX, Kotlin code style, JVM args
-├── insights/
-│   ├── build.gradle.kts             # plugins { kotlin("jvm") } — NO Android plugin
-│   └── src/
-│       ├── main/kotlin/com/endoapp/insights/
-│       │   ├── DaySnapshot.kt       # + SymptomPoint, PainPoint (data classes)
-│       │   ├── SnapshotEnums.kt     # SymptomType(11), BodyRegion(10), FoodTag,
-│       │   │                        #   ActivityType, ActivityIntensity,
-│       │   │                        #   SleepQuality, FlowIntensity — raw-value parity
-│       │   ├── Factor.kt            # sealed interface Factor + FactorPresence + key strings
-│       │   ├── Insight.kt           # Insight types + kotlinx-free JSON codec (see note)
-│       │   ├── CyclePhase.kt / CyclePhaseMapper.kt
-│       │   ├── CorrelationStats.kt  # Fisher exact, Mann-Whitney U, Cliff's δ, BH-FDR
-│       │   ├── TrendsEngine.kt / CorrelationEngine.kt
-│       │   ├── RecommendationsEngine.kt / FlareEngine.kt
-│       │   ├── HonestyGate.kt / ForbiddenTerms.kt
-│       │   ├── InsightsEngine.kt    # the ONE public producer function
-│       │   ├── ExploreSeries.kt / ExploreSeriesExtraction.kt
-│       │   ├── ScatterPairing.kt / SeriesNormalization.kt
-│       │   └── ChartScrubSelection.kt
-│       └── test/kotlin/…            # file-for-file mirror of EndoInsights/Tests (18 files)
-│           ├── SnapshotFixtures.kt / SeriesTestSupport.kt   (fixtures, 0 cases)
-│           ├── BoundaryLintTests.kt                          (source scan)
-│           ├── EnumRawValueParityTests.kt                    (NEW — drift test, Pattern 4)
-│           └── resources/enum-raw-values.golden.json         (generated once from Swift)
-└── app/
-    ├── build.gradle.kts             # com.android.application + compose + ksp
-    └── src/
-        ├── main/
-        │   ├── AndroidManifest.xml  # zero WRITE_* health permissions (auditable artifact)
-        │   ├── res/xml/             # backup rules: EXCLUDE Room DB, allow DataStore prefs
-        │   │   ├── data_extraction_rules.xml
-        │   │   └── file_provider_paths.xml
-        │   └── kotlin/com/endoapp/android/
-        │       ├── App.kt                    # Application: builds AppDependencies
-        │       ├── AppDependencies.kt        # manual composition root (iOS mirror)
-        │       ├── MainActivity.kt
-        │       ├── AppGate.kt                # + ConsentedShell + ConsentedTab enum
-        │       ├── CheckInRouter.kt          # deep-link intent flag (non-sensitive)
-        │       ├── data/
-        │       │   ├── EndoDatabase.kt       # @Database(v1, exportSchema = true)
-        │       │   ├── entities/             # 10 entity files, iOS model names
-        │       │   ├── daos/                 # per-aggregate DAOs + DeleteDayDao
-        │       │   ├── EndoRepository.kt     # consent-gated facade
-        │       │   ├── ConsentStore.kt       # DataStore-backed
-        │       │   └── ReminderSettingsStore.kt
-        │       ├── insightsbridge/
-        │       │   ├── SnapshotProjector.kt  # rows → DaySnapshot (daySnapshots() port)
-        │       │   └── EnumBridge.kt         # entity raw String ↔ :insights enum
-        │       ├── health/                   # HealthConnectImporter, mapping, anchors
-        │       ├── ui/
-        │       │   ├── onboarding/ home/ checkin/ daylog/ bodymap/
-        │       │   ├── insights/  (incl. InsightsCoordinator.kt)
-        │       │   ├── explore/ charts/      # Canvas chart layer (honesty rules)
-        │       │   └── settings/
-        │       ├── designsystem/             # BloomColors/Typography/Components/Theme
-        │       ├── report/                   # ReportModel, PdfReportRenderer, ShareReport
-        │       └── reminders/                # NotificationScheduler — physically separate
-        │                                     #   from ui/insights (flare-scan boundary)
-        ├── test/kotlin/…                     # JVM: CopyAuditTests, ClaimsPolicy drift scan,
-        │                                     #   FlareNoNotification/NoAlarmVisual scans,
-        │                                     #   SnapshotProjector mapping tests (fake rows),
-        │                                     #   ReportModel tests, merge tests
-        └── androidTest/kotlin/…              # instrumentation: Room migration tests,
-                                              #   delete-day cascade on real SQLite,
-                                              #   Compose consent-gate tests
+├── insights/src/main/kotlin/.../InsightMessage.kt     # NEW  key + typed args (pure)
+├── insights/src/main/kotlin/.../InsightTemplate.kt    # NEW  pure renderer + NumberStyle
+├── insights/src/main/kotlin/.../*Engine.kt            # MOD  also emit message
+├── app/build.gradle.kts                # MOD  assets.srcDir("../../i18n"), appcompat dep,
+│                                       #      androidResources { generateLocaleConfig = true }
+├── app/src/main/res/values/strings.xml          # NEW  EN source (~700)
+├── app/src/main/res/values-{de,fr,es}/strings.xml
+├── app/src/main/res/resources.properties        # NEW  unqualifiedResLocale=en (for generateLocaleConfig)
+├── app/src/main/kotlin/.../i18n/
+│   ├── AppLanguage.kt                  # NEW  enum + resolve()
+│   ├── LanguageStore.kt                # NEW  DataStore mirror; applier → AppCompatDelegate
+│   ├── LocalizedContext.kt             # NEW  ctx.forLanguage(lang) for worker/PDF
+│   ├── InsightMessageRenderer.kt       # NEW
+│   └── LocaleFormats.kt                # NEW  date/number formatters for the resolved Locale
+├── app/src/main/kotlin/.../content/*Copy.kt     # MOD  consts → @StringRes
+└── app/src/main/kotlin/.../ui/settings/LanguageSection.kt   # NEW
+
+Sources/EndoApp/
+├── Resources/Localizable.xcstrings     # NEW  EN source + de/fr/es
+├── I18n/AppLanguage.swift              # NEW  store + resolved bundle/locale
+├── I18n/L10n.swift                     # NEW  tr(key, lang) via lproj bundle
+├── I18n/InsightMessageRenderer.swift   # NEW
+├── Content/ClaimsPolicy.swift          # MOD  additive; EN static-let arrays untouched (drift guard parses them)
+├── Features/*/…Copy.swift              # MOD  static let → computed via L10n
+└── Features/Settings/LanguagePickerView.swift  # NEW
+EndoInsights/Sources/EndoInsights/InsightMessage.swift, InsightTemplate.swift   # NEW
+project.yml                             # MOD  resources: i18n/*.json; knownRegions/CFBundleLocalizations
 ```
 
 ### Structure Rationale
 
-- **`insightsbridge/` stays tiny (2 files) on purpose** — it is the single Room↔domain meeting point, mirroring the iOS rule that only `Repository.daySnapshots()` touches both worlds. Everything in `ui/` consumes `DaySnapshot`/`Insight`, never entities.
-- **`reminders/` physically separated from `ui/insights/`** — the flare no-notification invariant is enforced by a structural source scan (§5 of the port plan); a clean package boundary keeps the scan trivially greppable (scan `ui/insights` + `insightsbridge` + `:insights` for `NotificationManager`/`AlarmManager`/`NotificationCompat` imports).
-- **`exportSchema = true` + committed `schemas/` dir from day one** — Room migration tests (`MigrationTestHelper`) need historical schema JSON; iOS learned migration discipline across SchemaV1–V6, Android starts the scaffold in Phase 2 even though v1 ships a single schema version.
-- **Package base `com.endoapp.insights` vs `com.endoapp.android`** — the `:insights` namespace carries no platform hint, matching its portability contract; the boundary lint scans the whole `insights/src/main` tree.
+- **`i18n/` at repo root, used directly with no codegen.** Both apps bundle the same `insight-messages.json` file (Android `assets.srcDir`, XcodeGen `resources`). Insight sentences are the one copy surface that *must* be byte-identical across platforms (the 157-case parity already guarantees this for EN), so they get one physical source. Generating it into two native catalogs would only add a sync step that can drift.
+- **UI chrome goes in native catalogs, not the shared JSON.** The ~700 strings per platform have different key sets and layouts. Native catalogs give Android Lint `MissingTranslation`, Xcode catalog state tracking, plural handling, and, on Android 13+, the system per-app-language page. Cross-platform consistency for chrome is enforced through the **glossary conformance test**, not through shared keys.
+- **The glossary is test-only data.** It never ships. It is the contract both platforms' catalogs are checked against.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Consent-by-construction gate WITHOUT a navigation library
+### Pattern 1: Structured insight messages next to the legacy EN strings (the engines stay pure)
 
-**What:** No Navigation-Compose (Nav2) and no Navigation 3 in v1. `AppGate` is a plain composable `when`-switch; the consented shell is a Material 3 `Scaffold` + `NavigationBar` driven by a `ConsentedTab` enum in `rememberSaveable` state; modals (Check-In sheet, Day-Log editor, report sheet) are `ModalBottomSheet`/full-screen composables driven by plain state — exactly the shape of the shipped iOS app (AppGate switch + `TabView(selection:)` + sheets; there is no NavigationStack-heavy routing to port).
+**What:** Each engine keeps producing exactly the English `headline`/`detail` it produces today, so `HonestyGate`, the 157-case parity suite and the EN goldens stay untouched. It **also** attaches an `InsightMessage(headlineKey, detailKey, args)`. The app layer renders the message in the active language.
 
-**Why this is the right call here (not just dependency minimalism):**
-1. **A NavHost graph registers destinations as data.** With Nav2/Nav3 every health screen exists as a reachable route in a graph constructed before consent; consent becomes a *guard condition* you must remember on every destination and deep link. With the `when`-switch, health composables are **not composed and not constructible** outside the `Consented` branch — the invariant holds by construction, same as iOS, and the Phase 3 Compose test (`onNodeWithTag("tab.insights").assertDoesNotExist()` pre-consent) pins it.
-2. **The iOS app's entire routing surface is:** gate switch, 3 tabs, a handful of sheets, one programmatic tab jump (scatter deep-link via `ConsentedTab` selection + router payload), one notification deep-link flag. That is state, not a graph.
-3. **Deep links land ON the gate, never inside it** (locked invariant): `MainActivity.onNewIntent` sets `CheckInRouter.pendingCheckIn = true`; only `HomeScreen` (composed only post-consent) observes it. Identical to the iOS D-16 mechanism.
+**Why not pass a string table into the engine:** `HonestyGate` scans the engine output. If the engine rendered German, the gate would need German lists inside the pure package, the 157 parity fixtures would multiply by 4, and engine determinism would depend on app-provided data. A structured message keeps the engines language-free and the gate as it is today.
 
-**Trade-offs:** No free back-stack save/restore or predictive-back animations between "screens" — irrelevant for a tab shell + sheets (system back dismisses sheets via `ModalBottomSheet`/`BackHandler`). **Escape hatch (record it):** if a future milestone adds real stacked navigation, adopt **Navigation 3** (stable 1.0, Nov 2025 — Compose-first, back stack is a plain observable list you own), *not* Nav2. Nav3's "you own the back-stack list" model composes cleanly with an outer consent switch.
+**Why not drop `headline`/`detail` immediately:** they are the parity anchor. A test asserts `render(message, EN) == headline` for every fixture, which proves the structured path is complete. Removing the legacy fields can come in a later milestone.
 
-**Example:**
+**Trade-offs:** each insight carries some redundant data, and every engine template has to be changed once. In exchange, the EN behavior and its proof stay exactly as they are.
 
 ```kotlin
-@Composable
-fun AppGate(consentStore: ConsentStore) {
-    val state by consentStore.state.collectAsStateWithLifecycle()
-    when (state) {
-        ConsentState.Unknown      -> Box(Modifier.fillMaxSize()) // first DataStore emission (<1 frame)
-        ConsentState.NotConsented -> OnboardingScreen()          // router flag deliberately NOT observed
-        ConsentState.Consented    -> ConsentedShell()            // the ONLY health-UI branch
-    }
+// :insights (pure)
+@Serializable sealed interface InsightArg {
+    @Serializable data class Count(val n: Int) : InsightArg
+    @Serializable data class Decimal1(val v: Double) : InsightArg          // one-decimal mean
+    @Serializable data class Label(val key: String) : InsightArg            // "label.symptom.pelvicPain"
 }
-
-@Composable
-private fun ConsentedShell() {
-    var selectedTab by rememberSaveable { mutableStateOf(ConsentedTab.Log) } // ephemeral, never persisted
-    Scaffold(bottomBar = {
-        NavigationBar {
-            ConsentedTab.entries.forEach { tab ->
-                NavigationBarItem(
-                    selected = selectedTab == tab,
-                    onClick = { selectedTab = tab },
-                    icon = { Icon(tab.icon, null) },
-                    label = { Text(tab.label) },
-                    modifier = Modifier.testTag(tab.testTag), // "tab.insights" etc. — same ids as XCUITest
-                )
-            }
-        }
-    }) { padding ->
-        when (selectedTab) {
-            ConsentedTab.Log      -> HomeScreen(Modifier.padding(padding))
-            ConsentedTab.Insights -> InsightsScreen(onSeeDays = { selectedTab = ConsentedTab.Explore })
-            ConsentedTab.Explore  -> ExploreScreen(Modifier.padding(padding))
-        }
-    }
-}
+@Serializable data class InsightMessage(
+    val headlineKey: String, val detailKey: String,
+    val args: Map<String, InsightArg>,                                       // named, not positional
+)
+// TrendsEngine: headline = legacy EN (unchanged), message = InsightMessage(
+//   "trend.symptom.frequency.headline", "trend.symptom.frequency.detail",
+//   mapOf("label" to Label("label.symptom.${type.raw}"), "present" to Count(daysPresent),
+//         "total" to Count(daysWithAnyLog), "window" to Label("window.${window.raw}.inPhrase")))
 ```
 
-### Pattern 2: Room layering — entities → DAOs → consent-gated repository, Flow where it earns its keep
+Rules this pattern imposes on templates, enforced by a test over `insight-messages.json`:
 
-**What:** 10 `@Entity` classes named exactly like the SwiftData models (`DayEntry`, `SymptomReading`, `PainPoint`, `BleedingEvent`, `FactorReading`, `Medication`, `TreatmentState`, `ImportedSample`, `CachedInsight`, `DismissedInsight`); thin DAOs; one `EndoRepository` facade that is the only thing the rest of `:app` sees.
+- **No case transforms in code.** Delete `label.lowercase()` and `capitalizedLikeSwift()`, because German nouns are always capitalized. If a label appears both sentence-initially and mid-sentence, it gets two keys (`label.x` and `label.x.inline`).
+- **No inflection by code.** Templates are written so labels sit in grammatically invariant slots (after a colon, as a subject, or in a fixed "an {present} von {total} Tagen" frame). Direction, window and phase are whole-phrase labels, not fragments to glue together.
+- **Named placeholders only**, so word order can change per language. The placeholder set must be identical across the 4 languages (completeness test).
+- **Deterministic numbers:** `InsightTemplate` formats `Decimal1` by hand with a per-language decimal separator taken from the JSON (`"."` for en, `","` for de/fr/es) and no grouping. Do **not** use `NumberFormat`/`NumberFormatter` here. JDK CLDR and Apple ICU differ (for example French grouping U+202F vs U+00A0), which would break the cross-platform insight goldens. UI chrome and the PDF *can* use the platform formatters.
 
-**Entity design rules (carry the iOS lessons):**
-- **PK = app-generated UUID string** (`@PrimaryKey val id: String`), even though Room would allow autoincrement — the encrypted export format needs platform-neutral stable identity, and import is an idempotent upsert by this UUID (plan §2).
-- **Day columns as `epochDay: Long`** (from `LocalDate.toEpochDay()`), indexed. Lossless, orderable, timezone-proof; convert to ISO-8601 only at the export-JSON boundary. Room `TypeConverter`s for `LocalDate`/`Instant`.
-- **Enum-valued columns store the raw `String`** (the shared vocabulary, e.g. `"pelvicPain"`), never ordinals — parity with SwiftData storage and the export schema. Decode defensively via the `:insights` `fromRaw()` sinks (unknown → `OTHER`/null, never crash) at the bridge.
-- **Use Room's freedoms deliberately:** non-null columns where iOS was forced optional by CloudKit, `@Index(unique = true)` on `ImportedSample.hcRecordUuid` (the Health Connect dedupe key — iOS had to do upsert-by-uuid in code; Android can let SQLite enforce it and still keep the code-level upsert).
-- **No Room `@Relation`/foreign-key graph needed for v1** — the iOS models are flat, day-bucketed rows joined by date at projection time; mirror that. FKs only where they buy the cascade (they don't here: the cascade is by *day*, not by parent row — see below).
+### Pattern 2: The catalog becomes the audit registry (enforced by construction)
 
-**`deleteDay` cascade (GDPR Art. 17, born complete):** one `@Transaction` DAO method that deletes from **every day-scoped table** by `epochDay` (`DayEntry`, `SymptomReading`, `PainPoint`, `BleedingEvent`, `FactorReading`, `ImportedSample` for that day) and leaves definitions (`Medication`, `TreatmentState`) untouched; plus invalidates `CachedInsight` (delete-all — the fingerprint recompute rebuilds). The Phase 2 instrumentation test inserts one row of *all 10 types* and asserts the exact survival set — that test is what makes the cascade "born complete", and it must fail if an 11th day-scoped entity is ever added without joining the cascade (drive the cascade test from a single canonical `DAY_SCOPED_ENTITIES` list asserted against `EndoDatabase.entities`).
+**What:** Today, being audited depends on someone remembering to call `CopyAuditRegistry.sources += FooCopy` ("the load-bearing rule"). Once every user-facing string lives in `strings.xml` / `Localizable.xcstrings`, **the catalog file is the registry**. The audit parses the files directly, so a string cannot reach the UI without being scanned. `AuditableCopy`/`CopyAuditRegistry` stay only for strings that are not in a catalog (store listing, privacy policy text, `DataSafetyDeclaration`) or retire if those move to per-locale files.
 
-**Observation strategy — mirror iOS semantics, don't cargo-cult Flow everywhere:**
-- **One-shot suspend reads for projections:** `suspend fun daySnapshots(): List<DaySnapshot>` — the iOS dashboard/Explore/report all read the projection once per appearance; keep that contract so engine inputs are stable value lists.
-- **`Flow<List<T>>` DAO queries only for live list UI:** the Home day-history list and the medications list genuinely benefit from Room's invalidation-tracker-backed Flows (`collectAsStateWithLifecycle`).
-- **A change ticker for recompute:** `dao.observeDayScopedVersion(): Flow<Long>` (a cheap `SELECT COUNT + MAX(updatedAt)`-style query over day-scoped tables, or simply Room `InvalidationTracker` on those tables) debounced → tells `InsightsCoordinator` to run its fingerprint check. This replaces the iOS "recompute check on view appear" with something better-suited to Android process lifecycles, while the fingerprint short-circuit (unchanged data → no recompute) ports verbatim.
+**The gap to close at the same time:** literals that bypass the catalog (`Text("Cancel")`, `Text("←")`). Add a source-scan test (the same file-walk style as `BoundaryLintTests`) that fails on `Text("…letters…")` in `ui/**`. On iOS, fail on `Text("…")` without a matching catalog key, and on `Text(verbatim:)`/`Text(String)` fed from a non-`L10n` source.
 
-**Consent gate in the repository:** constructor takes `ConsentStore`; every health read/write starts with `checkConsented()` which reads the cached `StateFlow.value` and **throws** (`IllegalStateException`) when not `Consented` — a hard throw, not `assert`, because Android has no debug-only `assert` idiom that survives R8 the way Swift's `assert` works in debug; the JVM unit test for "repository throws pre-consent" ports the iOS `ConsentGateTests` directly.
+**Audit tests per locale `L ∈ {en,de,fr,es}`:**
 
-**Room version choice (nuance, decide at Phase 2 start):** **Room 2.8.x** is the recommendation for this milestone. Room 3.0.0 went stable on **2026-07-01** (one week old today): Kotlin-generated, KSP2-only, coroutines-first, new `androidx.room3` package. Everything this app needs (suspend DAOs, Flow queries, `MigrationTestHelper`, exported schemas) is fully supported in 2.8.x, which has years of production hardening and is where all testing documentation points. Migrating later is mechanical (package rename; the DAOs are already suspend/Flow). Re-check at Phase 2 kickoff: if Room 3 has a patch release or two by then, upgrading the default is reasonable — record whichever is chosen in the phase plan. (2.x is officially in maintenance mode, so Room 3 is the eventual destination either way.)
+1. **Completeness:** key set(`values-L`) == key set(`values`). On iOS, every key has `localizations[L].stringUnit.state == "translated"`. The same check runs on `insight-messages.json`.
+2. **Placeholder parity:** the `%1$s`/`%d` sequence (Android), `%@`/`%lld` (iOS) and `{name}` set (insight JSON) match the EN source exactly.
+3. **Claims scan:** every value is scanned against `ClaimsPolicy.forLanguage(L)` (causal, imperative, alarmist, gendered, precision). Matching is case-insensitive with **locale-aware lowercasing** (`lowercase(Locale(L))`) and **NFC normalization** (é, ß, ñ).
+4. **Insight exhaustive scan:** every template is rendered with **every** label key in each label slot and representative numbers, then scanned. This is complete because the inputs are closed sets (§0).
+5. **Glossary conformance:** for each glossary term, if the EN source string contains the EN term, then the L string must contain the approved L term and none of its banned variants. This runs on both platforms against the same `glossary.json`.
+6. **Red-capable self-test per language:** a deliberately forbidden DE/FR/ES string fed through the same helper must fail, so the suite cannot stay green on an empty list.
 
-### Pattern 3: Background insights recompute — `withContext(Dispatchers.Default)` as the `Task.detached` analog
+**Per-language forbidden lists** live in `i18n/claims-policy.l10n.json` and are exposed as `ForbiddenTerms.forLanguage(lang)` / `ClaimsPolicy.forLanguage(_:)`. The EN lists **stay in code, unchanged**. `ClaimsPolicyDriftTests` regex-parses `static let forbiddenVerbs: [String] = [` out of the Swift file, so do not restructure those declarations. Add one drift test per platform asserting that the JSON's `en` block (if present) equals the code lists, or leave EN out of the JSON altogether.
 
-**What:** Port `InsightsCoordinator` with the same shape: read snapshots → fingerprint check → engine compute off-main → gate → cache replace-all → publish UI state.
+The substring-trap problem gets worse in other languages. EN already rewords around "her" ⊂ "higher". For example, DE "nimm" (imperative "take") ⊂ "zunimmt" (increases), and FR "doit" ⊂ "endroit". Each language list therefore needs a **per-language allow-list of known-innocent host words** (a whitelist checked before flagging), or word-boundary matching for that language. Write that into the JSON schema now. Getting it wrong would push Claude-drafted translations into unnatural rewording.
 
-**Dispatcher mapping (the iOS ↔ Android concurrency Rosetta stone):**
+### Pattern 3: The language is a value passed in, not ambient global state
 
-| iOS mechanism | Android analog | Note |
-|---|---|---|
-| `Task.detached(priority: .userInitiated) { engine.compute(...) }` | `withContext(Dispatchers.Default) { InsightsEngine.compute(...) }` | `Default` = CPU-bound pool; the engine call is the ONLY thing moved off-main, same as iOS Pitfall-4 discipline |
-| Main-actor repository reads | Room suspend DAOs (main-safe; Room hops to its own I/O executor) | No manual `Dispatchers.IO` needed around Room suspend calls |
-| `Sendable` value types crossing the boundary | Immutable Kotlin data classes / `List` | `DaySnapshot` etc. are `val`-only data classes — safe by construction |
-| `@Observable` coordinator state read by SwiftUI | `StateFlow<InsightsUiState>` + `collectAsStateWithLifecycle()` | Coordinator is a plain class, not a ViewModel (see below) |
-| Coordinator lifetime = app composition root | `AppDependencies.applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)` | Manual-DI mirror; one coordinator instance app-wide |
-
-**Example (the load-bearing 15 lines):**
-
-```kotlin
-class InsightsCoordinator(
-    private val repo: EndoRepository,
-    private val scope: CoroutineScope,               // AppDependencies.applicationScope
-) {
-    private val _state = MutableStateFlow<InsightsUiState>(InsightsUiState.Loading)
-    val state: StateFlow<InsightsUiState> = _state
-
-    fun refresh() { scope.launch { refreshInner() } }
-
-    private suspend fun refreshInner() {
-        val snapshots = repo.daySnapshots()                          // Room-managed I/O, main-safe
-        val fingerprint = snapshotFingerprint(snapshots)
-        val cached = repo.loadCachedInsights()
-        if (fingerprint == repo.cachedFingerprint() && cached.isNotEmpty()) {
-            _state.value = InsightsUiState.Ready(cached); return     // short-circuit, iOS-identical
-        }
-        val dismissed = repo.dismissedSignalKeys()
-        val fresh = withContext(Dispatchers.Default) {               // ← Task.detached analog
-            InsightsEngine.compute(snapshots, dismissed)             // pure, gated, stdlib-only
-        }
-        repo.replaceCachedInsights(fresh, computedAt = Instant.now(), fingerprint = fingerprint)
-        _state.value = InsightsUiState.Ready(fresh)
-    }
-}
-```
-
-**Why a plain class and not a ViewModel:** manual DI is locked; the coordinator's cache lives in Room so process death costs nothing; per-screen ViewModels would fragment the single-recompute-authority the iOS design proved out. (androidx ViewModel is first-party and *allowed* — use it later only if config-change-scoped state actually appears; the Compose tab shell holds none.)
-
-**Trade-off:** an app-scoped `CoroutineScope` keeps a recompute alive across screen changes (good — matches iOS behavior where the detached task completes) but you must not touch UI from it — publishing through `StateFlow` handles that.
-
-### Pattern 4: The `insightsbridge` seam — projection + enum parity with drift tests
-
-**What:** `SnapshotProjector` is the verbatim port of iOS `Repository.daySnapshots()` (union of start-of-day buckets across all day-scoped tables + imported samples; manual-wins/nil-honest merge; suppressed flag from latest `TreatmentState` stamped on every snapshot; `hasNote` presence-only — free text NEVER crosses into the analysis layer). It takes fetched row lists as parameters (pure function), so its 24-case mapping test suite (port of `DaySnapshotMappingTests`) runs as a **JVM** test with hand-built entity instances — no database, no emulator.
-
-```kotlin
-object SnapshotProjector {
-    fun project(
-        symptoms: List<SymptomReading>, pain: List<PainPoint>,
-        bleeding: List<BleedingEvent>, factors: List<FactorReading>,
-        entries: List<DayEntry>, imported: List<ImportedSample>,
-        suppressed: Boolean,
-    ): List<DaySnapshot> { /* union of epochDay keys → one snapshot per day, ascending */ }
-}
-// EndoRepository.daySnapshots() = fetch all + checkConsented() + SnapshotProjector.project(...)
-```
-
-**Enum raw-value parity strategy (the drift-prone spot — treat it as a contract):**
-1. **Kotlin enums carry an explicit `raw: String`** matching the Swift `rawValue` **verbatim** (camelCase: `"pelvicPain"`, `"giEndoBelly"`, `"lowerAbdomenPelvis"`, …). Kotlin case names may be idiomatic (`PELVIC_PAIN`) — the *raw string* is the contract, used in Room columns, the export JSON, and `Insight.signalKey` fragments. Each enum ports the defensive decoder: `fun fromRaw(raw: String?): SymptomType` (unknown → `OTHER` sink) / `fromRawOrNull` for the optionals — same never-crash posture as the Swift `init(raw:)`.
-2. **Swift `Factor` is an enum with associated values** (`food(FoodTag)`, `activity(ActivityType)`, `cyclePhase(CyclePhase)`, …) → Kotlin **sealed interface** with data classes; its stable `key` strings (`"food.caffeine"`, `"activity.present"`, `"cyclePhase.menstrual"`, …) are part of the parity contract because they are `signalKey` fragments persisted in `DismissedInsight`/`CachedInsight`.
-3. **Drift test A (in `:insights` tests, the monorepo advantage):** `EnumRawValueParityTests` **parses the Swift source files directly** — a JVM test walks up to the repo root and regex-extracts the `case` lists from `EndoInsights/Sources/EndoInsights/SnapshotEnums.swift` and `Factor.swift`, then asserts every Kotlin enum's raw set (and case count: SymptomType = 11, BodyRegion = 10, FlowIntensity = 4, ActivityIntensity = 3, ActivityType = 5, FoodTag = 9, …) equals the extracted set. Zero iOS changes; real drift protection in both directions. Guard the test with `Assumptions.assumeTrue(swiftFile.exists())` so `:insights` still passes if the module is ever built outside the monorepo, and back it with **drift test B**: a checked-in `enum-raw-values.golden.json` asserted unconditionally (generated once from the Swift side; regeneration script documented in the test header).
-4. **Same two-layer mechanism for ClaimsPolicy substrings:** Kotlin `ClaimsPolicy` copies the forbidden-substring lists verbatim; a JVM drift test scans `Sources/EndoApp/Content/ClaimsPolicy.swift` and asserts the Kotlin lists are a superset (assumption-guarded), plus the unconditional CopyAudit over the registered Android copy catalog. The iOS rule carries over verbatim: **every user-facing string registers for audit in the same change that introduces it.**
-
-**Trade-off:** the Swift-source-scan tests are regex-coupled to iOS source formatting; if iOS refactors, they fail loudly (that is the point) and the golden JSON keeps `:insights` green while the fixture is regenerated deliberately.
-
-### Pattern 5: Consent flag in DataStore, outside the health DB
-
-**What:** Preferences DataStore file (`consent.preferences_pb`) holding `hasConsented: Boolean` (+ consent timestamp), mirroring the iOS UserDefaults split — the consent flag must survive independently of, and never live inside, the health database.
-
-```kotlin
-class ConsentStore(private val dataStore: DataStore<Preferences>, appScope: CoroutineScope) {
-    val state: StateFlow<ConsentState> = dataStore.data
-        .map { prefs -> if (prefs[CONSENTED] == true) ConsentState.Consented else ConsentState.NotConsented }
-        .stateIn(appScope, SharingStarted.Eagerly, ConsentState.Unknown)   // Unknown until first read
-
-    suspend fun grant()    = dataStore.edit { it[CONSENTED] = true }
-    suspend fun withdraw() = dataStore.edit { it[CONSENTED] = false }      // AppGate recomposes → re-gated
-}
-```
-
-- The `Unknown` initial state is why AppGate has a three-way switch — DataStore is async-only; never `runBlocking` on the main thread at startup.
-- `EndoRepository.checkConsented()` reads `state.value`; `Unknown` counts as not consented (fail closed).
-- **Backup rules interlock (Phase 2/8):** `data_extraction_rules.xml` **excludes** the Room database files from Auto Backup / device transfer (no opaque Google-account-tied copies of health data — plan §2) while the DataStore prefs (consent, reminders) may back up. A small app-side JVM/instrumentation check should assert the rules file excludes the DB path — this is an invariant, give it a test like the others.
-- Withdrawal semantics port from iOS: withdraw re-gates immediately (Compose test: consented → withdraw → health tags gone); data deletion remains an explicit separate action (delete-day / delete-all), matching the shipped iOS behavior.
-
-### Pattern 6: Test-suite organization for case-count parity
-
-**What:** Mirror the Swift suites file-for-file and case-for-case; make parity itself auditable.
-
-| Swift (shipped) | Android home | Kind | Notes |
-|---|---|---|---|
-| `EndoInsights/Tests` — 18 test files, **~157 `@Test` cases** (BoundaryLint 1, ChartScrub 7, Contract 7, CorrelationEngine 12, CorrelationStats 26, CyclePhaseMapper 8, ExploreSeriesCatalog 9, ExploreSeriesExtraction 10, FlareEngine 6, HonestyGate 16, InsightCodable 6, InsightsEngine 14, Recommendations 7, ScatterPairing 7, SeriesNormalization 6, Smoke 2, SuppressedFixture 2, Trends 11) | `insights/src/test/kotlin`, same file names `.kt` | JVM (`:insights:test`) | The correctness anchor; Phase 1 exit = case-count parity per file |
-| App JVM-able tests: CopyAudit (40), DaySnapshotMapping (24), HealthImportMerge, ReportModel, FlareNoNotification/NoAlarmVisual/CopyDrift scans, CycleMath, Terminology… | `app/src/test/kotlin` | JVM (`:app:testDebugUnitTest`) | Anything that was a pure-logic or source-scan test on iOS stays JVM on Android |
-| SwiftData-touching tests (SchemaMigration, SchemaRoundTrip, EditDelete/cascade, StoreRecovery) | `app/src/androidTest` | Instrumentation | Real SQLite; `MigrationTestHelper` + in-memory DB |
-| XCUITests (ConsentFlow, CheckInFlow, Logging, Explore, Scatter, Report…) | `app/src/androidTest` Compose UI tests | Instrumentation | Port the *flows*, not the framework idioms; keep the same `testTag` ids as the iOS accessibility ids (`tab.insights`, `tab.explore`) |
-
-**Framework mapping (Swift Testing → JUnit 5):** use **JUnit 5 (Jupiter)** on the JVM modules (`useJUnitPlatform()`), because it is the only mapping that preserves *case counts* for Swift Testing's parameterized tests:
-
-| Swift Testing | JUnit 5 / Kotlin |
-|---|---|
-| `@Test func x()` | `@Test fun x()` |
-| `@Test(arguments: [...])` | `@ParameterizedTest @MethodSource` (each argument = one reported case, same as Swift) |
-| `#expect(a == b)` | `assertEquals(b, a)` / `assertTrue(...)` |
-| `#require(x)` | `assertNotNull(x)` / `checkNotNull(x)` |
-| `@Suite` struct | test class |
-| `withKnownIssue` | `@Disabled("reason")` — but prefer porting the fix |
-
-(Plain kotlin.test assertions on top of the Jupiter runner are fine; Kotest is NOT needed — it would be a new dependency for matcher sugar, against the catalog-minimalism posture. Compose/instrumentation tests stay on JUnit4 runners as AndroidX requires — that split is normal and confined to `androidTest`.)
-
-**Parity ledger:** commit `insights/src/test/PARITY.md` mapping each Swift test file → Kotlin file → case count both sides; Phase 1's verifier recounts with `grep -c "@Test"` (Swift) vs the JUnit XML case count (Kotlin). Cheap, honest, auditable.
+**What:** Every non-Compose consumer (worker, PDF renderer, insight renderer, tests) receives an explicit `AppLanguage`/`Locale`. Only the UI reads it ambiently. That keeps notifications and the PDF correct regardless of process or activity state, and lets tests pick the language without touching device config.
 
 ---
 
 ## Data Flow
 
-### Log → recompute → dashboard (the core loop)
+### Language choice: storage, startup, live change
 
 ```
-User taps "Log today" (HomeScreen, consented branch only)
-    ↓
-CheckIn sheet state → EndoRepository.upsert…()          [checkConsented() first]
-    ↓ Room write (suspend, Room executor)
-InvalidationTracker → change-ticker Flow (debounced)
-    ↓
-InsightsCoordinator.refresh()
-    ├─ repo.daySnapshots() → SnapshotProjector (rows → List<DaySnapshot>, manual-wins merge)
-    ├─ fingerprint unchanged? → serve CachedInsight rows, STOP
-    └─ withContext(Dispatchers.Default): InsightsEngine.compute(snapshots, dismissedKeys)
-         └─ engines → HonestyGate.apply (single choke point; bias to silence)
-    ↓ repo.replaceCachedInsights(...)  [replace-all, never upsert — stale/dismissed can't linger]
-StateFlow<InsightsUiState> → InsightsScreen recomposes
+                    ┌─────────── Android ───────────┐   ┌──────────── iOS ────────────┐
+User picks "de" →   LanguageStore.set(DE)             AppLanguageStore.language = .de
+                     ├ DataStore key "app.language"     ├ UserDefaults "app.language"
+                     ├ AppCompatDelegate               ├ @Observable change → root
+                     │  .setApplicationLocales("de")   │   view re-renders (L10n reads
+                     │  → activity recreated (API all) │   current bundle) + .environment
+                     ├ re-create notification channel  │   (\.locale, resolved)
+                     │  (same id, new name/desc)       ├ NotificationScheduler.reschedule
+                     └ (insights: nothing; rendered    │   All() (content frozen at schedule)
+                        at display from message)       └ (insights: nothing; render-time)
+Startup:            App.onCreate: read store → apply  EndoAppApp.init: store loads → L10n
+                    (API 33+: LocaleManager is truth;  current bundle; "system" =
+                     reconcile store ← system value)   Bundle.main.preferredLocalizations
 ```
 
-### Health Connect import
+- **Android (MEDIUM):** use AppCompat's `AppCompatDelegate.setApplicationLocales` + `androidx.appcompat.app.AppLocalesMetadataHolderService` with `autoStoreLocales=true` + `generateLocaleConfig` (AGP 8.1+). This puts the app on Android 13+'s system per-app language page and backports to minSdk 26. **Required change:** `MainActivity : ComponentActivity` → `AppCompatActivity`, because the backport only applies to AppCompat activities, plus the `appcompat` dependency. **Also keep a DataStore mirror.** On API < 33 the application `Context` used by a cold-started WorkManager worker is *not* re-localized by AppCompat, and `getApplicationLocales()` may be empty before an activity has run. So the worker and the PDF read `LanguageStore` and build `context.createConfigurationContext(config.apply { setLocales(LocaleList(locale)) })`. On API 33+, if the user changes the language in system Settings, `LocaleManager.getApplicationLocales()` wins and the mirror is updated at startup.
+- **iOS (MEDIUM):** Apple offers no runtime API to switch an app's language (the per-app language lives in the Settings app and needs a relaunch). Writing `AppleLanguages` to UserDefaults is a hack that requires a restart, so avoid it. Instead, the app manages the language itself: `L10n.tr(key)` resolves through `Bundle(path: main.path(forResource: lang, ofType: "lproj"))` (the xcstrings compile into per-language `.lproj` tables), and `.environment(\.locale, resolved)` handles `Text(date, format:)` and number formatting. Inline `Text("literal")` must become `Text(L10n.tr("key"))` (verbatim String), so lookup never depends on implicit `LocalizedStringKey` resolution. That makes the in-app choice authoritative and live without a relaunch. Offer "Open iOS Settings" only as a secondary link.
+- **"Follow system" is a stored value (`system`), not an empty value**, so the picker can tell "explicitly English" apart from "default".
+
+### Insight rendering (display time)
 
 ```
-User taps import (rationale screen FIRST) → Health Connect permission UI (read-only set)
-    ↓ HealthConnectImporter reads 4 record types since anchor/token
-ImportedSample provenance rows → repo.replaceOrInsertImported(values, deletedIds)  [consent-gated]
-    ↓ change ticker → recompute (imported-only days join the snapshot union;
-      manual rows are NEVER mutated — imported values only fill absent fields)
+engines → Insight{headline(EN), detail(EN), message} → HonestyGate (EN scan, unchanged)
+   → CachedInsight.payload (JSON incl. message; language-NEUTRAL)
+   → InsightsCoordinator → UI / PDF
+        → InsightMessageRenderer(lang).render(message)
+             → labels from insight-messages.json[lang]
+             → InsightTemplate.render (pure, deterministic numbers)
+             → ClaimsPolicy.forLanguage(lang).violation(text)? → DROP (fail-closed, mirror of HonestyGate; log in debug)
+             → fallback: message == null (legacy cache) → treat as cache MISS → recompute
 ```
 
-### Key data flows
+- **Cache:** because the payload stores the message and not the rendered text, a language switch needs **no recompute** and the fingerprint stays language-free. Payloads written before v2.1 lack `message`. Bump the fingerprint with a version prefix (`"v2|count|latest|dismissed"`) so the first launch after the update recomputes once. On iOS the payload is a `Codable` blob, so adding an optional field needs **no SwiftData schema migration**. Synced CloudKit records rendered on devices with different languages are harmless.
+- **Dismissals** stay keyed on `signalKey`, and `Insight.id` stays derived from `kind.raw|window.raw|signalKey`. Both are language-neutral already, so neither changes.
 
-1. **Consent controls everything:** DataStore flag → `AppGate` branch (UI existence) AND `EndoRepository.checkConsented()` (data access) — two independent enforcement layers, both tested, same as iOS.
-2. **Free text never reaches analysis:** `DayEntry.note` → `hasNote: Boolean` only, converted inside `SnapshotProjector`.
-3. **Report path reads the same projection:** `ReportModel` consumes `repo.daySnapshots()` + provenance labels; `PdfReportRenderer` draws vector text/charts into `PdfDocument`; `FileProvider` grants one-shot URI permission to the user-chosen `ACTION_SEND` target (cache-dir file, cleaned after share).
+### Notifications
+
+- **Android:** `CheckInReminderWorker` → `ReminderNotifier.post(context.forLanguage(LanguageStore.current()))`. Strings resolve at fire time, so a language change needs no rescheduling, only a channel re-create (same channel id, so the user's channel settings survive).
+- **iOS:** on language change, call `NotificationScheduler.rescheduleAll()`, because pending `UNNotificationRequest` content is frozen. Add a test that a language change triggers a reschedule.
+- The notification copy must stay generic in every language (no symptom or flare words, because the lock screen is semi-public). It is covered by the per-language claims scan like any other key.
+
+### PDF report
+
+- `ReportPdfRenderer(…, language: AppLanguage)` takes the language explicitly. Replace `Locale.US` formatters with `LocaleFormats.date(locale)` (`DateTimeFormatter.ofLocalizedDate(MEDIUM).withLocale`) and locale number/unit formatting. Keep the filename stamp `yyyyMMdd` on `Locale.ROOT`. Resolve copy through `context.forLanguage(lang).getString(...)`. Insights go through the same renderer, so the PDF and the screen can never disagree.
+- Because the language is a parameter, a **per-report language override** (a German patient with an English-speaking clinician) costs nothing architecturally. FEATURES decides whether to expose it.
+- Text measurement/wrapping: DE/FR strings run ~20–35% longer than EN, and the CG/Canvas layout must paginate rather than truncate. Add per-language PDF render tests (page count > 0, no clipped block).
+
+### Tests (Compose / SwiftUI)
+
+- Android Robolectric Compose tests: the default stays EN. Add `@Config(qualifiers = "de")` (or run with an `AppCompatDelegate` locale) smoke tests per language for each screen. Assertions switch from English literals to `context.getString(R.string.x)` or `testTag`s. Most tests already use tags such as `log.cycleSummary.nextWindow`, and tags stay language-neutral.
+- iOS: unit tests call `L10n.tr(key, .de)`. UI tests launch with `-AppLanguage de` (a launch argument read by `AppLanguageStore`), not with `-AppleLanguages`.
 
 ---
 
-## Suggested Build Order (within the 8 locked phases)
+## Persisted data that MUST stay language-neutral
 
-Phase order is **locked** (plan §4). This is the intra-phase sequencing + the dependency edges the roadmapper needs:
-
-| Phase | Builds | Depends on | Concrete ordering inside the phase |
-|---|---|---|---|
-| **1 — `:insights` port** | `android/` Gradle skeleton (settings + catalog + `:insights` only), then: SnapshotEnums → DaySnapshot/Insight → Factor (sealed) → CorrelationStats → TrendsEngine → CyclePhaseMapper → CorrelationEngine → HonestyGate/ForbiddenTerms → InsightsEngine facade → Recommendations → Flare → chart-prep files (ExploreSeries*, ScatterPairing, SeriesNormalization, ChartScrubSelection). Port each test file with its source file, not at the end. BoundaryLint + EnumRawValueParity land here. | nothing (pure JVM — no SDK, no emulator) | Stats before engines; HonestyGate before the facade; chart-prep last (no consumers until Phase 6 but the suite parity requires them in Phase 1) |
-| **2 — Persistence** | `:app` module scaffold + manifest + backup rules; 10 entities + converters → DAOs → `DeleteDayDao` (@Transaction cascade) → `ConsentStore` (DataStore) → `EndoRepository` (consent-gated) → **`insightsbridge/SnapshotProjector` + EnumBridge** (+ 24-case mapping tests, JVM) → migration-test scaffold (`exportSchema`, `MigrationTestHelper`) → cascade/survival instrumentation tests. ClaimsPolicy port + CopyAudit harness also land here (needed before any UI copy exists). | 1 (bridge maps to `DaySnapshot`; enum bridge uses `fromRaw`) | Entities → cascade → consent guard → bridge. The bridge belongs to Phase 2 (it is the persistence projection seam), not Phase 6 |
-| **3 — UI shell + consent** | Bloom `designsystem` → `MainActivity`/`App`/`AppDependencies` → `AppGate` + `ConsentedShell` (3 tabs, placeholder screens) → Onboarding/consent flow → withdraw re-gate → Compose gate tests + deep-link-lands-on-gate test | 2 (ConsentStore) | Bloom tokens first (every screen after uses them); gate test is the phase's exit gate |
-| **4 — Tracking screens** | CheckIn sheet → DayLog editor → BodyMap → medications/settings → reminders (`reminders/` package, physically separate; POST_NOTIFICATIONS just-in-time) | 2, 3 | Per-screen: build → round-trip test (log-persist-reload; untouched optionals read "not logged", never 0) |
-| **5 — Health Connect** | availability gating → rationale-first permission UX → read client (4 record types) → mapping (`HealthSampleMapping` port) → anchor/changes-token store → merge into `ImportedSample` → provenance labels | 2 (ImportedSample, repository), 3 (a settings entry point); independent of 4's screens | Can be built in parallel with late Phase 4 if staffing allows — no shared files beyond settings |
-| **6 — Explore + charts** | Canvas chart layer (honesty rules pinned by tests on the **data-prep layer**, which is Phase-1 code: extraction/normalization/pairing) → trend charts + scrub → Insights dashboard rendering (`InsightsCoordinator` + cards + dismissal) → Explore lanes → scatter + deep-link tab jump | 1 (chart-prep), 2 (bridge/coordinator data), 3 (tabs), 4 (real data to render) | Coordinator + dashboard before Explore; scatter last (needs the correlation card affordance). This is where the Canvas-vs-Vico escape hatch gets evaluated — decide by mid-phase |
-| **7 — PDF report** | `ReportModel` (port; reads `daySnapshots()`) → `PdfReportRenderer` (vector text; chart pages drawn by the same Canvas chart code onto the PDF canvas — a reuse the iOS `ImageRenderer` path didn't have) → FileProvider + share intent → no-network/no-leak tests | 2, 6 (chart drawing code), 4 (data) | Model → renderer → share; copy audit on report strings in the same change |
-| **8 — Play Store prep** | Data safety form, Health apps declaration, HC rationale activity/intent, privacy policy URL, target-API check, store-copy claims audit, pre-launch report | everything | Also: the manifest zero-`WRITE_*` assertion test if not already landed in Phase 5 |
-
-**Critical-path summary:** 1 → 2 → 3 → 4 → 6 → 7 → 8, with 5 parallelizable against 4, and `designsystem` (start of 3) pullable earlier if a second stream exists. Phase 1 and 2 JVM test suites are the CI backbone from day one.
+| Data | Where | Rule |
+|---|---|---|
+| Enum raw values (`SymptomType.raw`, `FlowIntensity`, `BodyRegion`, `FoodTag`, `ActivityType`, `FactorKind`, `CyclePhase`, `InsightKind`, `TrendWindow`) | Room/SwiftData, export, `signalKey`, `DeterministicUUID` | Never derive display from `raw`. Display = `L10n("label.symptom.<raw>")`. `EnumRawValueParityTests` unchanged |
+| `TerminologyPreference.BleedingTerm` (iOS) | UserDefaults | **Bug-in-waiting:** `noun` returns `rawValue`. Keep the raw value as the stored choice and map `noun` → `L10n("term.bleeding.<raw>")`. Note that DE/FR/ES need gendered articles/cases, so sentences using the term need per-term template variants, not substitution. Android has no Terminology port, so nothing changes there |
+| `signalKey`, `Insight.id`, `DismissedInsight` | caches, export | Already neutral. Unchanged |
+| `CachedInsight.payload` | Room/SwiftData | Store `message` (neutral). Rendered text is a legacy field only, never shown directly after v2.1 |
+| Export envelope (`ExportEnvelope`, `schemaVersion = 1`) | encrypted file | Unchanged. Raw values + ISO-8601 dates only. **Do not add the language** (it is a device preference, and adding it means a format bump). A DE export must import byte-equivalently on an EN device (add a round-trip test across languages) |
+| Medication names, notes | user text | Never translated, never audited (user content) |
+| Language choice itself | DataStore `app.language` / UserDefaults `app.language` | Device preference. On Android it backs up with DataStore prefs (fine). Not synced via CloudKit (per-device choice) |
 
 ---
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: NavHost with a "consented" guard argument
+### Anti-Pattern 1: Translating inside the pure engines
+**What people do:** pass a `Map<String,String>` into `TrendsEngine` so it emits German directly.
+**Why it's wrong:** it multiplies the 157-case parity matrix, forces `HonestyGate` to ship per-language lists inside the pure module, and makes the cached payload language-dependent, so every language switch needs a recompute.
+**Do this instead:** keep the structured `InsightMessage` and render in the app layer (Pattern 1).
 
-**What people do:** Register all screens in a Navigation graph and check consent in each destination (or a wrapper).
-**Why it's wrong:** Inverts consent-by-construction into consent-by-remembering; every new destination and deep link is a new place to forget the guard — precisely the failure mode the iOS AppGate design eliminated (T-01-03).
-**Do this instead:** Pattern 1 — the `when`-switch; health composables only exist inside the consented branch. Deep links set flags observed only inside that branch.
+### Anti-Pattern 2: Platform number/date formatters inside insight sentences
+**What people do:** `NumberFormat.getInstance(Locale.FRENCH)` / `NumberFormatter` in the insight renderer.
+**Why it's wrong:** JDK CLDR and Apple ICU differ on grouping and space characters, so the cross-platform insight goldens break.
+**Do this instead:** use a deterministic `Decimal1` formatter with the decimal separator taken from the JSON. Use platform formatters only for UI chrome dates and the PDF.
 
-### Anti-Pattern 2: Exposing Room entities or `Flow<Entity>` to `ui/`
+### Anti-Pattern 3: `static let` localized strings on iOS / `const val` on Android
+**What people do:** `static let title = String(localized: "…")`.
+**Why it's wrong:** it is evaluated once, so the language is frozen for the process. `const val` cannot hold a localized value at all.
+**Do this instead:** computed `static var` via `L10n`, and `@StringRes` ids on Android.
 
-**What people do:** Collect DAO flows of entities directly in composables.
-**Why it's wrong:** Dissolves the `insightsbridge` seam; entity types leak everywhere, the honesty merge (manual-wins, absence ≠ 0) gets reimplemented per screen and drifts.
-**Do this instead:** `ui/` consumes `DaySnapshot`, `Insight`, and small screen-state types from the repository/coordinator. Entities appear in `data/` and `insightsbridge/` only — enforceable with a cheap structural JVM test (scan `ui/` sources for `data.entities` imports), in the same spirit as the boundary lint.
+### Anti-Pattern 4: Gluing sentence fragments and case-transforming labels
+**What people do:** carry `"$label severity averaged…"` + `label.lowercase()` + `directionPhrase` concatenation over into other languages.
+**Why it's wrong:** German capitalization, gender agreement and French elision ("de" → "d'") make fragment-gluing ungrammatical or, worse, change the meaning.
+**Do this instead:** whole-sentence templates with named placeholders and inline label variants.
 
-### Anti-Pattern 3: Coercing "not logged" to defaults anywhere in the pipeline
+### Anti-Pattern 5: Relying on the system/`AppleLanguages` for the in-app choice on iOS
+**Why it's wrong:** it needs a relaunch, it is undocumented, and the system can override it.
+**Do this instead:** app-managed `AppLanguageStore` + `L10n` bundle resolution (MEDIUM; verify `.environment(\.locale)` covers system controls such as `DatePicker` on device).
 
-**What people do:** `severity ?: 0`, `flow ?: NONE`, interpolating chart gaps, non-null Room columns with `DEFAULT 0` for optional signals.
-**Why it's wrong:** Breaks the load-bearing honesty contract (absence ≠ 0) that every engine and chart rule depends on; on Android the temptation is bigger because Room *allows* non-null.
-**Do this instead:** Optional signals are nullable columns and nullable `DaySnapshot` fields, end to end. Room's non-null freedom is spent on true invariants (ids, day keys, timestamps), never on health values.
-
-### Anti-Pattern 4: WorkManager/services for insights recompute
-
-**What people do:** Schedule background workers to precompute insights.
-**Why it's wrong:** Unnecessary (single-user dataset computes in milliseconds on `Dispatchers.Default`), adds background-execution policy surface, and creates health-data processing outside the consented foreground session.
-**Do this instead:** Pattern 3 — recompute on change-ticker/appearance in-process; `CachedInsight` rows cover cold starts.
-
-### Anti-Pattern 5: Letting Auto Backup silently copy the health DB
-
-**What people do:** Ship default backup behavior (full-app backup enabled).
-**Why it's wrong:** Places special-category health data in a Google-account-tied backup the user never explicitly consented to — the exact opaqueness plan §2 rejects.
-**Do this instead:** `dataExtractionRules`/`fullBackupContent` excluding the Room DB files; the encrypted SAF export is the only backup path for health data; a test pins the rules file.
-
-### Anti-Pattern 6: "Improving" ported engine code during Phase 1
-
-**What people do:** Refactor algorithms, rename thresholds, "idiomize" statistics while porting.
-**Why it's wrong:** The Swift suite is the correctness anchor; behavioral drift during porting is undetectable once both sides have "their own" tests. Numerical parity (BH-FDR ordering, Fisher tail sums, Cliff's δ ties) is the whole point.
-**Do this instead:** Port mechanically, tests first or alongside, per file; idiomatic cleanup is allowed only where the ported tests pin behavior. Divergences (e.g., `Double` math differences) get documented tolerance assertions, not silent changes.
+### Anti-Pattern 6: Weakening the substring gate to make translations pass
+**What people do:** delete a DE forbidden term because it collides with an innocent word.
+**Do this instead:** keep the term and add the innocent host word to that language's allow-list in `claims-policy.l10n.json`. Allow-list entries need native-reviewer sign-off.
 
 ---
 
 ## Integration Points
 
-### External services / platform surfaces
-
-| Surface | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Health Connect | `androidx.health.connect:connect-client`, read-only permission set for 4 record types; `getSdkStatus()` runtime gating | Android 14+ built-in; ≤13 installable app; rationale activity/intent is a Play REQUIREMENT (Phase 8 blocker if skipped). Manifest declares zero `WRITE_*` health permissions — auditable by test |
-| Notifications (reminders only) | `POST_NOTIFICATIONS` just-in-time (API 33+); exact alarms NOT needed — inexact `AlarmManager`/`setAndAllowWhileIdle` suffices for daily reminders | Keep ALL notification code in `reminders/`; the flare structural scan depends on this boundary |
-| Storage Access Framework | `ACTION_CREATE_DOCUMENT` / `ACTION_OPEN_DOCUMENT` for encrypted export/import | Zero storage permissions; user picks destination (plan §2). Export/import ships with Phase 2's UUID identity but the feature itself can ride with Settings (Phase 4) or later — roadmapper should place it explicitly |
-| Share (PDF) | `FileProvider` + `ACTION_SEND`, `FLAG_GRANT_READ_URI_PERMISSION`, cache subdir | No file readable by other apps beyond the explicit share target (Phase 7 exit criterion) |
-| Google Play | Health apps declaration + Data safety form ("no data collected/shared") + privacy policy URL | Data safety answers must match the manifest and the (empty) network usage — the app should have NO INTERNET permission at all, which makes the form trivially truthful and is itself a strong auditable artifact worth a manifest test |
+### External services
+None. The translations ship inside the app bundle, there is no network, and the no-`INTERNET` manifest test must stay green. AppCompat adds no permission (re-run `ManifestPermissionsTest`, since `AppLocalesMetadataHolderService` is a non-exported service).
 
 ### Internal boundaries
 
-| Boundary | Communication | Enforcement |
-|----------|---------------|-------------|
-| `:app` → `:insights` | Gradle `implementation(project(":insights"))`, one-way | `:insights` has `kotlin("jvm")` only — it *cannot* depend on `:app`; boundary lint test additionally forbids `android.`/`androidx.` imports in `:insights` sources |
-| `data/` ↔ `insightsbridge/` ↔ `ui/` | Repository facade; entities never cross into `ui/` | Structural source-scan JVM test (Anti-Pattern 2) |
-| `reminders/` ↮ flare/insights code | None (no imports either direction) | Flare no-notification structural scan over `ui/insights` + `insightsbridge` + `:insights` sources |
-| Kotlin enums ↔ Swift enums (cross-platform vocabulary) | Shared raw-value strings (contract, not code) | Two-layer drift tests: Swift-source scan (assumption-guarded) + golden JSON (unconditional) — Pattern 4 |
-| Kotlin `ClaimsPolicy` ↔ Swift `ClaimsPolicy` | Copied substring lists | Same two-layer drift mechanism + CopyAudit registration rule carried verbatim |
-| `android/` ↔ iOS tree | NONE at build time (Gradle never sees Xcode files and vice versa); read-only at test time (drift scans) | Path-filtered CI; iOS files untouched |
+| Boundary | Communication | Notes |
+|---|---|---|
+| `:insights` ↔ `:app` | `Insight.message` (data) | `:insights` stays android-free (`BoundaryLintTests`). `InsightTemplate` has no `java.util.Locale` dependency (pass the separator in) |
+| `EndoInsights` ↔ `EndoApp` | Same, via `Codable` | Package remains Foundation-only with zero deps. **Do not** add SPM resources to the package. The JSON is bundled in the app |
+| `i18n/*.json` ↔ Android | `sourceSets["main"].assets.srcDir("$rootDir/../i18n")` (runtime) + `resolveFromRoot` (tests) | Same pattern as the existing Swift-source drift guards. Skip with `assumeTrue` outside the monorepo |
+| `i18n/*.json` ↔ iOS | XcodeGen `resources` + test-bundle path | `project.yml` must also declare `knownRegions`/`CFBundleLocalizations: [en, de, fr, es]` so the App Store and the Settings app list the languages |
+| `LanguageStore` ↔ `reminders/` | `ReminderNotifier` takes a localized `Context` | Keeps the "all WorkManager APIs in `reminders/`" separation invariant: the language store is read *by* the worker, and the worker does not move |
+| `LanguageStore` ↔ `report/` | Explicit `language` param | Same object for screen and PDF |
+| Android ↔ iOS catalogs | Tests only: glossary conformance + `insight-messages.json` shared | A Kotlin test can additionally parse `Localizable.xcstrings` (it is JSON) and assert that shared glossary terms match, extending the existing cross-platform drift style |
+| Store listing | `StoreListingCopy.kt` → per-locale `fastlane/metadata/android/{en-US,de-DE,fr-FR,es-ES}/` and an iOS equivalent | Store copy is currently audited in `CopyAuditTest`, so extend the audit to the per-locale files |
 
-### CI story (`android/` alongside the Xcode project)
+---
 
-There is **no CI in the repo today** (no `.github/workflows/`; iOS runs locally/Xcode-scheme). Recommendation: add **one** GitHub Actions workflow for Android only, and change nothing for iOS.
+## Suggested Build Order (dependency-driven)
 
-```yaml
-# .github/workflows/android.yml  (the ONLY repo-root addition)
-on:
-  pull_request: { paths: ["android/**", ".github/workflows/android.yml"] }
-  push: { branches: [main], paths: ["android/**"] }
-jobs:
-  jvm:                                  # the backbone — fast, no emulator
-    runs-on: ubuntu-latest
-    defaults: { run: { working-directory: android } }
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 21 }
-      - uses: gradle/actions/setup-gradle@v4        # wrapper validation + build cache
-      - run: ./gradlew :insights:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
-  instrumentation:                      # migrations + Compose gate tests; slower
-    if: github.event_name == 'push'     # main-only (or nightly/label) — not per-PR
-    runs-on: ubuntu-latest              # ubuntu runners support KVM-accelerated emulators
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 21 }
-      - uses: reactivecircus/android-emulator-runner@v2
-        with: { api-level: 34, arch: x86_64, working-directory: android,
-                script: ./gradlew :app:connectedDebugAndroidTest }
-```
+1. **Shared foundation (no UI change):** create `i18n/` with the JSON schemas, `glossary.json` seeded from the EN terms, `claims-policy.l10n.json` (DE/FR/ES lists + allow-lists) and `ClaimsPolicy.forLanguage`/`ForbiddenTerms.forLanguage` on both platforms, plus red-capable self-tests. *Everything later is audited against this, so it comes first.*
+2. **Engine structured messages (both packages, parity-locked):** `InsightMessage`/`InsightArg`/`InsightTemplate` in `:insights` and `EndoInsights`. Every engine emits `message`, and EN `insight-messages.json` is extracted from the current templates. Gate: `render(message, en) == headline` for all 157 fixtures on both platforms, plus EN goldens in `i18n/golden/`. *This depends only on step 1 and keeps `HonestyGate` and parity untouched.*
+3. **Android language plumbing:** `AppLanguage`/`LanguageStore`, AppCompat migration (`MainActivity`), `generateLocaleConfig`, `forLanguage(context)`, the settings picker, and `InsightMessageRenderer` + fingerprint version bump (switching `InsightCard` and the PDF to render from the message). The EN-only app should look identical after this step.
+4. **Android catalog migration:** move every `*Copy` const into `values/strings.xml` and the Copy objects to `@StringRes`. Remove stray literals and add the literal-scan test. Rewrite `CopyAuditTest` so the catalog is the registry. Notifications and the PDF get a localized `Context` and locale formatters. *This is the largest mechanical change. Do it before translating so the translations land in their final structure.*
+5. **iOS language plumbing + catalog migration:** `AppLanguageStore`, `L10n`, `Localizable.xcstrings`, `*Copy` → computed, inline `Text("…")` → `L10n`, `BleedingTerm.noun` → localized, `NotificationScheduler.rescheduleAll` on change, PDF locale, `project.yml` regions, and the `CopyAuditTests` rewrite. *This can run in parallel with step 4 once step 2 lands (different branch: iOS starts from `main`).*
+6. **Translations DE/FR/ES:** fill `values-*/strings.xml`, xcstrings and `insight-messages.json`. The full per-language audit, completeness, placeholder-parity, glossary-conformance and exhaustive insight scans go live as hard gates. Write the DE/FR/ES insight goldens and assert that both platforms render them byte-equal.
+7. **Per-language verification + store copy:** Robolectric/XCUITest smoke tests per language, PDF per-language render tests (pagination with longer strings), the export round-trip across languages, per-locale store listing files + audit. Native-speaker review is a **human-gated release checklist item** (it is not automated, and the tests must not claim it happened).
 
-- **Path filters are the monorepo contract:** iOS-only commits never trigger Gradle; Android commits never touch Xcode. Checkout is full-repo, so the Swift-source drift scans work in CI for free.
-- **Note the drift-scan nuance:** the parity tests DO run on iOS-file changes locally but CI won't re-run Android tests when only Swift files change. Acceptable for v2.0 (iOS is frozen during this milestone); if iOS work resumes, add `EndoInsights/Sources/**` and `Sources/EndoApp/Content/ClaimsPolicy.swift` to the Android workflow's path filter — a one-line change, worth recording now.
-- The JVM job is the merge gate; instrumentation runs on `main` pushes (or a `run-emulator` label) because emulator jobs cost ~8–15 min. Local `connectedAndroidTest` on a device remains the Phase-2/3 development loop, mirroring how iOS device-gated checks worked.
-- Free-tier friendly: ubuntu runners only, no macOS minutes consumed, no signing needed for `assembleDebug`.
+Critical path: **1 → 2 → (3→4 ∥ 5) → 6 → 7.** Translation (6) waits for the catalog migrations (4 and 5), so strings are translated once, in their final keys.
+
+---
+
+## Files that change vs. new
+
+**Modified (Android):** `insights/.../Insight.kt`, `TrendsEngine.kt`, `CorrelationEngine.kt`, `CyclePhaseMapper.kt`, `RecommendationsEngine.kt`, `FlareEngine.kt`, `Factor.kt` (labels → keys), `ForbiddenTerms.kt` (additive); `app/build.gradle.kts`, `AndroidManifest.xml` (AppLocales service), `MainActivity.kt` (AppCompatActivity), `App.kt`/`AppDependencies.kt` (LanguageStore wiring), all `content/*Copy.kt`, `content/AuditableCopy.kt` (shrinks or retires), `content/ClaimsPolicy.kt`, `insights/InsightsCoordinator.kt` + `InsightFingerprint.kt` (version prefix), `ui/insights/InsightCard.kt`, `report/ReportPdfRenderer.kt` + `report/ui/ReportBuilderScreen.kt` (formatters), `ui/charts/*` + `ui/tracking/LogHomeScreen.kt` + `ui/explore/ExploreScreen.kt` (hard-coded `ofPattern("MMM d")` → localized skeletons), `reminders/ReminderNotifier.kt` + `CheckInReminderWorker.kt`, `ui/settings/SettingsScreen.kt`, `ui/settings/RemindersSection.kt` (literal), `test/.../CopyAuditTest.kt`, `insights/test/.../ClaimsPolicyDriftTests.kt` (extend), every Compose test that matches on English text.
+
+**Modified (iOS):** `EndoInsights/.../Insight.swift` + all `*Engine.swift` + `ForbiddenTerms.swift`; `Content/ClaimsPolicy.swift` (additive only), `Terminology/*`, all `*Copy.swift`, views with inline `Text("…")`, `Reminders/NotificationScheduler.swift`, `Features/Report/*`, `Persistence/Models/CachedInsight.swift` (payload decode tolerance), the insights coordinator, `App/EndoAppApp.swift`, `project.yml`, `Resources/Info.plist`, `Tests/EndoAppTests/CopyAuditTests.swift` (+ `HealthConnectCopyAuditTests`, `FlareNoAlarmVisualTests`).
+
+**New:** `i18n/{glossary,insight-messages,claims-policy.l10n}.json`, `i18n/golden/*`; `InsightMessage`/`InsightTemplate` (×2 platforms); Android `i18n/` package (AppLanguage, LanguageStore, LocalizedContext, InsightMessageRenderer, LocaleFormats), `res/values{,-de,-fr,-es}/strings.xml`, `res/resources.properties`, `ui/settings/LanguageSection.kt`; iOS `I18n/` (AppLanguage, L10n, InsightMessageRenderer), `Localizable.xcstrings`, `LanguagePickerView.swift`; tests: per-language audit, completeness, placeholder parity, glossary conformance, insight exhaustive scan, cross-platform golden, literal-scan, export cross-language round-trip, language-change → notification reschedule/channel re-create.
 
 ---
 
 ## Scaling Considerations
 
-Single-user, on-device — scale is data-history depth, not users:
-
 | Scale | Adjustment |
-|-------|------------|
-| ≤ 2 years of daily logs (~700 snapshots) | Everything above as-is; full-table fetch + projection is sub-10ms; engine compute trivial on `Dispatchers.Default` |
-| 5–10 years | Add `WHERE epochDay >= ?` windows to the projection fetches (the engines already window internally); Canvas charts already render windowed series |
-| Pathological (imports flood `ImportedSample`) | The unique index on the HC record id caps growth; changes-token incremental reads (already the design) prevent re-import churn |
-
-**First bottleneck honestly expected:** Canvas chart layout cost on low-end devices in Phase 6 — which is exactly the pre-declared Vico escape hatch; the honesty rules live in the (Phase 1) data-prep layer either way, so switching renderers is contained.
+|---|---|
+| 4 languages (v2.1) | The JSON + native catalogs described above. Exhaustive insight scan cost ≈ templates × labels × 4, which is trivial |
+| 5–10 languages | Same architecture. Add plural/ICU support to `InsightTemplate` before adding any language whose count-frame trick fails (e.g. Polish/Russian plural classes) |
+| RTL (ar/he) | Not in scope. It would need Compose/SwiftUI layout mirroring audits and PDF bidi. The architecture does not block it |
 
 ---
 
 ## Sources
 
-- Shipped iOS codebase (port SOURCE, read directly): `Sources/EndoApp/App/AppGate.swift`, `Sources/EndoApp/Persistence/Repository.swift` (`daySnapshots()`, 36 `assertConsented` sites), `Sources/EndoApp/Features/Insights/InsightsCoordinator.swift` (`Task.detached` pattern), `EndoInsights/Sources` (19 files) + `EndoInsights/Tests` (18 test files, ~157 `@Test` cases), `Tests/EndoAppTests` (40-case CopyAudit, 24-case DaySnapshotMapping, structural scans) — HIGH
-- `.planning/research/ANDROID-PORT-PLAN.md` §1–§5 (locked decisions this doc realizes) — HIGH
-- [Room releases (2.8.4 stable, 2.x maintenance mode)](https://developer.android.com/jetpack/androidx/releases/room) and [Room 3 releases (3.0.0 stable, 2026-07-01)](https://developer.android.com/jetpack/androidx/releases/room3); [Room 3.0 announcement](https://android-developers.googleblog.com/2026/03/room-30-modernizing-room.html) — HIGH (official)
-- [Jetpack Navigation 3 is stable (Nov 2025)](https://android-developers.googleblog.com/2025/11/jetpack-navigation-3-is-stable.html), [navigation3 releases](https://developer.android.com/jetpack/androidx/releases/navigation3) — HIGH (official; informs the "no nav library now, Nav3 as escape hatch" call)
-- androidx first-party docs (DataStore, Health Connect client, MigrationTestHelper, FileProvider, backup rules) — HIGH; patterns are stable, verify exact artifact versions in `libs.versions.toml` at each phase start
-- GitHub Actions Android practice (gradle/actions/setup-gradle, reactivecircus/android-emulator-runner, KVM on ubuntu runners) — MEDIUM (community-standard, widely corroborated)
+- Live code: `android/app/src/main/kotlin/com/endoapp/app/content/{AuditableCopy,ClaimsPolicy,InsightsCopy,ReminderCopy}.kt`, `android/insights/src/main/kotlin/com/endoapp/insights/{Insight,ForbiddenTerms,TrendsEngine,CorrelationEngine,FlareEngine,Factor,HonestyGate}.kt`, `insights/src/test/.../ClaimsPolicyDriftTests.kt`, `data/entities/CachedInsight.kt`, `insights/InsightFingerprint.kt`, `reminders/ReminderNotifier.kt`, `report/ReportPdfRenderer.kt`, `export/ExportEnvelope.kt`, `AndroidManifest.xml`, `app/build.gradle.kts`; iOS `Sources/EndoApp/{Terminology,Reminders/NotificationScheduler.swift,Persistence/Models/CachedInsight.swift,Features/Insights/InsightsCopy.swift}`, `Tests/EndoAppTests/CopyAuditTests.swift`, `project.yml`. HIGH
+- [Android Developers Blog: Per-app language preferences, part 1](https://android-developers.googleblog.com/2022/11/per-app-language-preferences-part-1.html): `AppCompatDelegate.setApplicationLocales`, backport, `AppLocalesMetadataHolderService` `autoStoreLocales`, `localeConfig`, SharedPreferences migration. MEDIUM (2022; verify against current AppCompat docs)
+- [Zendesk Android SDK: App language](https://developer.zendesk.com/documentation/zendesk-web-widget-sdks/sdks/android/app_language/): corroborates `setApplicationLocales` + `autoStoreLocales` behavior. MEDIUM
+- From prior knowledge, needs verifying: AGP 8.1+ `generateLocaleConfig`; iOS has no public runtime per-app language API (Settings-app per-app language since iOS 13); compiled String Catalogs produce `.lproj` tables usable via `Bundle(path:)`. MEDIUM/LOW
 
 ---
-*Architecture research for: Endo-App v2.0 Android port (`android/` monorepo, locked `:app` + `:insights` layout)*
-*Researched: 2026-07-08*
+*Architecture research for: multilingual (EN/DE/FR/ES) + in-app language selection on an existing Android + iOS endometriosis tracker*
+*Researched: 2026-10-31*
