@@ -53,6 +53,8 @@ struct InsightsCoordinatorTests {
         // Sleep seam control: the coordinator awaits `sleep()`; the test releases pending sleeps.
         private var sleepContinuations: [CheckedContinuation<Void, Never>] = []
         let sleepLock = NSLock()
+        /// Set by `releaseSleeps()`; latched so later arrivals at the seam never park.
+        private var released = false
 
         init(snapshots: [DaySnapshot], dismissed: Set<String> = [], cache: [Insight] = [],
              engineResult: [Insight] = []) {
@@ -63,8 +65,14 @@ struct InsightsCoordinatorTests {
         }
 
         /// Release every pending sleep so the debounce proceeds (deterministic, no real time).
+        ///
+        /// LEVEL-triggered: the release is remembered, so a task that reaches the seam AFTER the
+        /// release passes straight through instead of parking forever. Edge-triggered release made
+        /// the drain hang whenever the debounce task had not yet parked at release time — a race
+        /// that depended on scheduling and hung the whole suite.
         func releaseSleeps() {
             sleepLock.lock()
+            released = true
             let pending = sleepContinuations
             sleepContinuations = []
             sleepLock.unlock()
@@ -90,6 +98,11 @@ struct InsightsCoordinatorTests {
         func sleepSeam() async {
             await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
                 sleepLock.lock()
+                if released {
+                    sleepLock.unlock()
+                    c.resume()
+                    return
+                }
                 sleepContinuations.append(c)
                 sleepLock.unlock()
             }
