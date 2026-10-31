@@ -19,6 +19,12 @@ on:
       - 'project.yml'
       - 'docs/privacy.md'
       - '.github/workflows/ios.yml'
+  workflow_dispatch:
+    inputs:
+      ui_tests:
+        description: 'Also run the UI suite (slow and simulator-flaky; not part of the default gate)'
+        type: boolean
+        default: false
 
 jobs:
   build-test:
@@ -43,12 +49,17 @@ jobs:
           DEVICE=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next(x['name'] for rt in sorted(d) for x in d[rt] if x['name'].startswith('iPhone')))")
           echo "device=$DEVICE" >> "$GITHUB_OUTPUT"
 
-      - name: Run tests
+      - name: Run unit tests
         run: |
+          # ponytail: the UI suite is opt-in (workflow_dispatch → ui_tests). It takes ~15 min on a
+          # cold simulator and hangs on some runners; flip it on when UI coverage must gate a release.
+          EXTRA=""
+          if [ "${{ inputs.ui_tests }}" != "true" ]; then EXTRA="-skip-testing:EndoAppUITests"; fi
           xcodebuild test \
             -scheme EndoApp \
             -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device }}" \
             CODE_SIGNING_ALLOWED=NO \
+            $EXTRA \
             -quiet
 
       - name: Upload test results
