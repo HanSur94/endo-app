@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "policyRevision": 1,
+  "language": "de",
+  "reviewStatus": "draft-unreviewed",
+  "folding": {
+    "replace": [
+      ["ß", "ss"]
+    ]
+  },
+  "categories": {
+    "diagnostic": {
+      "raw": [],
+      "word": ["stadium", "stadien"],
+      "prefix": [],
+      "stem": ["diagnos", "erkenn", "erkannt", "feststell", "festgestell", "nachweis", "befund"],
+      "phrase": []
+    },
+    "treatment": {
+      "raw": [],
+      "word": ["geheilt"],
+      "prefix": ["heil"],
+      "stem": ["behandl", "behandel", "therap", "linder", "vorbeug", "verhinder"],
+      "phrase": ["hilft gegen", "wirkt gegen"]
+    },
+    "causal": {
+      "raw": [],
+      "word": ["wegen", "weil", "aufgrund", "infolge", "wirkt"],
+      "prefix": ["wirksam"],
+      "stem": ["verursach", "ursach", "ursäch", "auslös", "ausgelöst", "trigger", "verschlimmer", "verschlechter", "verbesser", "reduzier", "bewirk"],
+      "phrase": ["führt zu", "führen zu", "sorgt für"]
+    },
+    "certainty": {
+      "raw": [],
+      "word": ["definitiv", "zweifellos", "gewiss"],
+      "prefix": [],
+      "stem": ["vorhersag", "vorhergesag", "vorherseh", "prognos", "voraussag", "garantier"],
+      "phrase": ["du wirst", "wirst du", "mit sicherheit"]
+    },
+    "alarmist": {
+      "raw": [],
+      "word": ["akut", "droht", "drohend"],
+      "prefix": [],
+      "stem": ["gefahr", "gefähr", "notfall", "dringend", "alarm", "warn", "attacke", "anfall", "bedroh"],
+      "phrase": []
+    },
+    "imperative": {
+      "raw": [],
+      "word": ["nimm", "iss", "trink", "geh", "beginne", "starte", "stoppe", "frag"],
+      "prefix": ["vermeid", "versuch", "sollt", "musst", "müss", "verzicht", "absetz"],
+      "stem": [],
+      "phrase": ["hör auf", "höre auf", "achte auf"]
+    },
+    "gendered": {
+      "raw": [],
+      "word": ["mädchen", "dame", "damen"],
+      "prefix": [],
+      "stem": ["frau", "weiblich", "patientin"],
+      "phrase": []
+    },
+    "precision": {
+      "raw": ["%", "p =", "p=", "r =", "r=", "p-wert", "p wert"],
+      "word": [],
+      "prefix": [],
+      "stem": [],
+      "phrase": []
+    }
+  },
+  "allow": {
+    "tokens": [
+      { "token": "behandlungsteam", "reason": "care team: the approved neutral clinician term (glossary clinician)", "collidesWith": ["behandl"] },
+      { "token": "behandlungsteams", "reason": "genitive/plural of the approved clinician term", "collidesWith": ["behandl"] },
+      { "token": "erkenntnis", "reason": "noun 'finding'; kept usable in prose, insights copy still uses 'Einblicke'", "collidesWith": ["erkenn"] },
+      { "token": "erkenntnisse", "reason": "plural of 'Erkenntnis'", "collidesWith": ["erkenn"] },
+      { "token": "erkenntnissen", "reason": "dative plural of 'Erkenntnis'", "collidesWith": ["erkenn"] },
+      { "token": "anerkannt", "reason": "'recognised' (e.g. an established guideline), not a detection claim", "collidesWith": ["erkannt"] },
+      { "token": "anerkennen", "reason": "'to acknowledge', not a detection claim", "collidesWith": ["erkenn"] },
+      { "token": "vorher", "reason": "adverb 'before'. EN-trap control: the EN gendered token 'her' is inside it; DE text is never scanned with EN lists", "collidesWith": ["her"] },
+      { "token": "pause", "reason": "noun 'break'. EN-trap control: the EN imperative 'use' is inside it; DE text is never scanned with EN lists", "collidesWith": ["use"] }
+    ],
+    "phrases": []
+  },
+  "framing": ["keine medizinische beratung", "kein medizinprodukt", "möglicher zusammenhang"],
+  "selfTest": {
+    "normalization": [
+      { "input": "STRA\u1E9EE", "folded": "strasse" },
+      { "input": "Straße", "folded": "strasse" },
+      { "input": "Gefa\u0308hrlich", "folded": "gefährlich" },
+      { "input": "Schub\u00A0heute", "folded": "schub heute" },
+      { "input": "80\u202F%", "folded": "80 %" },
+      { "input": "Wie geht\u2019s?", "folded": "wie geht's?" }
+    ],
+    "tokenize": [
+      { "input": "Schub-Frühwarnung", "tokens": ["schub", "frühwarnung"], "sentenceInitial": [true, false] },
+      { "input": "Heute kein Schub. Morgen vielleicht.", "tokens": ["heute", "kein", "schub", "morgen", "vielleicht"], "sentenceInitial": [true, false, false, true, false] },
+      { "input": "Hinweis: Sie haben 3 Einträge", "tokens": ["hinweis", "sie", "haben", "3", "einträge"], "sentenceInitial": [true, true, false, false, false] },
+      { "input": "GRO\u1E9EE Pause", "tokens": ["grosse", "pause"], "sentenceInitial": [true, false] }
+    ],
+    "mustFail": [
+      { "text": "Die App erkennt Schübe frühzeitig.", "category": "diagnostic", "term": "erkenn" },
+      { "text": "Yoga kann Schmerzen lindern.", "category": "treatment", "term": "linder" },
+      { "text": "Diese Übung hilft gegen Krämpfe.", "category": "treatment", "term": "hilft gegen" },
+      { "text": "Stress verursacht Schmerzen.", "category": "causal", "term": "verursach" },
+      { "text": "STRESS VERURSACHT SCHMERZEN.", "category": "causal", "term": "verursach" },
+      { "text": "Morgen wirst du einen Schub haben.", "category": "certainty", "term": "wirst du" },
+      { "text": "Achtung: gefährlicher Schub!", "category": "alarmist", "term": "gefähr" },
+      { "text": "Achtung: gefa\u0308hrlicher Schub!", "category": "alarmist", "term": "gefähr" },
+      { "text": "GRO\u1E9EE GEFAHR!", "category": "alarmist", "term": "gefahr" },
+      { "text": "Du solltest Milchprodukte vermeiden.", "category": "imperative", "term": "vermeid" },
+      { "text": "Für Frauen mit Endometriose", "category": "gendered", "term": "frau" },
+      { "text": "Bei 80\u00A0% deiner Einträge", "category": "precision", "term": "%" },
+      { "text": "p = 0,03", "category": "precision", "term": "p =" }
+    ],
+    "mustPass": [
+      "Behandlungsteam",
+      "BEHANDLUNGSTEAM",
+      "vorher",
+      "Pause",
+      "Bewegung",
+      "jeweils",
+      "Der Schmerz nimmt zu.",
+      "Bist du sicher?",
+      "Einblicke in deine Einträge",
+      "Dein Behandlungsteam kann mit dir über Muster sprechen."
+    ]
+  }
+}
