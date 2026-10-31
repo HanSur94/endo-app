@@ -30,6 +30,24 @@ public enum SymptomType: String, CaseIterable, Sendable {
     case backLegPain
     case other
 
+    /// Human label for UI surfaces (Explore lane titles). Mirrors the app `SymptomType.plainLabel`
+    /// verbatim so a lane never renders a camelCase raw value such as "backLegPain severity".
+    public var displayName: String {
+        switch self {
+        case .pelvicPain:   return "Pelvic / abdominal pain"
+        case .dysmenorrhea: return "Pain during bleeding"
+        case .dyspareunia:  return "Pain during intimacy"
+        case .giEndoBelly:  return "Bloating / nausea / gut"
+        case .urinary:      return "Urinary discomfort"
+        case .fatigue:      return "Fatigue"
+        case .brainFog:     return "Brain fog"
+        case .lowMood:      return "Low mood"
+        case .headache:     return "Headache"
+        case .backLegPain:  return "Back / leg pain"
+        case .other:        return "Something else"
+        }
+    }
+
     /// Defensive decode: an unknown or `nil` raw maps to `.other` (the free-text sink), never crashes.
     public init(raw: String?) {
         if let raw, let value = SymptomType(rawValue: raw) {
@@ -52,6 +70,22 @@ public enum BodyRegion: String, CaseIterable, Sendable {
     case bladder
     case chestDiaphragm
     case shoulder
+
+    /// Human label for UI surfaces; mirrors the app `BodyRegion` label copy verbatim.
+    public var displayName: String {
+        switch self {
+        case .lowerAbdomenPelvis: return "Lower abdomen / pelvis"
+        case .lowerQuadrantLeft:  return "Lower left side"
+        case .lowerQuadrantRight: return "Lower right side"
+        case .lowerBack:          return "Lower back"
+        case .hips:               return "Hips"
+        case .upperThighs:        return "Upper thighs"
+        case .rectalBowel:        return "Rectal / bowel"
+        case .bladder:            return "Bladder"
+        case .chestDiaphragm:     return "Chest / diaphragm"
+        case .shoulder:           return "Shoulder"
+        }
+    }
 
     /// Defensive decode: an unknown or `nil` raw returns `nil` (caller: "not marked"), never crashes.
     public init?(raw: String?) {
