@@ -49,9 +49,9 @@ See [MILESTONES.md](MILESTONES.md) for shipped-version history. Release checklis
   3. `l10n/glossary.json` names the approved term for every core concept in all four languages with a fixed register (DE "du", FR "vous", ES "tú"), and a test on each platform fails when a string uses a banned variant, including the wrong register
   4. The per-language check is wired to every DE/FR/ES string source the app will ship (the shared `l10n/` files now; UI catalogs and store copy register as they appear), so no later phase can add translated text that bypasses it
   5. The English claims audit, `HonestyGate`, and the enum/ClaimsPolicy drift guards pass with zero edits to the English lists or their tests
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 - [x] 26-01-PLAN.md
-- [ ] 26-02-PLAN.md
+- [x] 26-02-PLAN.md
 - [ ] 26-03-PLAN.md
 
 ### Phase 27: Language-Neutral Insight Messages
@@ -176,7 +176,7 @@ See [MILESTONES.md](MILESTONES.md) for shipped-version history. Release checklis
 | 1–12 (archived) | v1.0 | 39/39 | Complete | 2026-06-10 |
 | 13–16 (archived) | v1.1 | 17/17 | Complete | 2026-06-17 |
 | 17–25 (archived) | v2.0 | 42/42 | Complete | 2026-07-10 |
-| 26. Shared l10n Foundation | v2.1 | 1/3 | In Progress | - |
+| 26. Shared l10n Foundation | v2.1 | 2/3 | In Progress | - |
 | 27. Language-Neutral Insight Messages | v2.1 | 0/TBD | Not started | - |
 | 28. Android Language Switching | v2.1 | 0/TBD | Not started | - |
 | 29. Android String Catalog | v2.1 | 0/TBD | Not started | - |

@@ -5,16 +5,16 @@ milestone_name: Multilingual
 current_phase: 26
 current_phase_name: Shared l10n Foundation
 status: executing
-stopped_at: Completed 26-01-PLAN.md
-last_updated: "2026-10-31T14:13:00.788Z"
+stopped_at: Completed 26-02-PLAN.md
+last_updated: "2026-10-31T14:25:23.495Z"
 last_activity: 2026-10-31
 last_activity_desc: v2.1 roadmap created (Phases 26–33, 27/27 requirements mapped)
-state_head: 725686ea06b418658c384e21c06380731c039278
+state_head: 3d638ada1bbbfd1e5fa13f63fe4734e08c6276ae
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-10-31)
 ## Current Position
 
 Phase: 26 (Shared l10n Foundation) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
-Last activity: 2026-10-31 — Completed 26-01 (shared l10n data, Gradle classpath wiring, CI trigger)
+Last activity: 2026-10-31 — Completed 26-02 (DE/FR/ES claims matcher, self/schema/parity suites)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 26 P01 | 9min | 3 tasks | 8 files |
+| Phase 26 P02 | 12min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecti
 - [Phase 26]: 26-01: DE certainty uses stems vorhersag/vorhergesag/vorherseh so allow token vorher is a pure EN-trap control
 - [Phase 26]: 26-01: selfTest first-hit {category, term} fixtures verified against a reference matcher of the README spec; 26-02 Kotlin matcher must reproduce them
 - [Phase 26]: 26-01: SAFE-01..03 left unchecked until the failing tests land in 26-02/26-03 (plan delivers data only)
+- [Phase 26]: 26-02: No seed-data tuning needed; all DE/FR/ES fixtures green against the Kotlin matcher on first run (policyRevision stays 1)
+- [Phase 26]: 26-02: README clarifies policyRevision stays 1 through Phase 26 seed tuning and is bumped on every data change from the 26-03 freeze onward
 
 ### Pending Todos
 
@@ -110,8 +113,8 @@ Items carried forward from previous milestone closes (release/device/human-gated
 
 ## Session Continuity
 
-Last session: 2026-10-31T14:12:50.562Z
-Stopped at: Completed 26-01-PLAN.md
+Last session: 2026-10-31T14:25:23.470Z
+Stopped at: Completed 26-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
