@@ -146,5 +146,8 @@ dependencies {
 
     // androidTest — instrumentation runner base + Room MigrationTestHelper.
     androidTestImplementation(libs.androidx.test.ext.junit)
+    // The runner class AndroidJUnitRunner lives in androidx.test:runner, not in ext:junit; without it
+    // the instrumentation APK installs but cannot instantiate, and the emulator lane fails on main.
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.room.testing)
 }
