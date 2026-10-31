@@ -39,6 +39,41 @@ android {
             // Robolectric must load the merged manifest + resources to render composables on the
             // JVM lane — without this the Compose test harness cannot inflate an Android context.
             isIncludeAndroidResources = true
+            // SAFE-01/SC4 (26-03, Pitfalls 4 and 6): the l10n audit and tripwire tests read the repo by
+            // path. They get the root from `endo.repoRoot` (never a `user.dir` walk-up), and both
+            // `l10n/` and every localized-looking file are declared inputs, so a new or edited
+            // translation anywhere in the repo reruns the tests instead of leaving a cached green.
+            all { test ->
+                val repoRoot = rootDir.parentFile
+                test.systemProperty("endo.repoRoot", repoRoot.absolutePath)
+                test.inputs.dir(repoRoot.resolve("l10n"))
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
+                    .withPropertyName("l10nData")
+                test.inputs.files(
+                    fileTree(repoRoot) {
+                        // Mirrors L10nSourceRegistry.looksLocalized (over-including only costs a rerun).
+                        val androidResTypes = listOf(
+                            "values", "drawable", "mipmap", "layout", "raw", "xml", "menu", "font",
+                            "anim", "animator", "color", "navigation", "transition", "interpolator",
+                        )
+                        for (tag in listOf("de", "fr", "es")) {
+                            for (type in androidResTypes) {
+                                include("**/$type-*$tag*/**")
+                            }
+                            include("**/$tag.lproj/**", "**/$tag-*.lproj/**", "**/${tag}_*.lproj/**")
+                            include("**/$tag-*/**")
+                            include("**/*.$tag.*", "**/*-$tag.*")
+                        }
+                        include("**/*.xcstrings", "l10n/**")
+                        exclude(
+                            ".git/**", ".planning/**", ".claude/**", "**/build/**", "**/.gradle/**",
+                            "**/.kotlin/**", "**/DerivedData/**", "**/.build/**", "**/.swiftpm/**",
+                            "**/.idea/**", "**/node_modules/**",
+                        )
+                    },
+                ).withPathSensitivity(PathSensitivity.RELATIVE)
+                    .withPropertyName("localizedFiles")
+            }
         }
     }
 
