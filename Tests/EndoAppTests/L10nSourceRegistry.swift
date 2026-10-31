@@ -80,7 +80,7 @@ enum L10nSourceRegistry {
 
     /// An Android resource directory with a de/fr/es qualifier: `values-de`, `values-es-rUS`,
     /// `values-night-fr`, BCP-47 `values-b+es+419`.
-    private static let androidResDir = #"(\(androidResTypes))(-[A-Za-z0-9]+)*-(de|fr|es)(-r[A-Z]{2})?(-[A-Za-z0-9]+)*|(\(androidResTypes))(-[A-Za-z0-9]+)*-(b\+(de|fr|es)(\+[A-Za-z0-9]+)*)(-[A-Za-z0-9]+)*"#
+    private static let androidResDir = #"(\#(androidResTypes))(-[A-Za-z0-9]+)*-(de|fr|es)(-r[A-Z]{2})?(-[A-Za-z0-9]+)*|(\#(androidResTypes))(-[A-Za-z0-9]+)*-(b\+(de|fr|es)(\+[A-Za-z0-9]+)*)(-[A-Za-z0-9]+)*"#
 
     /// An Apple localization directory: `de.lproj`, `fr-CA.lproj`, `es_419.lproj`.
     private static let lprojDir = #"(de|fr|es)([-_][A-Za-z0-9]+)*\.lproj"#

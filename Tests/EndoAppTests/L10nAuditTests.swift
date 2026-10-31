@@ -99,3 +99,93 @@ struct L10nAuditTests {
         try JSONSerialization.data(withJSONObject: object).write(to: url)
     }
 }
+
+// MARK: - Tripwire (SC4): nothing localized ships unscanned
+
+extension L10nAuditTests {
+
+    /// The real iOS tree: every localized-looking file is claimed by a registered source.
+    @Test func repoHasNoUnregisteredLocalizedFile() throws {
+        let unregistered = try L10nSourceRegistry.unregisteredLocalizedFiles(root: try L10nSourceRegistry.repoRoot())
+        #expect(unregistered.isEmpty,
+                "Register an extractor in L10nSourceRegistry for: \(unregistered.joined(separator: ", "))")
+    }
+
+    /// Non-vacuity: the walk really finds the l10n/ files and every one of them is claimed.
+    @Test func candidatesAreNotVacuous() throws {
+        let root = try L10nSourceRegistry.repoRoot()
+        let candidates = try L10nSourceRegistry.localizedCandidates(root: root).sorted()
+        #expect(candidates == ["l10n/README.md", "l10n/claims-policy.de.json", "l10n/claims-policy.es.json",
+                               "l10n/claims-policy.fr.json", "l10n/glossary.json"],
+                "the real iOS tree should yield exactly the five l10n/ files, got \(candidates)")
+        #expect(candidates.allSatisfy { L10nSourceRegistry.claim($0) != nil })
+    }
+
+    /// Every localized-looking name is recognized: .lproj, region dirs, .xcstrings, Android qualifiers,
+    /// tagged file names and anything under l10n/.
+    @Test func tripwireFlagsUnknownLocalizedFiles() throws {
+        let root = try temporaryRoot(planted: [
+            "Sources/EndoApp/Resources/de.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            "Sources/EndoApp/Resources/fr-CA.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            "Sources/EndoApp/Resources/es-419.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            "Sources/EndoApp/Resources/Localizable.xcstrings": "{}",
+            "android/app/src/main/res/values-b+es+419/strings.xml": "<resources/>",
+            "fastlane/metadata/de-DE/description.txt": "copy",
+            "docs/copy.fr.json": "{}",
+        ])
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let flagged = try L10nSourceRegistry.unregisteredLocalizedFiles(root: root).sorted()
+        #expect(flagged == [
+            "Sources/EndoApp/Resources/de.lproj/Localizable.strings",
+            "Sources/EndoApp/Resources/es-419.lproj/Localizable.strings",
+            "Sources/EndoApp/Resources/fr-CA.lproj/Localizable.strings",
+            "Sources/EndoApp/Resources/Localizable.xcstrings",
+            "android/app/src/main/res/values-b+es+419/strings.xml",
+            "docs/copy.fr.json",
+            "fastlane/metadata/de-DE/description.txt",
+        ].sorted(), "tripwire must flag every unclaimed localized file, got \(flagged)")
+    }
+
+    /// Exclusions hold (VCS/planning/agent state, build dirs, generated Xcode projects) and registered
+    /// paths stay claimed.
+    @Test func tripwireHonorsExclusionsAndRegistrations() throws {
+        let root = try temporaryRoot(planted: [
+            ".git/de.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            ".planning/de.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            ".claude/de.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            "DerivedData/App/de.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            "EndoApp.xcodeproj/de.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+            "nested-checkout/.git": "gitdir: elsewhere\n",
+            "nested-checkout/Sources/fr.lproj/Localizable.strings": "\"k\" = \"v\";\n",
+        ])
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("l10n"), withIntermediateDirectories: true)
+        try "# spec\n".write(to: root.appendingPathComponent("l10n/README.md"), atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let flagged = try L10nSourceRegistry.unregisteredLocalizedFiles(root: root)
+        #expect(flagged.isEmpty, "excluded directories and registered paths must not be flagged, got \(flagged)")
+        #expect(L10nSourceRegistry.claim("l10n/README.md")?.role == .documentation)
+    }
+
+    /// Every registered source claims at least one real file in the repo (no dead registration).
+    @Test func everyRegisteredSourceMatchesARealFile() throws {
+        let root = try L10nSourceRegistry.repoRoot()
+        let files = try L10nSourceRegistry.repoFiles(root: root)
+        for source in L10nSourceRegistry.sources {
+            #expect(files.contains { L10nSourceRegistry.wholeMatch(source.pathPattern, $0) },
+                    "registered source \(source.pathPattern) claims no real file")
+        }
+    }
+
+    /// A temp root with the planted files (relative path → content).
+    private func temporaryRoot(planted: [String: String]) throws -> URL {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("tripwire-\(UUID().uuidString)")
+        for (relative, content) in planted {
+            let url = root.appendingPathComponent(relative)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try content.write(to: url, atomically: true, encoding: .utf8)
+        }
+        return root
+    }
+}
