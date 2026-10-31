@@ -15,7 +15,7 @@ struct ConsentView: View {
                 .bloomH2()
 
             Text(
-                "To use Endo-App, you consent to it processing the health information you log "
+                "To use OpenEndo, you consent to it processing the health information you log "
                 + "on this device, and — if you turn on sync — in your own private iCloud. "
                 + "Nothing is processed until you tap the button below, and you can withdraw "
                 + "your consent at any time in Settings."

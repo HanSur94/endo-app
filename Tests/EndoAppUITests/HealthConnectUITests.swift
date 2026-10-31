@@ -62,7 +62,7 @@ final class HealthConnectUITests: XCTestCase {
     /// Pop the pushed Settings screen back to Home via the navigation back button.
     private func popBackToHome(_ app: XCUIApplication) {
         // The pushed Settings screen's nav bar shows the standard back button (titled with the parent
-        // "Endo-App"). Tapping the first nav-bar button pops back to Home.
+        // "OpenEndo"). Tapping the first nav-bar button pops back to Home.
         let backButton = app.navigationBars["Settings"].buttons.firstMatch
         if backButton.exists { backButton.tap() }
         XCTAssertTrue(app.buttons["home.logTodayButton"].waitForExistence(timeout: 10),

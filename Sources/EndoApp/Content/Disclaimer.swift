@@ -11,7 +11,7 @@ enum Disclaimer {
     /// Plain-language, warm-but-honest framing. MUST contain both "not medical advice" and
     /// "not a medical device" (the auditable claim, enforced by `DisclaimerTests`).
     static let text: String = """
-    Endo-App is an informational self-tracking tool. It is not medical advice and \
+    OpenEndo is an informational self-tracking tool. It is not medical advice and \
     not a medical device. It does not diagnose, treat, cure, or prevent any condition. \
     The patterns it surfaces come from your own data and are meant to help you understand \
     your body and have better conversations with your clinician — not to replace professional care.

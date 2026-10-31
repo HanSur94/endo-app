@@ -1,0 +1,25 @@
+name: Bug report
+description: Something is broken or wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Platform and version
+      placeholder: iOS 18.4 / iPhone 15 — or Android 15 / Pixel 8, app version 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or logs
+      description: Please use synthetic data only — never a screenshot of your real health record.
+    validations:
+      required: false

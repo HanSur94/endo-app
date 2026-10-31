@@ -282,3 +282,60 @@ final class CheckInFlowUITests: XCTestCase {
         }
     }
 }
+
+// MARK: - Pain-area body map in the check-in (SYMP-02 discoverability)
+
+@MainActor
+extension CheckInFlowUITests {
+    /// Selecting a pain-location symptom in the fast check-in reveals the accessible body map;
+    /// a marked region persists as a PainPoint and survives a re-opened check-in.
+    func testPainSymptom_revealsBodyMap_andPersistsTheMark() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest-reset"]
+        app.launch()
+
+        grantConsent(app)
+
+        let checkIn = app.buttons[ID.homeCheckInButton]
+        XCTAssertTrue(checkIn.waitForExistence(timeout: 10))
+        checkIn.tap()
+
+        // Selecting the pelvic/abdominal pain symptom reveals the body map
+        // (asserted via the map's region hotspots — the proven-queryable a11y surface).
+        let pelvic = app.buttons["checkin.symptom.pelvicPain"]
+        scrollToExistence(app, pelvic)
+        XCTAssertTrue(pelvic.exists, "the check-in must offer the pelvic/abdominal pain symptom")
+        pelvic.tap()
+
+        let region = app.descendants(matching: .any)["bodymap.region.lowerAbdomenPelvis"]
+        scrollToExistence(app, region)
+        XCTAssertTrue(region.waitForExistence(timeout: 5),
+                      "selecting a pain-location symptom must reveal the body map")
+        saveScreenshot(app, named: "checkin-body-map")
+
+        // Mark the lower-abdomen region and confirm. The severity sheet binds live — set a
+        // severity explicitly (Moderate = 6) via the sheet's preset. While the sheet is
+        // presented, iOS prunes the base window's controls from the a11y tree, so the sheet's
+        // preset is the ONLY match (boundBy 0).
+        region.tap()
+        let moderate = app.buttons.matching(identifier: "daylog.severityPreset.moderate").element(boundBy: 0)
+        XCTAssertTrue(moderate.waitForExistence(timeout: 5))
+        moderate.tap()
+        let done = app.buttons["bodymap.region.lowerAbdomenPelvis.done"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5))
+        done.tap()
+
+        app.buttons[ID.confirmButton].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["home.dayRow.0"].waitForExistence(timeout: 10))
+
+        // Re-open: the loaded PainPoint keeps the map visible and the region marked.
+        checkIn.tap()
+        let region2 = app.descendants(matching: .any)["bodymap.region.lowerAbdomenPelvis"]
+        scrollToExistence(app, region2)
+        XCTAssertTrue(region2.waitForExistence(timeout: 5),
+                      "a re-opened check-in must re-reveal the body map from loaded pain points")
+        let value = (region2.value as? String) ?? ""
+        XCTAssertTrue(value.contains("6 of 10"),
+                      "the marked region must read its severity; got '\(value)'")
+    }
+}

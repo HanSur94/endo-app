@@ -56,7 +56,7 @@ enum ReportCopy {
 
     // MARK: Surface 2 — PDF document copy (UI-SPEC §Copywriting Contract / §Honesty Contract)
 
-    static let pdfTitle = "Endo-App — Self-Tracking Report"
+    static let pdfTitle = "OpenEndo — Self-Tracking Report"
 
     // The 8 numbered section headings (D-04 order). Plain, descriptive nouns — no causal/diagnostic verb.
     static let sectionHeaderTitle = "1. Overview"
@@ -127,7 +127,7 @@ enum ReportCopy {
 
     // Source legend (section 7). Reworded to avoid the "her" substring in "other"/"there".
     static let legendIntro = "Source labels:"
-    static let legendSelfReported = "Self-reported — you logged this in Endo-App."
+    static let legendSelfReported = "Self-reported — you logged this in OpenEndo."
     static let legendAppleHealth = "From Apple Health — imported read-only from Apple Health."
     static let legendMixed = "Mixed — both sources contributed to this period."
 
@@ -143,7 +143,7 @@ enum ReportCopy {
     static let insightsSparse = "Not enough data to show insights for this range."
 
     /// The page footer framing, repeated on every page so it survives a single detached printed page.
-    static let footer = "Self-tracked, not diagnostic \u{00B7} Endo-App"
+    static let footer = "Self-tracked, not diagnostic \u{00B7} OpenEndo"
     /// The page-number format (e.g. "Page 2 of 5"); digits are interpolated by the renderer.
     static func pageNumber(_ n: Int, of total: Int) -> String { "Page \(n) of \(total)" }
 

@@ -40,10 +40,12 @@ enum CheckInCopy {
         "Brings back your usual meds, sleep and activity. Symptoms and bleeding are never carried over."
     /// The empty-confirm adherence confirmation (no data invented, D-15).
     static let checkedIn = "Checked in for today."
+    /// The pain-areas section header — same name as the detailed editor's section (single-source posture).
+    static let painAreas = "Pain areas"
 
     /// Everything `CopyAuditTests` audits for forbidden verbs / gendered tokens.
     static var auditableStrings: [String] {
-        [title, confirm, sameAsYesterday, sameAsYesterdaySubtitle, checkedIn]
+        [title, confirm, sameAsYesterday, sameAsYesterdaySubtitle, checkedIn, painAreas]
     }
 }
 
@@ -60,6 +62,9 @@ struct DailyCheckInView: View {
     @State private var severities: [SymptomType: Int] = [:]
     @State private var flow: FlowIntensity?
     @State private var clots = false
+
+    // MARK: Pain-area draft (SYMP-02) — revealed for pain-location symptoms, saved as PainPoints.
+    @State private var painSeverities: [BodyRegion: Int] = [:]
 
     // MARK: Sticky-context factor drafts (prefillable from yesterday — D-14).
     @State private var foodTags: Set<FoodTag> = []
@@ -92,6 +97,7 @@ struct DailyCheckInView: View {
         Form {
             sameAsYesterdaySection
             symptomSection
+            if showsPainAreas { painAreaSection }
             foodSection
             activitySection
             sleepSection
@@ -178,6 +184,23 @@ struct DailyCheckInView: View {
         } header: {
             Text("Symptoms").accessibilityIdentifier("checkin.section.symptoms")
         }
+    }
+
+    /// The pain-area body map (SYMP-02) — revealed in the fast check-in when a pain-location symptom
+    /// is selected OR marks already exist, so marks never become invisible or un-clearable.
+    private var painAreaSection: some View {
+        Section(CheckInCopy.painAreas) {
+            BodyMapView(severities: $painSeverities)
+                .accessibilityIdentifier("checkin.bodyMap")
+        }
+    }
+
+    /// Pain-location symptoms (pelvic/abdominal pain, back/leg pain) carry a body location; the map
+    /// stays visible while any mark exists even if the symptom is deselected.
+    private var showsPainAreas: Bool {
+        severities.keys.contains(.pelvicPain)
+            || severities.keys.contains(.backLegPain)
+            || !painSeverities.isEmpty
     }
 
     /// Food & drink (LIFE-01, D-03): multi-select tags + optional free-text. Neutral category tags,
@@ -518,6 +541,13 @@ struct DailyCheckInView: View {
             }
         }
 
+        let points = (try? modelContext.fetch(FetchDescriptor<SchemaV1.PainPoint>())) ?? []
+        for point in points where cal.isDate(point.occurredOn, inSameDayAs: today) {
+            if let region = BodyRegion(raw: point.regionRaw) {
+                painSeverities[region] = point.severity ?? 6
+            }
+        }
+
         let events = (try? modelContext.fetch(FetchDescriptor<SchemaV1.BleedingEvent>())) ?? []
         if let dayEvent = events.first(where: { cal.isDate($0.occurredAt, inSameDayAs: today) }) {
             flow = FlowIntensity(raw: dayEvent.flowRaw)
@@ -549,7 +579,7 @@ struct DailyCheckInView: View {
 
     /// Whether the user touched ANYTHING worth committing as data (drives the empty-confirm path, D-15).
     private var hasAnyInput: Bool {
-        !severities.isEmpty
+        !severities.isEmpty || !painSeverities.isEmpty
             || flow != nil
             || !foodTags.isEmpty || !foodNote.isEmpty
             || activityType != nil
@@ -573,6 +603,15 @@ struct DailyCheckInView: View {
                     try? repo.upsertSymptom(type: type, severity: severity, on: today)
                 } else {
                     try? repo.removeSymptom(type: type, on: today)
+                }
+            }
+            // Pain areas: a marked region writes a PainPoint; an unmarked region is removed
+            // (mirrors DayLogEditorView — the loaded draft keeps existing marks intact).
+            for region in BodyRegion.allCases {
+                if let severity = painSeverities[region] {
+                    try? repo.setPainPoint(region: region, severity: severity, on: today)
+                } else {
+                    try? repo.removePainPoint(region: region, on: today)
                 }
             }
             // Bleeding (event): nil flow clears the day's bleeding.
