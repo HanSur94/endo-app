@@ -59,8 +59,69 @@ extension ClaimsPolicy {
 }
 
 extension LanguageClaimsPolicy {
-    /// JSON decoding entry point. Task 26-04/03 makes this strict (exact key sets) — see the plan.
+    /// Strict JSON entry point. `JSONDecoder` alone silently ignores an unknown key, which would drop a
+    /// whole rule class from the shipped policy (T-26-19); the key-set walk runs first and throws
+    /// `L10nPolicyError.unexpectedKeys` at the first object whose keys differ.
     static func decode(_ data: Data) throws -> LanguageClaimsPolicy {
-        try JSONDecoder().decode(LanguageClaimsPolicy.self, from: data)
+        try StrictPolicySchema.validate(data)
+        return try JSONDecoder().decode(LanguageClaimsPolicy.self, from: data)
+    }
+}
+
+/// The exact key sets of `l10n/README.md` §Policy file schema, walked on the raw JSON — the counterpart
+/// of kotlinx's strict decoding on Android.
+enum StrictPolicySchema {
+    static let topLevel = ["schemaVersion", "policyRevision", "language", "reviewStatus",
+                           "folding", "categories", "allow", "framing", "selfTest"]
+
+    static func validate(_ data: Data) throws {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw L10nPolicyError.unexpectedKeys(path: "<root>", extra: [], missing: [])
+        }
+        try expectKeys(root, topLevel, "<root>")
+
+        if let folding = root["folding"] as? [String: Any] {
+            try expectKeys(folding, ["replace"], "folding")
+        }
+        if let categories = root["categories"] as? [String: Any] {
+            try expectKeys(categories, RuleKinds.categoryOrder, "categories")
+            for category in RuleKinds.categoryOrder {
+                if let ruleSet = categories[category] as? [String: Any] {
+                    try expectKeys(ruleSet, RuleKinds.kindOrder, "categories.\(category)")
+                }
+            }
+        }
+        if let allow = root["allow"] as? [String: Any] {
+            try expectKeys(allow, ["tokens", "phrases"], "allow")
+            for (index, entry) in (allow["tokens"] as? [[String: Any]] ?? []).enumerated() {
+                try expectKeys(entry, ["token", "reason", "collidesWith"], "allow.tokens[\(index)]")
+            }
+            for (index, entry) in (allow["phrases"] as? [[String: Any]] ?? []).enumerated() {
+                try expectKeys(entry, ["phrase", "reason", "collidesWith"], "allow.phrases[\(index)]")
+            }
+        }
+        if let selfTest = root["selfTest"] as? [String: Any] {
+            try expectKeys(selfTest, ["normalization", "tokenize", "mustFail", "mustPass"], "selfTest")
+            let fixtures: [(String, [String])] = [
+                ("normalization", ["input", "folded"]),
+                ("tokenize", ["input", "tokens", "sentenceInitial"]),
+                ("mustFail", ["text", "category", "term"]),
+            ]
+            for (name, keys) in fixtures {
+                for (index, entry) in (selfTest[name] as? [[String: Any]] ?? []).enumerated() {
+                    try expectKeys(entry, keys, "selfTest.\(name)[\(index)]")
+                }
+            }
+        }
+    }
+
+    private static func expectKeys(_ object: [String: Any], _ expected: [String], _ path: String) throws {
+        let actual = Set(object.keys)
+        let wanted = Set(expected)
+        guard actual == wanted else {
+            throw L10nPolicyError.unexpectedKeys(path: path,
+                                                 extra: actual.subtracting(wanted).sorted(),
+                                                 missing: wanted.subtracting(actual).sorted())
+        }
     }
 }
