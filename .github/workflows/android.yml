@@ -2,14 +2,17 @@ name: android
 
 # Path-filtered merge gate for the Android monorepo tree (AENG-07). Only changes under
 # android/** (or this workflow) trigger it, so the iOS build/test lanes stay independent.
+# l10n/** also triggers it, because the Android tests enforce the shared DE/FR/ES policy data (SAFE-01).
 on:
   push:
     paths:
       - 'android/**'
+      - 'l10n/**'
       - '.github/workflows/android.yml'
   pull_request:
     paths:
       - 'android/**'
+      - 'l10n/**'
       - '.github/workflows/android.yml'
 
 jobs:
