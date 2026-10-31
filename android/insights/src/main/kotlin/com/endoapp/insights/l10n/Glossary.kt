@@ -11,6 +11,7 @@
 // kinds compare the NFC typography view exactly.
 package com.endoapp.insights.l10n
 
+import com.endoapp.insights.ForbiddenTerms
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -26,12 +27,16 @@ data class Glossary(
     val selfTest: GlossarySelfTest,
 ) {
 
-    /** Every register hit for [text] in [lang], in kind then list order. Category is "register". */
+    /** Every register hit for [text] in [lang], in kind then list order (README step 6), deduplicated.
+     *  Category is "register". Uses the language policy's tokens, fold and allow mask; [applyAllow] = false
+     *  disables masking (used by the allow-collision proof). */
     fun registerViolations(lang: PolicyLanguage, text: String, applyAllow: Boolean = true): List<Violation> =
-        emptyList()
+        bannedHits(register.forLanguage(lang).banned, ForbiddenTerms.forLanguage(lang), text, applyAllow, REGISTER, firstOnly = false)
 
     /** The first register hit, or null when [text] keeps the language's register. */
-    fun registerViolation(lang: PolicyLanguage, text: String): Violation? = null
+    fun registerViolation(lang: PolicyLanguage, text: String): Violation? =
+        bannedHits(register.forLanguage(lang).banned, ForbiddenTerms.forLanguage(lang), text, true, REGISTER, firstOnly = true)
+            .firstOrNull()
 
     /** Every banned hit of [concept] in [lang] for [text]. Category is the concept id. */
     fun conceptBannedViolations(
@@ -39,15 +44,89 @@ data class Glossary(
         lang: PolicyLanguage,
         text: String,
         applyAllow: Boolean = true,
-    ): List<Violation> = emptyList()
+    ): List<Violation> =
+        bannedHits(concept.forLanguage(lang).banned, ForbiddenTerms.forLanguage(lang), text, applyAllow, concept.id, firstOnly = false)
 
-    /** The conformance verdict of translation [text] in [lang] for EN source [en]. */
-    fun conformance(en: String, lang: PolicyLanguage, text: String): GlossaryVerdict = GlossaryVerdict.Pass
+    /**
+     * The conformance verdict of translation [text] in [lang] for EN source [en] (README §Glossary
+     * schema, Semantics). Fixed order:
+     *  1. register, unconditional;
+     *  2. for the concepts whose EN trigger phrase-matches [en] (in concept order), the first banned hit,
+     *     with the policy's allow mask applied;
+     *  3. the first of those concepts with no approved form phrase-matching [text]. Approved matching
+     *     IGNORES the allow mask, because an approved form (FR "entraînement") can itself be an allow token.
+     * EN folding is the typography view plus root lowercase, with no replace pairs.
+     */
+    fun conformance(en: String, lang: PolicyLanguage, text: String): GlossaryVerdict {
+        registerViolation(lang, text)?.let { return GlossaryVerdict.Register(it.term) }
+        val policy = ForbiddenTerms.forLanguage(lang)
+        val enTokens = L10nText.tokenize(en, emptyList())
+        val enUnmasked = BooleanArray(enTokens.size)
+        val triggered = concepts.filter { concept ->
+            concept.en.triggers.any { trigger ->
+                RuleKinds.phrase(enTokens, enUnmasked, L10nText.tokenize(trigger, emptyList()).map { it.folded })
+            }
+        }
+        for (concept in triggered) {
+            conceptBannedViolations(concept, lang, text).firstOrNull()?.let {
+                return GlossaryVerdict.Banned(concept.id, it.term)
+            }
+        }
+        val textTokens = policy.tokens(text)
+        val textUnmasked = BooleanArray(textTokens.size)
+        for (concept in triggered) {
+            val hasApproved = concept.forLanguage(lang).approved.any { form ->
+                RuleKinds.phrase(textTokens, textUnmasked, policy.tokens(form).map { it.folded })
+            }
+            if (!hasApproved) return GlossaryVerdict.MissingApproved(concept.id)
+        }
+        return GlossaryVerdict.Pass
+    }
 
     companion object {
+        /** The category every register hit reports. */
+        const val REGISTER = "register"
+
         /** Strictly decodes glossary JSON: unknown and missing required keys both throw. */
         fun decode(text: String): Glossary = Json.decodeFromString(serializer(), text)
     }
+}
+
+/** Evaluates [rules] on [text] in [BannedRules.KIND_ORDER] then list order, with [policy]'s fold, tokens
+ *  and (when [applyAllow]) allow mask. Folded kinds reuse the [RuleKinds] predicates; the cased kinds
+ *  compare a token's cased NFC text exactly, `wordCasedMidSentence` skipping sentence-initial tokens. */
+private fun bannedHits(
+    rules: BannedRules,
+    policy: LanguageClaimsPolicy,
+    text: String,
+    applyAllow: Boolean,
+    category: String,
+    firstOnly: Boolean,
+): List<Violation> {
+    val folded = policy.fold(text)
+    val toks = policy.tokens(text)
+    val masked = if (applyAllow) policy.mask(toks) else BooleanArray(toks.size)
+    val hits = LinkedHashSet<Violation>()
+    for (kind in BannedRules.KIND_ORDER) {
+        for (term in rules.terms(kind)) {
+            val hit = when (kind) {
+                RuleKinds.RAW -> RuleKinds.raw(folded, term)
+                RuleKinds.WORD -> RuleKinds.word(toks, masked, term)
+                RuleKinds.PREFIX -> RuleKinds.prefix(toks, masked, term)
+                RuleKinds.STEM -> RuleKinds.stem(toks, masked, term)
+                RuleKinds.PHRASE -> RuleKinds.phrase(toks, masked, policy.tokens(term).map { it.folded })
+                BannedRules.WORD_CASED -> toks.indices.any { !masked[it] && toks[it].text == term }
+                BannedRules.WORD_CASED_MID_SENTENCE ->
+                    toks.indices.any { !masked[it] && !toks[it].sentenceInitial && toks[it].text == term }
+                else -> error("Unknown glossary rule kind '$kind' (fail-closed)")
+            }
+            if (hit) {
+                hits.add(Violation(category = category, kind = kind, term = term))
+                if (firstOnly) return hits.toList()
+            }
+        }
+    }
+    return hits.toList()
 }
 
 @Serializable
