@@ -294,6 +294,7 @@
     "pairs": [
       { "en": "Possible flare pattern", "lang": "de", "text": "Mögliches Schub-Muster", "expect": "pass", "concept": null, "term": null },
       { "en": "You logged pain?", "lang": "de", "text": "Sie haben Schmerzen eingetragen?", "expect": "pass", "concept": null, "term": null },
+      { "en": "Your entries are saved; you can edit them later.", "lang": "de", "text": "Deine Einträge sind gespeichert, du kannst sie später bearbeiten.", "expect": "pass", "concept": null, "term": null },
       { "en": "Possible flare pattern", "lang": "de", "text": "Möglicher Anfall", "expect": "banned", "concept": "flare", "term": "anfall" },
       { "en": "Worth discussing with your clinician", "lang": "de", "text": "Das könnten Sie mit Ihrem Behandlungsteam besprechen.", "expect": "register", "concept": null, "term": "Sie" },
       { "en": "Possible flare pattern", "lang": "fr", "text": "Tendance possible de poussée", "expect": "pass", "concept": null, "term": null },

@@ -11,6 +11,7 @@ package com.endoapp.app.l10n
 
 import com.endoapp.app.content.ClaimsPolicy
 import com.endoapp.app.content.forLanguage
+import com.endoapp.insights.l10n.Glossary
 import com.endoapp.insights.l10n.PolicyLanguage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -46,6 +47,8 @@ object L10nSourceRegistry {
 
     private val POLICY_FILE = Regex("""l10n/claims-policy\.(de|fr|es)\.json""")
 
+    private const val GLOSSARY_PATH = "l10n/glossary.json"
+
     /** Every registered source. A new localized file needs a line here in the same change. */
     val sources: List<L10nSource> = listOf(
         L10nSource(
@@ -55,6 +58,15 @@ object L10nSourceRegistry {
                 "and selfTest fixtures are policy data that legitimately CONTAIN forbidden terms, the same " +
                 "exemption the English ForbiddenTerms/ClaimsPolicy lists have.",
             extract = ::extractPolicyFraming,
+        ),
+        L10nSource(
+            pathPattern = Regex("""l10n/glossary\.json"""),
+            role = SourceRole.COPY,
+            reason = "Every de/fr/es `approved` form is copy and must pass its policy and the register. The " +
+                "`banned` lists and selfTest pairs are fixtures that CONTAIN the forms they ban. The " +
+                "`doNotTranslate` brand names (Health Connect, Endo-App) are kept verbatim in every language, " +
+                "so they are not DE/FR/ES text and are not extracted.",
+            extract = ::extractGlossaryApproved,
         ),
     )
 
@@ -82,17 +94,28 @@ object L10nSourceRegistry {
         return root
     }
 
+    /** The strictly decoded glossary under [root]. Missing means FAIL, never skip. */
+    fun glossary(root: File): Glossary {
+        val file = File(root, GLOSSARY_PATH)
+        if (!file.isFile) throw AssertionError("$GLOSSARY_PATH is missing under '$root' (fail, never skip).")
+        return Glossary.decode(file.readText(Charsets.UTF_8))
+    }
+
     /**
      * THE audit helper. Every real scan and every red-capable control goes through it, so a control that
-     * turns red proves the real scan would too. Returns one "origin: text → category/term" line per
-     * string that hits its language's policy.
+     * turns red proves the real scan would too. Returns one "origin: text → category/term" line per policy
+     * hit and per register hit. The register comes from the glossary under [root], the SAME root the
+     * strings were collected from, so a mutated temp copy is judged by its own data.
      */
-    fun auditFindings(strings: List<L10nString>): List<String> =
-        strings.mapNotNull { s ->
-            ClaimsPolicy.forLanguage(s.lang).violation(s.text)?.let { v ->
-                "${s.origin}: \"${s.text}\" → ${v.category}/${v.term}"
-            }
+    fun auditFindings(strings: List<L10nString>, root: File = repoRoot()): List<String> {
+        val glossary = glossary(root)
+        return strings.flatMap { s ->
+            listOfNotNull(
+                ClaimsPolicy.forLanguage(s.lang).violation(s.text),
+                glossary.registerViolation(s.lang, s.text),
+            ).map { v -> "${s.origin}: \"${s.text}\" → ${v.category}/${v.term}" }
         }
+    }
 
     /** Repo-relative paths (`/` separators) of every file under [root], skipping [EXCLUDED_DIRS]. */
     internal fun repoFiles(root: File): List<String> {
@@ -110,6 +133,17 @@ object L10nSourceRegistry {
         }
         walk(root, "")
         return out
+    }
+
+    private fun extractGlossaryApproved(file: File): List<L10nString> {
+        val glossary = Glossary.decode(file.readText(Charsets.UTF_8))
+        return glossary.concepts.flatMap { concept ->
+            PolicyLanguage.entries.flatMap { lang ->
+                concept.forLanguage(lang).approved.map { form ->
+                    L10nString(lang, form, "$GLOSSARY_PATH#${concept.id}.${lang.tag}")
+                }
+            }
+        }
     }
 
     private fun extractPolicyFraming(file: File): List<L10nString> {
