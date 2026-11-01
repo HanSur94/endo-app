@@ -28,3 +28,6 @@ android/**/*.keystore
 # Hermes / agent scratch
 .hermes/
 .claude/worktrees/
+
+# graphify
+graphify-out/
