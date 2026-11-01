@@ -1,3 +1,9 @@
 title: OpenEndo
 description: A private, open-source symptom tracker for endometriosis.
 theme: minima
+# jekyll-titles-from-headings would promote the policy's own H1 into a second page title;
+# dropping it from the plugin list keeps exactly one heading per page.
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
