@@ -1,0 +1,133 @@
+name: release
+
+# Builds the two sideloadable artifacts and attaches them to a GitHub release.
+# Runs on GitHub's machines on purpose: the release is reproducible and does not depend on a laptop.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+env:
+  # Throwaway signing key for the APK: generated inside the job, never stored anywhere.
+  # Consequence, documented in the release notes: an update must be installed over this one with the
+  # same key, so sideloaders reinstall rather than upgrade. Play uploads use Play App Signing anyway.
+  KS_PASS: openendo-preview-keystore
+
+jobs:
+  android:
+    name: build android apk
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Assemble release
+        run: ./gradlew :app:assembleRelease --console=plain --stacktrace
+
+      - name: Sign the APK
+        run: |
+          set -euo pipefail
+          BT="$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          mkdir -p ../dist
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/openendo.jks" -alias openendo \
+            -keyalg RSA -keysize 4096 -validity 10000 \
+            -storepass "$KS_PASS" -keypass "$KS_PASS" \
+            -dname "CN=OpenEndo sideload, O=OpenEndo" >/dev/null
+          "$ANDROID_HOME/build-tools/$BT/zipalign" -p -f 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/aligned.apk"
+          "$ANDROID_HOME/build-tools/$BT/apksigner" sign \
+            --ks "$RUNNER_TEMP/openendo.jks" --ks-pass "pass:$KS_PASS" \
+            --out ../dist/OpenEndo-${{ inputs.tag }}-android.apk "$RUNNER_TEMP/aligned.apk"
+          "$ANDROID_HOME/build-tools/$BT/apksigner" verify --print-certs \
+            ../dist/OpenEndo-${{ inputs.tag }}-android.apk
+          ls -la ../dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/*.apk
+          if-no-files-found: error
+
+  ios:
+    name: build ios app (unsigned)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Archive
+        run: |
+          set -euo pipefail
+          xcodebuild archive -project EndoApp.xcodeproj -scheme EndoApp -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/OpenEndo.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | tail -20
+
+      - name: Package the .app
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          APP="$(find "$RUNNER_TEMP/OpenEndo.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' | head -1)"
+          test -n "$APP" || { echo "no .app in archive"; exit 1; }
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP" "dist/OpenEndo-${{ inputs.tag }}-ios-unsigned.zip"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: dist/*.zip
+          if-no-files-found: error
+
+  publish:
+    name: publish release
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          ls -la dist
+          cat > notes.md <<'MD'
+          **OpenEndo — sideload builds.** These are not store builds: nothing here is notarised, reviewed
+          or signed by Apple, and the Android APK carries a throwaway signing key.
+
+          **Android** — install with the file manager or `adb install`. The key is generated per build, so a
+          future build installs *alongside* rather than over this one.
+
+          **iOS** — the archive is unsigned and will not install as-is. Resign it with your own Apple ID
+          (Sideloadly, AltStore, or Xcode's "Sign to Run Locally") before putting it on a device.
+
+          The store releases will come from App Store Connect and Play Console, once both accounts exist.
+          MD
+          gh release create "$TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "OpenEndo $TAG" \
+            --notes-file notes.md
