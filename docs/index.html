@@ -54,6 +54,19 @@
   }
   .lang button:hover{color:var(--ink)}
   .lang button[aria-pressed="true"]{background:var(--plum); color:#fff; box-shadow:0 1px 3px rgba(110,33,83,.25)}
+  img[src^="screenshots/"]{cursor:zoom-in}
+  dialog#lightbox{
+    border:0; padding:0; background:transparent; overflow:visible;
+    max-width:min(92vw,520px); max-height:92vh;
+  }
+  dialog#lightbox::backdrop{background:rgba(42,16,32,.74); backdrop-filter:blur(5px)}
+  dialog#lightbox img{width:100%; height:auto; max-height:86vh; object-fit:contain; border-radius:24px; box-shadow:0 30px 80px rgba(0,0,0,.45); background:var(--card)}
+  dialog#lightbox .lb-cap{font-family:var(--sans); font-size:13.5px; color:#f1e3ea; text-align:center; margin:14px 0 0}
+  dialog#lightbox .lb-close{
+    position:absolute; top:-16px; right:-16px; width:38px; height:38px; border-radius:999px;
+    border:1px solid var(--petal-line); background:var(--card); color:var(--ink); font-size:20px;
+    line-height:1; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.28);
+  }
   .scroll-hint{display:flex; justify-content:center; align-items:center; width:fit-content; margin:34px auto 0; padding:8px; color:var(--ink3); text-decoration:none; border-radius:999px}
   .scroll-hint:hover{color:var(--plum)}
   .scroll-hint svg{width:22px; height:22px; animation:scrollBob 1.9s cubic-bezier(.5,0,.5,1) infinite}
@@ -373,6 +386,12 @@
     els.forEach(function (el) { io.observe(el); });
   })();
 </script>
+<dialog id="lightbox" aria-label="Screenshot">
+  <button type="button" class="lb-close" aria-label="Close">&times;</button>
+  <img alt="">
+  <p class="lb-cap"></p>
+</dialog>
+
 <script type="application/json" id="i18n-de">{"A quieter way to keep track of endo.": "Ein ruhigerer Weg, <em>Endo</em> im Blick zu behalten.", "Android": "Android", "Backups go through your own iCloud or Android backup, if you use one": "Backups laufen über deine eigene iCloud- oder Android-Sicherung, wenn du eine nutzt", "Built to be checked": "Gebaut, um nachprüfbar zu sein", "Check in once a day": "Einmal am Tag eintragen", "Check-in, insights, explore, report.": "Check-in, Insights, Explore, Report.", "Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.": "Verglichen wird mit deinen eigenen erfassten Tagen. Eine kurze Historie wird auch so benannt: Abdeckung und Anzahl erfasster Tage stehen in jedem Report — eine dünne Woche kann sich nicht als Muster ausgeben.", "Confidence from logged days": "<b>Konfidenz</b> aus erfassten Tagen", "Contributing": "Mitmachen", "Daily check-in": "Täglicher Check-in", "Data lives in the app's own store on your phone": "Die Daten liegen im eigenen Speicher der App auf deinem Telefon", "Days behind the card": "<b>Tage</b> hinter der Karte", "Direction of the movement": "<b>Richtung</b> der Bewegung", "Explore any two signals": "Zwei beliebige Signale erkunden", "Explore — lanes and scatter": "Explore — Lanes und Streudiagramm", "Exportable PDF report": "Exportierbarer PDF-Report", "Five taps a day. That is the whole routine.": "Fünf Tipper am Tag. Mehr Routine braucht es nicht.", "Hand over a report": "Einen Report in die Hand geben", "Home — cycle estimate and today": "Start — Zyklusschätzung und heute", "How it works": "So funktioniert es", "Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.": "Insights vergleichen die Tage, die du wirklich erfasst hast, und zeigen, wo sich zwei Dinge in dieselbe Richtung bewegt haben — mit der Zahl der Tage hinter jeder Karte, damit du selbst urteilen kannst.", "Insights — with the days behind each card": "Insights — mit den Tagen hinter jeder Karte", "Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.": "Lanes und ein Streudiagramm zeigen ein Symptom gegen ein anderes über Wochen — ohne Dashboard voller Zahlen, nach denen du nicht gefragt hast.", "Lanes — the same days as a timeline": "Lanes — dieselben Tage als Zeitstrahl", "Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.": "Trag deinen Tag in unter einer Minute ein, sieh, was sich in deinen eigenen Aufzeichnungen zusammen bewegt, und nimm einen sauberen Report zum nächsten Termin mit. Alles bleibt auf deinem Gerät.", "MIT licensed": "MIT-Lizenz", "MIT licensed, and small enough to read.": "MIT-lizenziert — und klein genug, um es zu lesen.", "No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.": "Kein Konto, kein Backend, kein Analytics-SDK, keine Werbe-ID. Die App ist eine lokale Datenbank und ein paar Ansichten darauf.", "Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.": "Nicht nur „da ist ein Muster“: die Richtung der Bewegung, wie deutlich sie über deine Aufzeichnungen aussieht, und — was die meisten Tracker verbergen — auf wie vielen Tagen sie beruht.", "Nothing is sent anywhere, so nothing can be sold or leaked": "Nichts wird irgendwohin geschickt, also kann auch nichts verkauft oder geleakt werden", "Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.": "Nichts wird geglättet, bewertet oder vorhergesagt. Wähle zwei Signale, und das Streudiagramm zeigt, wie sie sich im gewählten Zeitraum zusammen bewegt haben; die Lanes zeigen dieselben Tage als Zeitstrahl, wenn ein Diagramm die falsche Form ist.", "Open source": "Open Source", "OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.": "OpenEndo ist ein Selbsttracking-Werkzeug für dein Wohlbefinden. Es ist kein Medizinprodukt und diagnostiziert, behandelt, heilt oder verhindert keine Erkrankung. Es ersetzt keinen ärztlichen Rat — sprich bitte mit einer Ärztin oder einem Arzt über Symptome und Behandlung.", "OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.": "OpenEndo ist um einen kurzen Check-in gebaut, nicht um Formulare. Symptome sind optional; den Tag zu bestätigen reicht.", "Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.": "Schmerz, Blutung, Verdauung, Energie, Schlaf, Stimmung, Medikamente, Stress — jede Zeile für sich, jede überspringbar. Ein Tag ohne Eintrag zählt trotzdem.", "Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.": "Wähle einen Zeitraum und exportiere ein PDF mit deinen erfassten Tagen, der Abdeckung und den Mustern, die gehalten haben. Etwas, das du beim Termin auf den Tisch legen kannst.", "Privacy": "Datenschutz", "Read the privacy policy": "Datenschutzerklärung lesen", "Scatter — one dot per logged day": "Streudiagramm — ein Punkt pro erfasstem Tag", "Screens": "Screens", "See the screens": "Screens ansehen", "See what moves together": "Sehen, was sich zusammen bewegt", "Symptoms and severity": "Symptome und Stärke", "The data": "Die Daten", "The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.": "Dieselben Regeln laufen auf iOS und Android aus einem eingefrorenen Datensatz, und die Unit-Tests halten die Zahlen daran fest — eine Karte mit „12 Tagen“ ist durch zwölf Zeilen belegt, nicht durch die Zuversicht eines Modells.", "The whole loop, top to bottom.": "Der ganze Ablauf, von oben nach unten.", "There is no server to send your data to.": "Es gibt keinen Server, an den deine Daten gehen.", "Two axes, one point per logged day.": "Zwei Achsen, ein Punkt pro erfasstem Tag.", "Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.": "Zwei native Apps — SwiftUI auf iOS, Kotlin und Compose auf Android — mit einem eingefrorenen Claims-Policy-Datensatz, damit die Texte zwischen den Plattformen nicht auseinanderlaufen.", "View on GitHub": "Auf GitHub ansehen", "What a pattern card actually says": "Was eine Muster-Karte wirklich sagt", "You can read the privacy policy — and the code that implements it": "Du kannst die Datenschutzerklärung lesen — und den Code, der sie umsetzt", "Your own baseline, never anyone else’s": "Deine eigene Baseline, nie die von anderen", "fork it, audit it, ship your own": "forks, prüf es, bau dein eigenes", "iPhone & iPad": "iPhone & iPad", "third-party analytics SDKs": "Analytics-SDKs von Drittanbietern", "unit tests across the two codebases": "Unit-Tests über beide Codebasen", "Scroll to next section": "Weiter scrollen"}</script>
 <script>
   (function () {
@@ -422,6 +441,27 @@
     }
     startAtTop();
     window.addEventListener('pageshow', startAtTop);
+  })();
+
+  (function () {
+    var dlg = document.getElementById('lightbox');
+    var lbImg = dlg.querySelector('img');
+    var lbCap = dlg.querySelector('.lb-cap');
+    document.querySelectorAll('img[src^="screenshots/"]').forEach(function (img) {
+      img.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        lbImg.src = img.currentSrc || img.src;
+        lbImg.alt = img.alt || '';
+        var fig = img.closest('figure');
+        var cap = fig && fig.querySelector('figcaption');
+        lbCap.textContent = cap ? cap.textContent : '';
+        lbCap.hidden = !cap;
+        dlg.showModal();
+      });
+    });
+    dlg.querySelector('.lb-close').addEventListener('click', function () { dlg.close(); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
   })();
 </script>
 </body>
