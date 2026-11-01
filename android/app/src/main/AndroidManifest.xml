@@ -45,7 +45,7 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/full_backup_content"
         android:icon="@mipmap/ic_launcher"
-        android:label="Endo-App"
+        android:label="OpenEndo"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.EndoApp">
 
