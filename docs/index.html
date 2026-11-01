@@ -46,6 +46,16 @@
   .btn-ghost{background:var(--card); color:var(--ink); border-color:var(--stroke); box-shadow:var(--shadow)}
   .btn-ghost:hover{border-color:var(--petal-line)}
   .btn-sm{padding:9px 15px; font-size:14px}
+  .lang{display:inline-flex; align-items:center; position:relative}
+  .lang select{
+    appearance:none; font:inherit; font-size:13.5px; font-weight:600; letter-spacing:.04em;
+    color:var(--ink); background:var(--card); border:1px solid var(--stroke); border-radius:999px;
+    padding:8px 30px 8px 14px; cursor:pointer; box-shadow:0 2px 6px rgba(110,33,83,.06);
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%237a5e70' stroke-width='1.6' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center;
+  }
+  .lang select:hover{border-color:var(--petal-line)}
+  .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
 
   .hero{padding:72px 0 20px; position:relative; overflow:clip}
   .hero::before{content:""; position:absolute; inset:-64px -20% auto; height:620px; background:linear-gradient(180deg,#f7e3ea 0%,rgba(247,227,234,0) 78%); z-index:-1}
@@ -148,11 +158,18 @@
   <nav class="wrap">
     <a class="wordmark" href="#top"><img src="assets/app-icon.png" alt="OpenEndo app icon" width="30" height="30">Open<span>Endo</span></a>
     <div class="links">
-      <a class="plain" href="#how">How it works</a>
-      <a class="plain" href="#screens">Screens</a>
-      <a class="plain" href="#privacy">Privacy</a>
-      <a class="plain" href="#source">Open source</a>
+      <a class="plain" href="#how" data-i18n="How it works">How it works</a>
+      <a class="plain" href="#screens" data-i18n="Screens">Screens</a>
+      <a class="plain" href="#privacy" data-i18n="Privacy">Privacy</a>
+      <a class="plain" href="#source" data-i18n="Open source">Open source</a>
     </div>
+    <label class="lang">
+      <span class="sr">Language</span>
+      <select id="lang" aria-label="Language">
+        <option value="en">EN</option>
+        <option value="de">DE</option>
+      </select>
+    </label>
     <a class="btn btn-primary btn-sm" href="https://github.com/HanSur94/endo-app">GitHub</a>
   </nav>
 </header>
@@ -163,16 +180,16 @@
     <div class="wrap hero-grid reveal">
       <div>
         <img class="mark" src="assets/app-icon.png" alt="OpenEndo app icon" width="64" height="64">
-        <h1>A quieter way to keep track of <em>endo.</em></h1>
-        <p class="lede">Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.</p>
+        <h1 data-i18n-html="A quieter way to keep track of endo.">A quieter way to keep track of <em>endo.</em></h1>
+        <p class="lede" data-i18n="Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.">Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.</p>
         <div class="cta">
-          <a class="btn btn-primary" href="https://github.com/HanSur94/endo-app">View on GitHub<svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
-          <a class="btn btn-ghost" href="#screens">See the screens</a>
+          <a class="btn btn-primary" href="https://github.com/HanSur94/endo-app" data-i18n="View on GitHub">View on GitHub<svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+          <a class="btn btn-ghost" href="#screens" data-i18n="See the screens">See the screens</a>
         </div>
         <div class="meta">
-          <span><i class="dot"></i>iPhone &amp; iPad</span>
-          <span><i class="dot"></i>Android</span>
-          <span><i class="dot"></i>MIT licensed</span>
+          <span><i class="dot"></i><span data-i18n="iPhone &amp; iPad">iPhone &amp; iPad</span></span>
+          <span><i class="dot"></i><span data-i18n="Android">Android</span></span>
+          <span><i class="dot"></i><span data-i18n="MIT licensed">MIT licensed</span></span>
         </div>
       </div>
 
@@ -187,40 +204,40 @@
   <section id="how" class="reveal">
     <div class="wrap">
       <div class="section-head">
-        <p class="eyebrow">How it works</p>
-        <h2>Five taps a day. That is the whole routine.</h2>
-        <p>OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.</p>
+        <p class="eyebrow" data-i18n="How it works" data-i18n="How it works">How it works</p>
+        <h2 data-i18n="Five taps a day. That is the whole routine.">Five taps a day. That is the whole routine.</h2>
+        <p data-i18n="OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.">OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.</p>
       </div>
       <div class="cards">
         <div class="card">
           <div>
             <span class="n">01</span>
-            <h3>Check in once a day</h3>
-            <p>Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.</p>
+            <h3 data-i18n="Check in once a day">Check in once a day</h3>
+            <p data-i18n="Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.">Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.</p>
           </div>
           <figure class="peek"><img src="screenshots/03-check-in.png" alt="Daily check-in with the day's rows"></figure>
         </div>
         <div class="card">
           <div>
             <span class="n">02</span>
-            <h3>See what moves together</h3>
-            <p>Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.</p>
+            <h3 data-i18n="See what moves together">See what moves together</h3>
+            <p data-i18n="Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.">Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.</p>
           </div>
           <figure class="peek"><img src="screenshots/05-insights.png" alt="Insights cards with the days behind each pattern"></figure>
         </div>
         <div class="card">
           <div>
             <span class="n">03</span>
-            <h3>Explore any two signals</h3>
-            <p>Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.</p>
+            <h3 data-i18n="Explore any two signals">Explore any two signals</h3>
+            <p data-i18n="Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.">Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.</p>
           </div>
           <figure class="peek"><img src="screenshots/08-explore.png" alt="Explore view plotting two signals against each other"></figure>
         </div>
         <div class="card">
           <div>
             <span class="n">04</span>
-            <h3>Hand over a report</h3>
-            <p>Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.</p>
+            <h3 data-i18n="Hand over a report">Hand over a report</h3>
+            <p data-i18n="Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.">Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.</p>
           </div>
           <figure class="peek"><img src="screenshots/07-report.png" alt="Exported PDF report preview with coverage"></figure>
         </div>
@@ -231,17 +248,17 @@
   <section id="screens" class="reveal" style="background:var(--surface); border-block:1px solid var(--stroke)">
     <div class="wrap">
       <div class="section-head">
-        <p class="eyebrow">Screens</p>
-        <h2>Check-in, insights, explore, report.</h2>
-        <p>The whole loop, top to bottom.</p>
+        <p class="eyebrow" data-i18n="Screens" data-i18n="Screens">Screens</p>
+        <h2 data-i18n="Check-in, insights, explore, report.">Check-in, insights, explore, report.</h2>
+        <p data-i18n="The whole loop, top to bottom.">The whole loop, top to bottom.</p>
       </div>
       <div class="rail">
-        <figure class="phone"><img src="screenshots/02-home.png" alt="Home"><figcaption>Home — cycle estimate and today</figcaption></figure>
-        <figure class="phone"><img src="screenshots/03-check-in.png" alt="Daily check-in"><figcaption>Daily check-in</figcaption></figure>
-        <figure class="phone"><img src="screenshots/04-check-in-factors.png" alt="Symptoms and severity"><figcaption>Symptoms and severity</figcaption></figure>
-        <figure class="phone"><img src="screenshots/05-insights.png" alt="Insights"><figcaption>Insights — with the days behind each card</figcaption></figure>
-        <figure class="phone"><img src="screenshots/08-explore.png" alt="Explore"><figcaption>Explore — lanes and scatter</figcaption></figure>
-        <figure class="phone"><img src="screenshots/07-report.png" alt="Report preview"><figcaption>Exportable PDF report</figcaption></figure>
+        <figure class="phone"><img src="screenshots/02-home.png" alt="Home"><figcaption data-i18n="Home — cycle estimate and today">Home — cycle estimate and today</figcaption></figure>
+        <figure class="phone"><img src="screenshots/03-check-in.png" alt="Daily check-in"><figcaption data-i18n="Daily check-in">Daily check-in</figcaption></figure>
+        <figure class="phone"><img src="screenshots/04-check-in-factors.png" alt="Symptoms and severity"><figcaption data-i18n="Symptoms and severity">Symptoms and severity</figcaption></figure>
+        <figure class="phone"><img src="screenshots/05-insights.png" alt="Insights"><figcaption data-i18n="Insights — with the days behind each card">Insights — with the days behind each card</figcaption></figure>
+        <figure class="phone"><img src="screenshots/08-explore.png" alt="Explore"><figcaption data-i18n="Explore — lanes and scatter">Explore — lanes and scatter</figcaption></figure>
+        <figure class="phone"><img src="screenshots/07-report.png" alt="Report preview"><figcaption data-i18n="Exportable PDF report">Exportable PDF report</figcaption></figure>
       </div>
     </div>
   </section>
@@ -249,27 +266,27 @@
   <section id="data" class="reveal">
     <div class="wrap">
       <div class="section-head">
-        <p class="eyebrow">The data</p>
-        <h2>Two axes, one point per logged day.</h2>
-        <p>Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.</p>
+        <p class="eyebrow" data-i18n="The data" data-i18n="The data">The data</p>
+        <h2 data-i18n="Two axes, one point per logged day.">Two axes, one point per logged day.</h2>
+        <p data-i18n="Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.">Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.</p>
       </div>
       <div class="plots">
         <div class="shots">
-          <figure class="shot phone"><img src="screenshots/10-explore-scatter.png" alt="Scatter plot with one dot per logged day for two chosen signals"><figcaption>Scatter — one dot per logged day</figcaption></figure>
-          <figure class="shot phone"><img src="screenshots/09-explore-lanes.png" alt="Lanes view with one row per signal across the same date range"><figcaption>Lanes — the same days as a timeline</figcaption></figure>
+          <figure class="shot phone"><img src="screenshots/10-explore-scatter.png" alt="Scatter plot with one dot per logged day for two chosen signals"><figcaption data-i18n="Scatter — one dot per logged day">Scatter — one dot per logged day</figcaption></figure>
+          <figure class="shot phone"><img src="screenshots/09-explore-lanes.png" alt="Lanes view with one row per signal across the same date range"><figcaption data-i18n="Lanes — the same days as a timeline">Lanes — the same days as a timeline</figcaption></figure>
         </div>
         <div class="plot-copy">
-          <h3>What a pattern card actually says</h3>
-          <p>Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.</p>
+          <h3 data-i18n="What a pattern card actually says">What a pattern card actually says</h3>
+          <p data-i18n="Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.">Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.</p>
           <div class="chips">
-            <span class="chip"><b>Days</b> behind the card</span>
-            <span class="chip"><b>Direction</b> of the movement</span>
-            <span class="chip"><b>Confidence</b> from logged days</span>
+            <span class="chip" data-i18n-html="Days behind the card"><b>Days</b> behind the card</span>
+            <span class="chip" data-i18n-html="Direction of the movement"><b>Direction</b> of the movement</span>
+            <span class="chip" data-i18n-html="Confidence from logged days"><b>Confidence</b> from logged days</span>
           </div>
-          <h3>Your own baseline, never anyone else’s</h3>
-          <p>Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.</p>
-          <h3>Built to be checked</h3>
-          <p>The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.</p>
+          <h3 data-i18n="Your own baseline, never anyone else’s">Your own baseline, never anyone else’s</h3>
+          <p data-i18n="Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.">Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.</p>
+          <h3 data-i18n="Built to be checked">Built to be checked</h3>
+          <p data-i18n="The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.">The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.</p>
         </div>
       </div>
     </div>
@@ -278,19 +295,19 @@
   <section id="privacy" class="band reveal">
     <div class="wrap band-grid">
       <div>
-        <p class="eyebrow">Privacy</p>
-        <h2>There is no server to send your data to.</h2>
-        <p style="margin-top:16px">No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.</p>
+        <p class="eyebrow" data-i18n="Privacy" data-i18n="Privacy">Privacy</p>
+        <h2 data-i18n="There is no server to send your data to.">There is no server to send your data to.</h2>
+        <p style="margin-top:16px" data-i18n="No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.">No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.</p>
       </div>
       <div>
         <ul class="checks">
-          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Data lives in the app's own store on your phone</span></li>
-          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Backups go through your own iCloud or Android backup, if you use one</span></li>
-          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>Nothing is sent anywhere, so nothing can be sold or leaked</span></li>
-          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span>You can read the privacy policy — and the code that implements it</span></li>
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span data-i18n="Data lives in the app&#x27;s own store on your phone">Data lives in the app's own store on your phone</span></li>
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span data-i18n="Backups go through your own iCloud or Android backup, if you use one">Backups go through your own iCloud or Android backup, if you use one</span></li>
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span data-i18n="Nothing is sent anywhere, so nothing can be sold or leaked">Nothing is sent anywhere, so nothing can be sold or leaked</span></li>
+          <li><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#ef6e8e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 8 15.5 17 5"/></svg><span data-i18n="You can read the privacy policy — and the code that implements it">You can read the privacy policy — and the code that implements it</span></li>
         </ul>
         <div class="cta">
-          <a class="btn btn-ghost" href="https://github.com/HanSur94/endo-app/blob/main/docs/privacy.md">Read the privacy policy</a>
+          <a class="btn btn-ghost" href="https://github.com/HanSur94/endo-app/blob/main/docs/privacy.md" data-i18n="Read the privacy policy">Read the privacy policy</a>
         </div>
       </div>
     </div>
@@ -299,18 +316,18 @@
   <section id="source" class="reveal">
     <div class="wrap">
       <div class="section-head">
-        <p class="eyebrow">Open source</p>
-        <h2>MIT licensed, and small enough to read.</h2>
-        <p>Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.</p>
+        <p class="eyebrow" data-i18n="Open source" data-i18n="Open source">Open source</p>
+        <h2 data-i18n="MIT licensed, and small enough to read.">MIT licensed, and small enough to read.</h2>
+        <p data-i18n="Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.">Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.</p>
       </div>
       <div class="oss">
-        <div class="stat"><b>474</b><span>unit tests across the two codebases</span></div>
-        <div class="stat"><b>0</b><span>third-party analytics SDKs</span></div>
-        <div class="stat"><b>MIT</b><span>fork it, audit it, ship your own</span></div>
+        <div class="stat"><b>474</b><span data-i18n="unit tests across the two codebases">unit tests across the two codebases</span></div>
+        <div class="stat"><b>0</b><span data-i18n="third-party analytics SDKs">third-party analytics SDKs</span></div>
+        <div class="stat"><b>MIT</b><span data-i18n="fork it, audit it, ship your own">fork it, audit it, ship your own</span></div>
       </div>
       <div class="cta">
         <a class="btn btn-primary" href="https://github.com/HanSur94/endo-app">github.com/HanSur94/endo-app</a>
-        <a class="btn btn-ghost" href="https://github.com/HanSur94/endo-app/blob/main/CONTRIBUTING.md">Contributing</a>
+        <a class="btn btn-ghost" href="https://github.com/HanSur94/endo-app/blob/main/CONTRIBUTING.md" data-i18n="Contributing">Contributing</a>
       </div>
     </div>
   </section>
@@ -322,7 +339,7 @@
       <span class="wordmark" style="font-size:17px"><img src="assets/app-icon.png" alt="" width="22" height="22" style="width:22px;height:22px;border-radius:6px">Open<span>Endo</span></span>
       <span><a href="https://github.com/HanSur94/endo-app/blob/main/docs/privacy.md">Privacy</a> · <a href="https://github.com/HanSur94/endo-app/issues">Support</a> · <a href="https://github.com/HanSur94/endo-app">GitHub</a> · MIT</span>
     </div>
-    <p class="disclaimer">OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.</p>
+    <p class="disclaimer" data-i18n="OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.">OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.</p>
   </div>
 </footer>
 
@@ -339,6 +356,46 @@
       });
     }, { threshold: 0.18, rootMargin: '0px 0px -18% 0px' });
     els.forEach(function (el) { io.observe(el); });
+  })();
+</script>
+<script type="application/json" id="i18n-de">{"A quieter way to keep track of endo.": "Ein ruhigerer Weg, <em>Endo</em> im Blick zu behalten.","Android": "Android","Backups go through your own iCloud or Android backup, if you use one": "Backups laufen über deine eigene iCloud- oder Android-Sicherung, wenn du eine nutzt","Built to be checked": "Gebaut, um nachprüfbar zu sein","Check in once a day": "Einmal am Tag eintragen","Check-in, insights, explore, report.": "Check-in, Insights, Explore, Report.","Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.": "Verglichen wird mit deinen eigenen erfassten Tagen. Eine kurze Historie wird auch so benannt: Abdeckung und Anzahl erfasster Tage stehen in jedem Report — eine dünne Woche kann sich nicht als Muster ausgeben.","Confidence from logged days": "<b>Konfidenz</b> aus erfassten Tagen","Contributing": "Mitmachen","Daily check-in": "Täglicher Check-in","Data lives in the app's own store on your phone": "Die Daten liegen im eigenen Speicher der App auf deinem Telefon","Days behind the card": "<b>Tage</b> hinter der Karte","Direction of the movement": "<b>Richtung</b> der Bewegung","Explore any two signals": "Zwei beliebige Signale erkunden","Explore — lanes and scatter": "Explore — Lanes und Streudiagramm","Exportable PDF report": "Exportierbarer PDF-Report","Five taps a day. That is the whole routine.": "Fünf Tipper am Tag. Mehr Routine braucht es nicht.","Hand over a report": "Einen Report in die Hand geben","Home — cycle estimate and today": "Start — Zyklusschätzung und heute","How it works": "So funktioniert es","Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.": "Insights vergleichen die Tage, die du wirklich erfasst hast, und zeigen, wo sich zwei Dinge in dieselbe Richtung bewegt haben — mit der Zahl der Tage hinter jeder Karte, damit du selbst urteilen kannst.","Insights — with the days behind each card": "Insights — mit den Tagen hinter jeder Karte","Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.": "Lanes und ein Streudiagramm zeigen ein Symptom gegen ein anderes über Wochen — ohne Dashboard voller Zahlen, nach denen du nicht gefragt hast.","Lanes — the same days as a timeline": "Lanes — dieselben Tage als Zeitstrahl","Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.": "Trag deinen Tag in unter einer Minute ein, sieh, was sich in deinen eigenen Aufzeichnungen zusammen bewegt, und nimm einen sauberen Report zum nächsten Termin mit. Alles bleibt auf deinem Gerät.","MIT licensed": "MIT-Lizenz","MIT licensed, and small enough to read.": "MIT-lizenziert — und klein genug, um es zu lesen.","No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.": "Kein Konto, kein Backend, kein Analytics-SDK, keine Werbe-ID. Die App ist eine lokale Datenbank und ein paar Ansichten darauf.","Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.": "Nicht nur „da ist ein Muster“: die Richtung der Bewegung, wie deutlich sie über deine Aufzeichnungen aussieht, und — was die meisten Tracker verbergen — auf wie vielen Tagen sie beruht.","Nothing is sent anywhere, so nothing can be sold or leaked": "Nichts wird irgendwohin geschickt, also kann auch nichts verkauft oder geleakt werden","Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.": "Nichts wird geglättet, bewertet oder vorhergesagt. Wähle zwei Signale, und das Streudiagramm zeigt, wie sie sich im gewählten Zeitraum zusammen bewegt haben; die Lanes zeigen dieselben Tage als Zeitstrahl, wenn ein Diagramm die falsche Form ist.","Open source": "Open Source","OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.": "OpenEndo ist ein Selbsttracking-Werkzeug für dein Wohlbefinden. Es ist kein Medizinprodukt und diagnostiziert, behandelt, heilt oder verhindert keine Erkrankung. Es ersetzt keinen ärztlichen Rat — sprich bitte mit einer Ärztin oder einem Arzt über Symptome und Behandlung.","OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.": "OpenEndo ist um einen kurzen Check-in gebaut, nicht um Formulare. Symptome sind optional; den Tag zu bestätigen reicht.","Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.": "Schmerz, Blutung, Verdauung, Energie, Schlaf, Stimmung, Medikamente, Stress — jede Zeile für sich, jede überspringbar. Ein Tag ohne Eintrag zählt trotzdem.","Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.": "Wähle einen Zeitraum und exportiere ein PDF mit deinen erfassten Tagen, der Abdeckung und den Mustern, die gehalten haben. Etwas, das du beim Termin auf den Tisch legen kannst.","Privacy": "Datenschutz","Read the privacy policy": "Datenschutzerklärung lesen","Scatter — one dot per logged day": "Streudiagramm — ein Punkt pro erfasstem Tag","Screens": "Screens","See the screens": "Screens ansehen","See what moves together": "Sehen, was sich zusammen bewegt","Symptoms and severity": "Symptome und Stärke","The data": "Die Daten","The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.": "Dieselben Regeln laufen auf iOS und Android aus einem eingefrorenen Datensatz, und die Unit-Tests halten die Zahlen daran fest — eine Karte mit „12 Tagen“ ist durch zwölf Zeilen belegt, nicht durch die Zuversicht eines Modells.","The whole loop, top to bottom.": "Der ganze Ablauf, von oben nach unten.","There is no server to send your data to.": "Es gibt keinen Server, an den deine Daten gehen.","Two axes, one point per logged day.": "Zwei Achsen, ein Punkt pro erfasstem Tag.","Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.": "Zwei native Apps — SwiftUI auf iOS, Kotlin und Compose auf Android — mit einem eingefrorenen Claims-Policy-Datensatz, damit die Texte zwischen den Plattformen nicht auseinanderlaufen.","View on GitHub": "Auf GitHub ansehen","What a pattern card actually says": "Was eine Muster-Karte wirklich sagt","You can read the privacy policy — and the code that implements it": "Du kannst die Datenschutzerklärung lesen — und den Code, der sie umsetzt","Your own baseline, never anyone else’s": "Deine eigene Baseline, nie die von anderen","fork it, audit it, ship your own": "forks, prüf es, bau dein eigenes","iPhone & iPad": "iPhone & iPad","third-party analytics SDKs": "Analytics-SDKs von Drittanbietern","unit tests across the two codebases": "Unit-Tests über beide Codebasen"}</script>
+<script>
+  (function () {
+    var dict = {};
+    try { dict = JSON.parse(document.getElementById('i18n-de').textContent); } catch (e) { dict = {}; }
+    var nodes = Array.prototype.slice.call(document.querySelectorAll('[data-i18n],[data-i18n-html]'));
+    nodes.forEach(function (el) {
+      var isHTML = el.hasAttribute('data-i18n-html');
+      el.dataset.key = isHTML ? el.getAttribute('data-i18n-html') : el.getAttribute('data-i18n');
+      el.dataset.original = isHTML ? el.innerHTML : el.textContent;
+    });
+    var select = document.getElementById('lang');
+    function apply(lang) {
+      document.documentElement.lang = lang;
+      nodes.forEach(function (el) {
+        var value = lang === 'de' ? dict[el.dataset.key] : null;
+        if (el.hasAttribute('data-i18n-html')) el.innerHTML = value || el.dataset.original;
+        else el.textContent = value || el.dataset.original;
+      });
+      select.value = lang;
+    }
+    function initial() {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q === 'de' || q === 'en') return q;
+      var saved = localStorage.getItem('lang');
+      if (saved === 'de' || saved === 'en') return saved;
+      return (navigator.language || 'en').toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
+    }
+    var lang = initial();
+    apply(lang);
+    select.addEventListener('change', function (e) {
+      var next = e.target.value;
+      try { localStorage.setItem('lang', next); } catch (err) {}
+      var url = new URL(location.href);
+      url.searchParams.set('lang', next);
+      history.replaceState(null, '', url);
+      apply(next);
+    });
   })();
 </script>
 </body>
