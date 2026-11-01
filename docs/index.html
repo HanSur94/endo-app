@@ -46,15 +46,20 @@
   .btn-ghost{background:var(--card); color:var(--ink); border-color:var(--stroke); box-shadow:var(--shadow)}
   .btn-ghost:hover{border-color:var(--petal-line)}
   .btn-sm{padding:9px 15px; font-size:14px}
-  .lang{display:inline-flex; align-items:center; position:relative}
-  .lang select{
-    appearance:none; font:inherit; font-size:13.5px; font-weight:600; letter-spacing:.04em;
-    color:var(--ink); background:var(--card); border:1px solid var(--stroke); border-radius:999px;
-    padding:8px 30px 8px 14px; cursor:pointer; box-shadow:0 2px 6px rgba(110,33,83,.06);
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%237a5e70' stroke-width='1.6' stroke-linecap='round'/></svg>");
-    background-repeat:no-repeat; background-position:right 12px center;
+  .lang{display:inline-flex; align-items:center; gap:2px; position:relative; padding:3px; background:var(--surface); border:1px solid var(--stroke); border-radius:10px; box-shadow:0 2px 6px rgba(110,33,83,.06)}
+  .lang button{
+    appearance:none; border:0; background:transparent; cursor:pointer; font:inherit;
+    font-size:12.5px; font-weight:700; letter-spacing:.08em; color:var(--ink2);
+    padding:6px 11px; border-radius:8px; transition:background .15s ease, color .15s ease;
   }
-  .lang select:hover{border-color:var(--petal-line)}
+  .lang button:hover{color:var(--ink)}
+  .lang button[aria-pressed="true"]{background:var(--plum); color:#fff; box-shadow:0 1px 3px rgba(110,33,83,.25)}
+  .scroll-hint{display:flex; justify-content:center; align-items:center; width:fit-content; margin:34px auto 0; padding:8px; color:var(--ink3); text-decoration:none; border-radius:999px}
+  .scroll-hint:hover{color:var(--plum)}
+  .scroll-hint svg{width:22px; height:22px; animation:scrollBob 1.9s cubic-bezier(.5,0,.5,1) infinite}
+  @keyframes scrollBob{0%,100%{transform:translateY(0); opacity:.5}50%{transform:translateY(8px); opacity:1}}
+  .band .scroll-hint{color:#e5b9cc}
+  .band .scroll-hint:hover{color:#fff}
   .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
 
   .hero{padding:72px 0 20px; position:relative; overflow:clip}
@@ -149,6 +154,14 @@
   .js .reveal.in .card:nth-child(2), .js .reveal.in .stat:nth-child(2), .js .reveal.in .shot:nth-child(2){transition-delay:.12s}
   .js .reveal.in .card:nth-child(3), .js .reveal.in .stat:nth-child(3), .js .reveal.in .shot:nth-child(3){transition-delay:.24s}
   .js .reveal.in .card:nth-child(4), .js .reveal.in .shot:nth-child(4){transition-delay:.36s}
+  @media (max-width:560px){
+    nav{gap:12px}
+    .wordmark{font-size:18px; gap:8px}
+    .wordmark img{width:26px; height:26px}
+    .lang{padding:2px}
+    .lang button{padding:5px 9px; font-size:12px}
+    .btn-sm{padding:8px 12px; font-size:13px}
+  }
   @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important; scroll-behavior:auto!important} .js .reveal,.js .reveal .card,.js .reveal .stat,.js .reveal .shot{opacity:1!important; transform:none!important}}
 </style>
 </head>
@@ -163,13 +176,10 @@
       <a class="plain" href="#privacy" data-i18n="Privacy">Privacy</a>
       <a class="plain" href="#source" data-i18n="Open source">Open source</a>
     </div>
-    <label class="lang">
-      <span class="sr">Language</span>
-      <select id="lang" aria-label="Language">
-        <option value="en">EN</option>
-        <option value="de">DE</option>
-      </select>
-    </label>
+    <div class="lang" id="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="de" aria-pressed="false">DE</button>
+    </div>
     <a class="btn btn-primary btn-sm" href="https://github.com/HanSur94/endo-app">GitHub</a>
   </nav>
 </header>
@@ -199,6 +209,7 @@
         <div class="phone side"><img src="screenshots/09-explore-lanes.png" alt="Explore screen with one lane per tracked signal"></div>
       </div>
     </div>
+    <a class="scroll-hint" href="#how"><span class="sr" data-i18n="Scroll to next section">Scroll to next section</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
   </div>
 
   <section id="how" class="reveal">
@@ -243,6 +254,7 @@
         </div>
       </div>
     </div>
+      <a class="scroll-hint" href="#screens"><span class="sr" data-i18n="Scroll to next section">Scroll to next section</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
   </section>
 
   <section id="screens" class="reveal" style="background:var(--surface); border-block:1px solid var(--stroke)">
@@ -261,6 +273,7 @@
         <figure class="phone"><img src="screenshots/07-report.png" alt="Report preview"><figcaption data-i18n="Exportable PDF report">Exportable PDF report</figcaption></figure>
       </div>
     </div>
+      <a class="scroll-hint" href="#data"><span class="sr" data-i18n="Scroll to next section">Scroll to next section</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
   </section>
 
   <section id="data" class="reveal">
@@ -290,6 +303,7 @@
         </div>
       </div>
     </div>
+      <a class="scroll-hint" href="#privacy"><span class="sr" data-i18n="Scroll to next section">Scroll to next section</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
   </section>
 
   <section id="privacy" class="band reveal">
@@ -311,7 +325,8 @@
         </div>
       </div>
     </div>
-  </section>
+    <a class="scroll-hint" href="#source"><span class="sr" data-i18n="Scroll to next section">Scroll to next section</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
+</section>
 
   <section id="source" class="reveal">
     <div class="wrap">
@@ -358,7 +373,7 @@
     els.forEach(function (el) { io.observe(el); });
   })();
 </script>
-<script type="application/json" id="i18n-de">{"A quieter way to keep track of endo.": "Ein ruhigerer Weg, <em>Endo</em> im Blick zu behalten.","Android": "Android","Backups go through your own iCloud or Android backup, if you use one": "Backups laufen über deine eigene iCloud- oder Android-Sicherung, wenn du eine nutzt","Built to be checked": "Gebaut, um nachprüfbar zu sein","Check in once a day": "Einmal am Tag eintragen","Check-in, insights, explore, report.": "Check-in, Insights, Explore, Report.","Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.": "Verglichen wird mit deinen eigenen erfassten Tagen. Eine kurze Historie wird auch so benannt: Abdeckung und Anzahl erfasster Tage stehen in jedem Report — eine dünne Woche kann sich nicht als Muster ausgeben.","Confidence from logged days": "<b>Konfidenz</b> aus erfassten Tagen","Contributing": "Mitmachen","Daily check-in": "Täglicher Check-in","Data lives in the app's own store on your phone": "Die Daten liegen im eigenen Speicher der App auf deinem Telefon","Days behind the card": "<b>Tage</b> hinter der Karte","Direction of the movement": "<b>Richtung</b> der Bewegung","Explore any two signals": "Zwei beliebige Signale erkunden","Explore — lanes and scatter": "Explore — Lanes und Streudiagramm","Exportable PDF report": "Exportierbarer PDF-Report","Five taps a day. That is the whole routine.": "Fünf Tipper am Tag. Mehr Routine braucht es nicht.","Hand over a report": "Einen Report in die Hand geben","Home — cycle estimate and today": "Start — Zyklusschätzung und heute","How it works": "So funktioniert es","Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.": "Insights vergleichen die Tage, die du wirklich erfasst hast, und zeigen, wo sich zwei Dinge in dieselbe Richtung bewegt haben — mit der Zahl der Tage hinter jeder Karte, damit du selbst urteilen kannst.","Insights — with the days behind each card": "Insights — mit den Tagen hinter jeder Karte","Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.": "Lanes und ein Streudiagramm zeigen ein Symptom gegen ein anderes über Wochen — ohne Dashboard voller Zahlen, nach denen du nicht gefragt hast.","Lanes — the same days as a timeline": "Lanes — dieselben Tage als Zeitstrahl","Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.": "Trag deinen Tag in unter einer Minute ein, sieh, was sich in deinen eigenen Aufzeichnungen zusammen bewegt, und nimm einen sauberen Report zum nächsten Termin mit. Alles bleibt auf deinem Gerät.","MIT licensed": "MIT-Lizenz","MIT licensed, and small enough to read.": "MIT-lizenziert — und klein genug, um es zu lesen.","No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.": "Kein Konto, kein Backend, kein Analytics-SDK, keine Werbe-ID. Die App ist eine lokale Datenbank und ein paar Ansichten darauf.","Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.": "Nicht nur „da ist ein Muster“: die Richtung der Bewegung, wie deutlich sie über deine Aufzeichnungen aussieht, und — was die meisten Tracker verbergen — auf wie vielen Tagen sie beruht.","Nothing is sent anywhere, so nothing can be sold or leaked": "Nichts wird irgendwohin geschickt, also kann auch nichts verkauft oder geleakt werden","Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.": "Nichts wird geglättet, bewertet oder vorhergesagt. Wähle zwei Signale, und das Streudiagramm zeigt, wie sie sich im gewählten Zeitraum zusammen bewegt haben; die Lanes zeigen dieselben Tage als Zeitstrahl, wenn ein Diagramm die falsche Form ist.","Open source": "Open Source","OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.": "OpenEndo ist ein Selbsttracking-Werkzeug für dein Wohlbefinden. Es ist kein Medizinprodukt und diagnostiziert, behandelt, heilt oder verhindert keine Erkrankung. Es ersetzt keinen ärztlichen Rat — sprich bitte mit einer Ärztin oder einem Arzt über Symptome und Behandlung.","OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.": "OpenEndo ist um einen kurzen Check-in gebaut, nicht um Formulare. Symptome sind optional; den Tag zu bestätigen reicht.","Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.": "Schmerz, Blutung, Verdauung, Energie, Schlaf, Stimmung, Medikamente, Stress — jede Zeile für sich, jede überspringbar. Ein Tag ohne Eintrag zählt trotzdem.","Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.": "Wähle einen Zeitraum und exportiere ein PDF mit deinen erfassten Tagen, der Abdeckung und den Mustern, die gehalten haben. Etwas, das du beim Termin auf den Tisch legen kannst.","Privacy": "Datenschutz","Read the privacy policy": "Datenschutzerklärung lesen","Scatter — one dot per logged day": "Streudiagramm — ein Punkt pro erfasstem Tag","Screens": "Screens","See the screens": "Screens ansehen","See what moves together": "Sehen, was sich zusammen bewegt","Symptoms and severity": "Symptome und Stärke","The data": "Die Daten","The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.": "Dieselben Regeln laufen auf iOS und Android aus einem eingefrorenen Datensatz, und die Unit-Tests halten die Zahlen daran fest — eine Karte mit „12 Tagen“ ist durch zwölf Zeilen belegt, nicht durch die Zuversicht eines Modells.","The whole loop, top to bottom.": "Der ganze Ablauf, von oben nach unten.","There is no server to send your data to.": "Es gibt keinen Server, an den deine Daten gehen.","Two axes, one point per logged day.": "Zwei Achsen, ein Punkt pro erfasstem Tag.","Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.": "Zwei native Apps — SwiftUI auf iOS, Kotlin und Compose auf Android — mit einem eingefrorenen Claims-Policy-Datensatz, damit die Texte zwischen den Plattformen nicht auseinanderlaufen.","View on GitHub": "Auf GitHub ansehen","What a pattern card actually says": "Was eine Muster-Karte wirklich sagt","You can read the privacy policy — and the code that implements it": "Du kannst die Datenschutzerklärung lesen — und den Code, der sie umsetzt","Your own baseline, never anyone else’s": "Deine eigene Baseline, nie die von anderen","fork it, audit it, ship your own": "forks, prüf es, bau dein eigenes","iPhone & iPad": "iPhone & iPad","third-party analytics SDKs": "Analytics-SDKs von Drittanbietern","unit tests across the two codebases": "Unit-Tests über beide Codebasen"}</script>
+<script type="application/json" id="i18n-de">{"A quieter way to keep track of endo.": "Ein ruhigerer Weg, <em>Endo</em> im Blick zu behalten.", "Android": "Android", "Backups go through your own iCloud or Android backup, if you use one": "Backups laufen über deine eigene iCloud- oder Android-Sicherung, wenn du eine nutzt", "Built to be checked": "Gebaut, um nachprüfbar zu sein", "Check in once a day": "Einmal am Tag eintragen", "Check-in, insights, explore, report.": "Check-in, Insights, Explore, Report.", "Comparisons run against your own logged days. A short history is stated as short: coverage and the number of logged days travel with every report, so a thin week cannot masquerade as a pattern.": "Verglichen wird mit deinen eigenen erfassten Tagen. Eine kurze Historie wird auch so benannt: Abdeckung und Anzahl erfasster Tage stehen in jedem Report — eine dünne Woche kann sich nicht als Muster ausgeben.", "Confidence from logged days": "<b>Konfidenz</b> aus erfassten Tagen", "Contributing": "Mitmachen", "Daily check-in": "Täglicher Check-in", "Data lives in the app's own store on your phone": "Die Daten liegen im eigenen Speicher der App auf deinem Telefon", "Days behind the card": "<b>Tage</b> hinter der Karte", "Direction of the movement": "<b>Richtung</b> der Bewegung", "Explore any two signals": "Zwei beliebige Signale erkunden", "Explore — lanes and scatter": "Explore — Lanes und Streudiagramm", "Exportable PDF report": "Exportierbarer PDF-Report", "Five taps a day. That is the whole routine.": "Fünf Tipper am Tag. Mehr Routine braucht es nicht.", "Hand over a report": "Einen Report in die Hand geben", "Home — cycle estimate and today": "Start — Zyklusschätzung und heute", "How it works": "So funktioniert es", "Insights compare the days you actually logged and show where two things moved in the same direction — with the number of days behind each card, so you can judge it yourself.": "Insights vergleichen die Tage, die du wirklich erfasst hast, und zeigen, wo sich zwei Dinge in dieselbe Richtung bewegt haben — mit der Zahl der Tage hinter jeder Karte, damit du selbst urteilen kannst.", "Insights — with the days behind each card": "Insights — mit den Tagen hinter jeder Karte", "Lanes and a scatter view let you look at one symptom against another across weeks, without a dashboard full of numbers you did not ask for.": "Lanes und ein Streudiagramm zeigen ein Symptom gegen ein anderes über Wochen — ohne Dashboard voller Zahlen, nach denen du nicht gefragt hast.", "Lanes — the same days as a timeline": "Lanes — dieselben Tage als Zeitstrahl", "Log your day in under a minute, see what moves together in your own logs, and take a clean report to your next appointment. Everything stays on your device.": "Trag deinen Tag in unter einer Minute ein, sieh, was sich in deinen eigenen Aufzeichnungen zusammen bewegt, und nimm einen sauberen Report zum nächsten Termin mit. Alles bleibt auf deinem Gerät.", "MIT licensed": "MIT-Lizenz", "MIT licensed, and small enough to read.": "MIT-lizenziert — und klein genug, um es zu lesen.", "No account, no backend, no analytics SDK, no advertising identifier. The app is a local database and a set of views over it.": "Kein Konto, kein Backend, kein Analytics-SDK, keine Werbe-ID. Die App ist eine lokale Datenbank und ein paar Ansichten darauf.", "Not just “there is a pattern”: the direction of the movement, how strong it looks across your logs, and — the part most trackers hide — how many days it is built on.": "Nicht nur „da ist ein Muster“: die Richtung der Bewegung, wie deutlich sie über deine Aufzeichnungen aussieht, und — was die meisten Tracker verbergen — auf wie vielen Tagen sie beruht.", "Nothing is sent anywhere, so nothing can be sold or leaked": "Nichts wird irgendwohin geschickt, also kann auch nichts verkauft oder geleakt werden", "Nothing is smoothed, scored or forecast. Pick two signals and the scatter shows how they travelled together over the range you choose; the lanes show the same days as a timeline when a chart is the wrong shape.": "Nichts wird geglättet, bewertet oder vorhergesagt. Wähle zwei Signale, und das Streudiagramm zeigt, wie sie sich im gewählten Zeitraum zusammen bewegt haben; die Lanes zeigen dieselben Tage als Zeitstrahl, wenn ein Diagramm die falsche Form ist.", "Open source": "Open Source", "OpenEndo is a wellness self-tracking tool. It is not a medical device and does not diagnose, treat, cure or prevent any condition. It is not a substitute for medical advice — please talk to a clinician about symptoms and treatment.": "OpenEndo ist ein Selbsttracking-Werkzeug für dein Wohlbefinden. Es ist kein Medizinprodukt und diagnostiziert, behandelt, heilt oder verhindert keine Erkrankung. Es ersetzt keinen ärztlichen Rat — sprich bitte mit einer Ärztin oder einem Arzt über Symptome und Behandlung.", "OpenEndo is built around one short check-in, not around filling in forms. Symptoms are optional; confirming the day is enough.": "OpenEndo ist um einen kurzen Check-in gebaut, nicht um Formulare. Symptome sind optional; den Tag zu bestätigen reicht.", "Pain, bleeding, gut, energy, sleep, mood, meds, stress — each on its own row, each skippable. A day with nothing logged still counts.": "Schmerz, Blutung, Verdauung, Energie, Schlaf, Stimmung, Medikamente, Stress — jede Zeile für sich, jede überspringbar. Ein Tag ohne Eintrag zählt trotzdem.", "Pick a date range and export a PDF with your logged days, coverage and the patterns that held. Something to put on the table at an appointment.": "Wähle einen Zeitraum und exportiere ein PDF mit deinen erfassten Tagen, der Abdeckung und den Mustern, die gehalten haben. Etwas, das du beim Termin auf den Tisch legen kannst.", "Privacy": "Datenschutz", "Read the privacy policy": "Datenschutzerklärung lesen", "Scatter — one dot per logged day": "Streudiagramm — ein Punkt pro erfasstem Tag", "Screens": "Screens", "See the screens": "Screens ansehen", "See what moves together": "Sehen, was sich zusammen bewegt", "Symptoms and severity": "Symptome und Stärke", "The data": "Die Daten", "The same rules run on iOS and Android from one frozen dataset, and the unit tests hold the numbers to it — so a card that says “12 days” is backed by twelve rows, not by a model’s confidence.": "Dieselben Regeln laufen auf iOS und Android aus einem eingefrorenen Datensatz, und die Unit-Tests halten die Zahlen daran fest — eine Karte mit „12 Tagen“ ist durch zwölf Zeilen belegt, nicht durch die Zuversicht eines Modells.", "The whole loop, top to bottom.": "Der ganze Ablauf, von oben nach unten.", "There is no server to send your data to.": "Es gibt keinen Server, an den deine Daten gehen.", "Two axes, one point per logged day.": "Zwei Achsen, ein Punkt pro erfasstem Tag.", "Two native apps — SwiftUI on iOS, Kotlin and Compose on Android — sharing one frozen claims-policy dataset so the copy cannot drift between platforms.": "Zwei native Apps — SwiftUI auf iOS, Kotlin und Compose auf Android — mit einem eingefrorenen Claims-Policy-Datensatz, damit die Texte zwischen den Plattformen nicht auseinanderlaufen.", "View on GitHub": "Auf GitHub ansehen", "What a pattern card actually says": "Was eine Muster-Karte wirklich sagt", "You can read the privacy policy — and the code that implements it": "Du kannst die Datenschutzerklärung lesen — und den Code, der sie umsetzt", "Your own baseline, never anyone else’s": "Deine eigene Baseline, nie die von anderen", "fork it, audit it, ship your own": "forks, prüf es, bau dein eigenes", "iPhone & iPad": "iPhone & iPad", "third-party analytics SDKs": "Analytics-SDKs von Drittanbietern", "unit tests across the two codebases": "Unit-Tests über beide Codebasen", "Scroll to next section": "Weiter scrollen"}</script>
 <script>
   (function () {
     var dict = {};
@@ -369,7 +384,8 @@
       el.dataset.key = isHTML ? el.getAttribute('data-i18n-html') : el.getAttribute('data-i18n');
       el.dataset.original = isHTML ? el.innerHTML : el.textContent;
     });
-    var select = document.getElementById('lang');
+    var group = document.getElementById('lang');
+    var buttons = Array.prototype.slice.call(group.querySelectorAll('button[data-lang]'));
     function apply(lang) {
       document.documentElement.lang = lang;
       nodes.forEach(function (el) {
@@ -377,7 +393,7 @@
         if (el.hasAttribute('data-i18n-html')) el.innerHTML = value || el.dataset.original;
         else el.textContent = value || el.dataset.original;
       });
-      select.value = lang;
+      buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
     }
     function initial() {
       var q = new URLSearchParams(location.search).get('lang');
@@ -388,14 +404,24 @@
     }
     var lang = initial();
     apply(lang);
-    select.addEventListener('change', function (e) {
-      var next = e.target.value;
-      try { localStorage.setItem('lang', next); } catch (err) {}
-      var url = new URL(location.href);
-      url.searchParams.set('lang', next);
-      history.replaceState(null, '', url);
-      apply(next);
+    buttons.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var next = b.dataset.lang;
+        if (next === document.documentElement.lang) return;
+        try { localStorage.setItem('lang', next); } catch (err) {}
+        var url = new URL(location.href);
+        url.searchParams.set('lang', next);
+        history.replaceState(null, '', url);
+        apply(next);
+      });
     });
+    // Every open or reload starts on the hero, even if the URL still carries a section hash.
+    function startAtTop() {
+      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+      window.scrollTo(0, 0);
+    }
+    startAtTop();
+    window.addEventListener('pageshow', startAtTop);
   })();
 </script>
 </body>
