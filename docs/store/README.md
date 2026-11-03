@@ -1,7 +1,9 @@
 # App Store assets
 
-**Screenshots** — `app-store/iphone-6.9/` holds six 1320 × 2868 PNGs (iPhone 6.9", the size App Store
-Connect requires for iPhone). They are the full-resolution attachments from `StoreScreenshotTour`,
+**Screenshots** — two sizes, same six screens:
+- `app-store/iphone-6.3/` — 1206 × 2622, what App Store Connect asks for under "iPhone with Dynamic
+  Island (medium display)" (accepted sizes there: 2556 × 1179, 1179 × 2556, 2622 × 1206, 1206 × 2622).
+- `app-store/iphone-6.9/` — 1320 × 2868, the larger class, also accepted. They are the full-resolution attachments from `StoreScreenshotTour`,
 not the 900 px web copies in `docs/screenshots/`.
 
 Still missing before submission: **iPad screenshots** (2064 × 2752, 13"), required because the app
